@@ -10,7 +10,7 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="3.9.0";
+const VERSAO="3.9.1";
 const NOVIDADES=[
   "Despesas e receitas avulsas do mês mostram só as 5 mais recentes, com o botão \"Ver todas\" para abrir o resto.",
   "Modo viagem (Ajustes → Modo viagem): cadastre a viagem com a moeda do destino, a cotação (dá para buscar a de hoje), as taxas do cartão e um orçamento.",
