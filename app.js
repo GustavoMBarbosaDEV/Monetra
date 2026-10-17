@@ -10,12 +10,12 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="2.7.0";
+const VERSAO="2.8.0";
 const NOVIDADES=[
-  "Várias contas (corrente, poupança, dinheiro…), com o saldo de cada uma e transferências entre elas.",
-  "Vários cartões de crédito, cada um com sua fatura, dias de fechamento e vencimento e limite disponível.",
-  "Ao lançar, escolha de qual conta sai o dinheiro ou em qual cartão foi a compra.",
-  "Seu cartão antigo foi mantido automaticamente como o primeiro cartão da lista."
+  "Importar extrato do banco (OFX ou CSV): traga todos os lançamentos de uma vez, em Ajustes → Importar extrato.",
+  "O app sugere a categoria de cada gasto (pelo que você já lançou e por palavras como mercado, uber, farmácia).",
+  "Lançamentos repetidos e pagamentos de fatura são desmarcados sozinhos. Dá para desfazer a importação.",
+  "Termos de privacidade: o app explica quais dados guarda e pede o seu aceite. Dá para reler ou retirar o aceite no Perfil."
 ];
 
 /* ---------- utilidades ---------- */
@@ -71,7 +71,7 @@ const ICON={
 };
 
 /* ---------- estado ---------- */
-function defaultConfig(){ return {salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
+function defaultConfig(){ return {termos:null,salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
 const state={config:defaultConfig(), months:{}, loaded:false};
 let MESES=[];
 const today=new Date();
@@ -118,7 +118,8 @@ function normConfig(d){
   const contas=Array.isArray(d?.contas)?d.contas.filter(c=>c&&c.id).map(c=>({id:String(c.id),nome:String(c.nome||"Conta"),tipo:String(c.tipo||"corrente"),saldoInicial:Number(c.saldoInicial)||0})):[];
   const contaSalario=d?.contaSalario&&contas.some(c=>c.id===d.contaSalario)?String(d.contaSalario):null;
   const metas=Array.isArray(d?.metas)?d.metas.filter(x=>x&&x.id).map(x=>({id:String(x.id),nome:String(x.nome||"Meta"),alvo:Number(x.alvo)||0,prazo:mk(x.prazo)?x.prazo:null})):[];
-  return {salarioPadrao:Number(d?.salarioPadrao)||0, saldoInicial:Number(d?.saldoInicial)||0, saldoCaixinha:Number(d?.saldoCaixinha)||0, ate, inicio, categorias:cats, fixos, parcelas, rendas, cartoes, contas, contaSalario, metas};
+  const termos=d?.termos&&typeof d.termos.v==="string"?{v:d.termos.v,em:String(d.termos.em||"")}:null;
+  return {termos, salarioPadrao:Number(d?.salarioPadrao)||0, saldoInicial:Number(d?.saldoInicial)||0, saldoCaixinha:Number(d?.saldoCaixinha)||0, ate, inicio, categorias:cats, fixos, parcelas, rendas, cartoes, contas, contaSalario, metas};
 }
 function getMonth(k){ if(!state.months[k]) state.months[k]=normMonth({}); else state.months[k]=Object.assign(normMonth({}),state.months[k]); return state.months[k]; }
 const catIndex=id=>state.config.categorias.findIndex(c=>c.id===id);
@@ -530,7 +531,7 @@ function exportar(){
 function importar(file){
   const r=new FileReader();
   r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.config||!d.months) throw 0;
-    state.config=normConfig(d.config); buildMeses(); save("config");
+    const t=state.config.termos; state.config=normConfig(d.config); if(!state.config.termos) state.config.termos=t; buildMeses(); save("config");
     for(const k in d.months){ state.months[k]=normMonth(d.months[k]); save(k); }
     ui.importMsg="Backup restaurado."; render(); }catch(e){ ui.importMsg="Arquivo inválido. Use um backup baixado pelo MB Controle."; render(); } };
   r.readAsText(file);
@@ -585,15 +586,15 @@ function render(){
   const a=document.activeElement, inApp=a&&document.getElementById("app").contains(a);
   const fid=inApp&&a.id, sel=(fid&&"selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const app=document.getElementById("app");
-  const corpo=mode==="login"?viewLogin():!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="perfil"?viewPerfil():viewAjustes();
+  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="perfil"?viewPerfil():viewAjustes();
   app.innerHTML=header()+corpo+bottomNav();
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus({preventScroll:true}); if(sel&&el.setSelectionRange){ try{el.setSelectionRange(sel[0],sel[1])}catch(e){} } } }
   const on=document.querySelector(".chip.on"); if(on&&on.scrollIntoView&&!fid) on.scrollIntoView({block:"nearest",inline:"center"});
-  if(state.loaded&&mode!=="login"){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); }
+  if(state.loaded&&mode!=="login"&&!precisaTermos()){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); }
 }
 function header(){
   const t=(id,l)=>`<button role="tab" data-tab="${id}" aria-selected="${ui.tab===id}">${l}</button>`;
-  const VIS=mesesVisiveis(), i=VIS.indexOf(ui.month), logado=mode!=="login";
+  const VIS=mesesVisiveis(), i=VIS.indexOf(ui.month), logado=mode!=="login"&&!precisaTermos();
   return `<div class="top"><div class="brand"><h1>MB <span>Controle</span></h1><span class="status ${statusCls}" id="status"><i></i>${esc(statusTxt)}</span></div>
   <div class="topright">${logado?`<div class="tabs" role="tablist">${t("mes","Mês")}${t("ano","Visão geral")}${t("ajustes","Ajustes")}</div>`:botaoTema()}
   ${logado&&state.loaded?`<button type="button" class="iconbtn" data-busca="1" aria-label="Buscar lançamentos" title="Buscar (tecla /)">${ICON.busca}</button>`:""}
@@ -610,7 +611,7 @@ function avatar(px){
   return `<span class="avatar" style="width:${px}px;height:${px}px">${ini?esc(ini):ICON.perfil}</span>`;
 }
 function bottomNav(){
-  if(mode==="login"||!state.loaded) return "";
+  if(mode==="login"||!state.loaded||precisaTermos()) return "";
   const np=pendencias().length;
   const b=(id,l)=>`<button type="button" data-tab="${id}" class="${ui.tab===id?"on":""}" aria-current="${ui.tab===id?"page":"false"}">${ICON[id]}${id==="mes"&&np?`<i class="badge">${np}</i>`:""}<span>${l}</span></button>`;
   return `<nav class="bottomnav" aria-label="Navegação">${b("mes","Mês")}${b("ano","Visão geral")}${b("ajustes","Ajustes")}${b("perfil","Perfil")}</nav>
@@ -625,7 +626,8 @@ function viewLogin(){
   <button class="btn google" data-login="1" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${novo?"Criar conta com Google":"Entrar com Google"}</button>
   ${/FBAN|FBAV|FB_IAB|Instagram|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|Twitter/i.test(navigator.userAgent)?`<div class="note">Você abriu o link dentro de outro app (Instagram, Facebook…), e o Google não permite entrar por aqui. Toque nos <b>três pontinhos</b> e escolha <b>Abrir no navegador</b> (Chrome ou Safari).<br><button class="link" type="button" data-copialink="1">Copiar link</button></div>`:""}
   ${loginErro?`<p class="note">${esc(loginErro)}</p>`:""}
-  <p class="hint">${novo?"Já tem conta? Clique em Entrar.":"Primeira vez aqui? Clique em Criar conta."} Seus dados ficam salvos na nuvem e aparecem em qualquer aparelho onde você entrar.</p></div>`;
+  <p class="hint">${novo?"Já tem conta? Clique em Entrar.":"Primeira vez aqui? Clique em Criar conta."} Seus dados ficam salvos na nuvem e aparecem em qualquer aparelho onde você entrar.</p>
+  <p class="hint">Ao entrar, você vai ler e decidir se aceita os <button class="link" type="button" data-termos="ler">termos de privacidade</button>.</p></div>`;
 }
 
 /* ---------- gráfico de rosca ---------- */
@@ -828,6 +830,9 @@ function viewAjustes(){
     <div class="card"><div class="cardhead"><h2>Compras parceladas</h2><span class="num muted">${abertas.length?abertas.length+" em andamento":""}</span></div>
     ${abertas.length?`<div>${abertas.map(x=>`<button type="button" class="item" data-edit="parcela" data-id="${esc(x.p.id)}" style="--dot:${catColor(x.p.cat)}"><span class="pill">${x.pagas}/${x.p.n}</span><span class="desc"><b>${esc(x.p.desc||"Compra parcelada")}</b><small>${x.p.n}x de ${brl(x.p.total/x.p.n)} · até ${esc(abrMes(x.ultima))}</small></span><span class="v">${brl(x.p.total)}</span></button>`).join("")}</div>`:`<p class="hint">Para parcelar, ao lançar uma despesa ligue a opção <b>Compra parcelada</b>. As parcelas entram sozinhas nos meses seguintes.</p>`}
     ${quitadas?`<p class="hint">${quitadas} compra(s) já quitada(s).</p>`:""}</div>
+    <div class="card"><h2>Importar extrato do banco</h2>
+    <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX ou CSV no app do seu banco e traga tudo de uma vez, com a categoria já sugerida.</p>
+    <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>
     <div class="card"><div class="cardhead"><h2>Contas</h2><span class="num muted">${cf.contas.length?brl(saldoInicialTotal())+" inicial":""}</span></div>
     ${cf.contas.length?`<div class="contas">${cf.contas.map(ct=>`<button type="button" class="conta" data-edit="conta" data-id="${esc(ct.id)}"><span class="ic">${ICON[ct.tipo==="dinheiro"?"dinheiro":ct.tipo==="poupanca"?"poupanca":"banco"]}</span><span class="desc"><b>${esc(ct.nome)}</b><small>saldo inicial ${brl(ct.saldoInicial)}${(cf.contaSalario||(cf.contas[0]||{}).id)===ct.id?" · recebe o salário":""}</small></span><span class="v muted">editar</span></button>`).join("")}</div>`:`<p class="hint">Separe seu dinheiro por conta (ex.: Nubank, Caixa, Dinheiro). Cada lançamento pode sair de uma conta, e o app mostra o saldo de cada uma. Sem contas cadastradas, tudo fica num saldo só.</p>`}
     <button class="btn ghost" data-novo="conta" type="button">+ Nova conta</button></div>
@@ -877,9 +882,154 @@ function viewPerfil(){
     <div class="card"><div class="cardhead"><h2>Novidades</h2><span class="versao">versão ${VERSAO}</span></div>
     <ul class="novidades">${NOVIDADES.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>
     <p class="hint">O histórico completo fica no arquivo CHANGELOG.md do projeto.</p></div>
-    <div class="card"><h2>Privacidade</h2><p class="hint">Só você vê seus lançamentos. Eles ficam guardados na sua conta e protegidos por regras que impedem qualquer outra pessoa de ler ou alterar.</p></div>
+    <div class="card"><h2>Privacidade</h2><p class="hint">Só você vê seus lançamentos. Eles ficam guardados na sua conta e protegidos por regras que impedem qualquer outra pessoa de ler ou alterar.</p>
+    ${state.config.termos?`<p class="hint">Você aceitou os termos de privacidade (versão ${esc(state.config.termos.v)})${state.config.termos.em?" em "+esc(dataBR(state.config.termos.em)):""}.</p>`:""}
+    <div class="row2"><button class="btn ghost" type="button" data-termos="ler">Ler os termos</button><button class="btn ghost" type="button" data-termos="revogar">Retirar meu aceite</button></div></div>
     <div class="card perigo"><h2>Recomeçar do zero</h2><p class="hint">Apaga todos os seus lançamentos, contas fixas, parcelas e configurações. Não dá para desfazer; se quiser, baixe um backup antes.</p>
     ${ui.confirmaApagar?`<label class="f">Para confirmar, digite APAGAR<input class="in" id="txtApagar" autocomplete="off" placeholder="APAGAR"></label><div class="row2"><button class="btn ghost" type="button" data-apagar="nao">Cancelar</button><button class="btn danger" type="button" data-apagar="sim">Apagar tudo</button></div>`:`<button class="btn danger" type="button" data-apagar="pedir">Apagar todos os meus dados</button>`}</div></div></div>`;
+}
+
+/* =====================================================================
+   TERMOS DE PRIVACIDADE (aceite obrigatório para usar o app)
+   ===================================================================== */
+const TERMOS_V="1.0", TERMOS_DATA="17/10/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
+const precisaTermos=()=>mode!=="login"&&state.loaded&&!(state.config.termos&&state.config.termos.v===TERMOS_V);
+const dataBR=iso=>{ const d=new Date(iso); return isNaN(d)?"":d.toLocaleDateString("pt-BR"); };
+function textoTermos(){
+  return `<h3>1. O que é o MB Controle</h3>
+  <p>O MB Controle é um aplicativo gratuito de controle de gastos pessoais, criado por Gustavo M. Barbosa. Ele serve para você anotar e acompanhar o seu próprio dinheiro. Não é banco, não movimenta dinheiro e não pede senha de banco.</p>
+  <h3>2. Quais dados o app guarda</h3>
+  <ul><li><b>Da sua conta Google:</b> nome, e-mail, foto e um código de identificação, usados só para fazer o login e mostrar seu perfil.</li>
+  <li><b>O que você digita:</b> salário, receitas, despesas, categorias, contas, cartões (só nome, datas e limite, nunca o número do cartão), parcelas, metas e lembretes.</li>
+  <li><b>Extratos importados:</b> o arquivo é lido dentro do seu aparelho. Só os lançamentos que você escolher importar são salvos; o arquivo em si não é enviado.</li>
+  <li><b>No seu aparelho:</b> preferências como tema, lembretes já avisados e uma cópia para funcionar sem internet.</li></ul>
+  <h3>3. Para que os dados são usados</h3>
+  <p>Somente para mostrar o seu controle financeiro a você, em qualquer aparelho em que você entrar. Os dados <b>não são vendidos, não são usados para publicidade e não são compartilhados</b> com ninguém.</p>
+  <h3>4. Onde os dados ficam</h3>
+  <p>Na sua conta, nos servidores do Google Firebase (login e banco de dados), protegidos por regras que só deixam a sua própria conta ler e alterar os seus dados. O site é hospedado no GitHub Pages, que pode registrar dados técnicos de acesso (como endereço IP) por segurança. O Google e o GitHub seguem as próprias políticas de privacidade.</p>
+  <h3>5. Seus direitos (LGPD — Lei 13.709/2018)</h3>
+  <ul><li><b>Ver e levar seus dados:</b> Perfil → baixar backup ou planilha para Excel.</li>
+  <li><b>Corrigir:</b> edite qualquer lançamento a qualquer momento.</li>
+  <li><b>Apagar:</b> Perfil → Recomeçar do zero apaga todos os seus lançamentos e configurações.</li>
+  <li><b>Retirar o aceite:</b> Perfil → Privacidade → Retirar meu aceite. Sem o aceite, o app não pode ser usado.</li>
+  <li><b>Excluir a conta por completo</b> ou tirar dúvidas: fale com o responsável pelo contato abaixo.</li></ul>
+  <h3>6. Notificações</h3>
+  <p>Os avisos de contas a vencer só são enviados se você permitir no aparelho, e podem ser desligados no Perfil ou nas configurações do celular.</p>
+  <h3>7. Responsabilidade</h3>
+  <p>O app é oferecido de graça, como está. Os valores e saldos são calculados a partir do que você lança e servem para organização pessoal; não são consultoria financeira. Guarde backups dos dados importantes.</p>
+  <h3>8. Mudanças nestes termos</h3>
+  <p>Se os termos mudarem, o app mostra a nova versão e pede o seu aceite de novo antes de continuar.</p>
+  <h3>9. Contato</h3>
+  <p><a href="${CONTATO}" target="_blank" rel="noopener">${CONTATO.replace(/^https?:\/\//,"")}</a></p>`;
+}
+function viewTermos(pedir){
+  const recusou=ui.recusouTermos&&pedir;
+  return `<div class="card termos">
+  <h2>Termos de privacidade</h2><p class="hint">Versão ${TERMOS_V} · ${TERMOS_DATA}</p>
+  ${pedir?`<p>${state.config.termos?"Os termos mudaram. ":""}Antes de usar o MB Controle, leia como seus dados são tratados e escolha se aceita.</p>`:""}
+  <div class="termostexto">${textoTermos()}</div>
+  ${recusou?`<p class="note">Sem aceitar os termos não é possível usar o app neste aparelho. Seus dados não foram alterados.</p>`:""}
+  ${pedir?`<label class="checkline"><input type="checkbox" id="t-li"> Li e entendi os termos de privacidade</label>
+  <div class="row2"><button class="btn ghost" type="button" data-termos="recusar">Não aceito</button><button class="btn" type="button" data-termos="aceitar" id="t-aceitar" disabled>Aceito</button></div>`
+  :`<button class="btn wide" type="button" data-termos="fechar">Voltar</button>`}</div>`;
+}
+function acaoTermos(a){
+  if(a==="ler"){ ui.lerTermos=true; render(); window.scrollTo({top:0}); return; }
+  if(a==="fechar"){ ui.lerTermos=false; render(); window.scrollTo({top:0}); return; }
+  if(a==="aceitar"){ state.config.termos={v:TERMOS_V,em:new Date().toISOString()}; ui.recusouTermos=false; ui.lerTermos=false; save("config"); render(); toast("Termos aceitos. Bom controle!"); return; }
+  if(a==="recusar"){
+    if(mode==="cloud"&&fb){ loginErro="Para usar o MB Controle é preciso aceitar os termos de privacidade. Seus dados não foram alterados."; fb.signOut(fb.auth); return; }
+    ui.recusouTermos=true; render(); return;
+  }
+  if(a==="revogar"){ if(!confirmaRevogar()) return; state.config.termos=null; ui.lerTermos=false; save("config"); render(); window.scrollTo({top:0}); }
+}
+function confirmaRevogar(){ ui.revogarCont=(ui.revogarCont||0)+1; if(ui.revogarCont<2){ toast("Toque de novo em “Retirar meu aceite” para confirmar."); setTimeout(()=>{ ui.revogarCont=0; },5000); return false; } ui.revogarCont=0; return true; }
+
+/* =====================================================================
+   IMPORTAR EXTRATO (OFX ou CSV)
+   ===================================================================== */
+const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
+function lerArquivoTexto(file){ return file.arrayBuffer().then(buf=>{ try{ return new TextDecoder("utf-8",{fatal:true}).decode(buf); }catch(e){ return new TextDecoder("windows-1252").decode(buf); } }); }
+function parseOFX(t){
+  const out=[];
+  t.split(/<STMTTRN>/i).slice(1).forEach(b=>{
+    b=b.split(/<\/STMTTRN>/i)[0];
+    const tag=n=>{ const m=b.match(new RegExp("<"+n+">([^<\\r\\n]*)","i")); return m?m[1].trim():""; };
+    const d=tag("DTPOSTED"), v=Number(tag("TRNAMT").replace(",","."));
+    if(!/^\d{8}/.test(d)||!isFinite(v)||v===0) return;
+    out.push({data:d.slice(0,4)+"-"+d.slice(4,6)+"-"+d.slice(6,8),valor:v,desc:(tag("MEMO")||tag("NAME")).replace(/\s+/g," "),fitid:tag("FITID")});
+  });
+  return out;
+}
+function linhaCSV(l,sep){ const r=[]; let cur="",q=false; for(let i=0;i<l.length;i++){ const ch=l[i]; if(ch==='"'){ if(q&&l[i+1]==='"'){ cur+='"'; i++; } else q=!q; } else if(ch===sep&&!q){ r.push(cur); cur=""; } else cur+=ch; } r.push(cur); return r.map(x=>x.trim()); }
+function numCSV(s){ s=String(s||"").replace(/R\$|\s/g,""); if(!s) return NaN; const neg=/^\(.*\)$/.test(s)||/-$/.test(s)||/^-/.test(s); s=s.replace(/[()\-+]/g,"");
+  if(s.includes(",")&&s.lastIndexOf(",")>s.lastIndexOf(".")) s=s.replace(/\./g,"").replace(",","."); else s=s.replace(/,/g,"");
+  const n=Number(s); return isFinite(n)?(neg?-n:n):NaN; }
+function dataCSV(s){ s=String(s||"").trim(); let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+"-"+m[2]+"-"+m[3];
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/); if(m){ const y=m[3].length===2?"20"+m[3]:m[3]; return y+"-"+pad2(m[2])+"-"+pad2(m[1]); } return null; }
+function parseCSV(t){
+  const linhas=t.replace(/\r/g,"").split("\n").filter(l=>l.trim()); if(linhas.length<2) return {itens:[],cartao:false};
+  let hi=linhas.slice(0,15).findIndex(l=>/data|date/i.test(l)); if(hi<0) hi=0;
+  const h=linhas[hi], sep=h.split(";").length>h.split(",").length?";":(h.split("\t").length>h.split(",").length?"\t":",");
+  const cols=linhaCSV(h,sep).map(norm);
+  const iD=cols.findIndex(c=>/^(data|date|dt)/.test(c)||/data/.test(c));
+  const achar=res=>{ for(const re of res){ const i=cols.findIndex((c,j)=>j!==iD&&re.test(c)); if(i>=0) return i; } return -1; };
+  const iV=achar([/^valor$|^amount$|^value$/,/valor|amount|value|quantia/]), iDesc=achar([/descri/,/title|titulo|historico|memo|estabelecimento|name|nome/,/lancamento/]), iId=achar([/identificador|^id$/]);
+  const cartao=cols.includes("title")&&cols.includes("amount");
+  const itens=[];
+  if(iD<0||iV<0) return {itens,cartao,erro:"Não encontrei as colunas de data e valor neste arquivo."};
+  linhas.slice(hi+1).forEach(l=>{ const c=linhaCSV(l,sep), d=dataCSV(c[iD]), v=numCSV(c[iV]); if(!d||!isFinite(v)||v===0) return; itens.push({data:d,valor:v,desc:(iDesc>=0?c[iDesc]:"").replace(/\s+/g," "),fitid:iId>=0?c[iId]:""}); });
+  return {itens,cartao};
+}
+/* sugestão de categoria: primeiro pelo que você já lançou com a mesma descrição, depois por palavras-chave */
+const REGRAS_CAT=[[/mercad|supermerc|atacad|assai|carrefour|hortifrut|padaria|acougue|sacolao|atacarejo/,/mercado|aliment/],
+  [/uber|99app|\b99\b|posto|shell|ipiranga|petrobras|combust|estacion|onibus|metro|pedagio|recarga.*transporte/,/transp|combust/],
+  [/farm|droga|raia|pacheco|pague menos|panvel|hospital|clinica|laborat|odonto|consulta/,/saude|farm/],
+  [/ifood|restaur|lanch|pizza|burger|\bbar\b|cinema|ingresso|rappi|mcdonald|sorvet|cafe/,/lazer|restaur/],
+  [/netflix|spotify|prime video|disney|hbo|internet|\bvivo\b|\bclaro\b|\btim\b|energia|cemig|enel|light|copel|celesc|sabesp|copasa|saneago|\bagua\b|\bgas\b/,/contas|luz|internet/],
+  [/escola|curso|faculd|universidade|udemy|alura|livraria|mensalidade/,/educa/],
+  [/aluguel|condominio|iptu|imobiliaria/,/moradia|aluguel/],
+  [/loja|shopping|renner|riachuelo|\bc&a\b|shein|shopee|magalu|magazine|americanas|mercado ?livre|amazon|zara|centauro|netshoes/,/compras|vestu/]];
+function sugerirCategoria(desc){
+  const d=norm(desc);
+  if(d) for(const k of Object.keys(state.months).sort().reverse()){ const g=((state.months[k]||{}).gastos||[]).find(x=>x.desc&&norm(x.desc)===d&&catIndex(x.cat)>=0); if(g) return g.cat; }
+  for(const [re,alvo] of REGRAS_CAT) if(re.test(d)){ const ct=state.config.categorias.find(c=>alvo.test(norm(c.nome))); if(ct) return ct.id; }
+  const outros=state.config.categorias.find(c=>/outro/.test(norm(c.nome))); return (outros||state.config.categorias[0]||{}).id;
+}
+function sugerirForma(desc,cartao){ if(cartao) return "credito"; const d=norm(desc); if(/pix/.test(d)) return "pix"; if(/boleto|titulo|pagto|pagamento de conta/.test(d)) return "boleto"; if(/saque/.test(d)) return "dinheiro"; return "debito"; }
+/* prepara a prévia: mês, dia, tipo, categoria sugerida e se já foi lançado */
+function preparaImportacao(lista,cartao){
+  return lista.map(x=>{
+    const k=x.data.slice(0,7), dia=Number(x.data.slice(8,10)), tipo=cartao?(x.valor>0?"gasto":"ignorar"):(x.valor<0?"gasto":"receita"), valor=Math.abs(x.valor);
+    const m=state.months[k], dn=norm(x.desc);
+    const dup=!!m&&(((m.gastos||[]).concat(m.avulsos||[])).some(g=>(x.fitid&&g.imp===x.fitid)||(g.dia===dia&&Math.abs(g.valor-valor)<0.005&&norm(g.desc)===dn)));
+    const fatura=/pagamento.*fatura|fatura.*cartao|pgto.*fatura|pagamento recebido/.test(dn);
+    const fora=!MESES.includes(k);
+    let obs=dup?"já lançado":fatura?"pagamento de fatura (já contado no cartão)":fora?"fora do período do app":tipo==="ignorar"?"pagamento ou estorno":"";
+    return {k,dia,valor,desc:x.desc,fitid:x.fitid,tipo,cat:tipo==="gasto"?sugerirCategoria(x.desc):null,forma:tipo==="gasto"?sugerirForma(x.desc,cartao):null,incluir:!obs,obs,bloq:fora||tipo==="ignorar"};
+  }).sort((a,b)=>(a.k+pad2(a.dia)).localeCompare(b.k+pad2(b.dia)));
+}
+async function abrirArquivoExtrato(file){
+  const s=ui.sheet; if(!s||s.tipo!=="importar") return;
+  try{
+    const t=await lerArquivoTexto(file);
+    const ehOFX=/<OFX>|OFXHEADER|<STMTTRN>/i.test(t);
+    const r=ehOFX?{itens:parseOFX(t),cartao:false}:parseCSV(t);
+    const cartao=document.getElementById("s-impcartao")?document.getElementById("s-impcartao").checked||r.cartao:r.cartao;
+    if(!r.itens.length){ s.erroImp=r.erro||"Não encontrei lançamentos neste arquivo. Confira se é um extrato em OFX ou CSV."; s.itens=null; renderSheet(); return; }
+    s.erroImp=""; s.arquivo=file.name; s.cartaoArq=cartao; s.contaImp=valSel("s-impconta")||s.contaImp; s.cartaoImp=valSel("s-cartao")||s.cartaoImp;
+    s.itens=preparaImportacao(r.itens,cartao); renderSheet();
+  }catch(e){ console.error(e); s.erroImp="Não consegui ler o arquivo."; renderSheet(); }
+}
+function importarExtrato(){
+  const s=ui.sheet, its=(s.itens||[]).filter(x=>x.incluir&&!x.bloq); if(!its.length) return erroSheet("Marque pelo menos um lançamento para importar.");
+  const criados=[], meses=new Set();
+  its.forEach(x=>{ const m=getMonth(x.k), id=uidGen(), base={id,dia:x.dia,valor:x.valor,desc:x.desc}; if(x.fitid) base.imp=x.fitid;
+    if(x.tipo==="gasto"){ Object.assign(base,{cat:x.cat,forma:x.forma}); if(x.forma==="credito"){ if(s.cartaoImp) base.cartaoId=s.cartaoImp; } else if(s.contaImp) base.contaId=s.contaImp; m.gastos.push(base); criados.push([x.k,"gastos",id]); }
+    else { if(s.contaImp) base.contaId=s.contaImp; m.avulsos.push(base); criados.push([x.k,"avulsos",id]); }
+    meses.add(x.k); });
+  meses.forEach(k=>save(k)); closeSheet(); render();
+  toast(its.length+" lançamento"+(its.length===1?"":"s")+" importado"+(its.length===1?"":"s")+".","Desfazer",()=>{ const ms=new Set(); criados.forEach(([k,l,id])=>{ const m=getMonth(k); m[l]=m[l].filter(x=>x.id!==id); ms.add(k); }); ms.forEach(k=>save(k)); render(); toast("Importação desfeita."); });
 }
 
 /* =====================================================================
@@ -888,6 +1038,7 @@ function viewPerfil(){
 function sheetRoot(){ let r=document.getElementById("sheet"); if(!r){ r=document.createElement("div"); r.id="sheet"; document.body.appendChild(r); bindSheet(r); } return r; }
 let sheetVoltaFoco=null;
 function openSheet(tipo,id,extra){
+  if(mode==="login"||precisaTermos()) return;
   if(mode==="login"||!state.loaded) return;
   if(!ui.sheet) sheetVoltaFoco=document.activeElement;
   ui.sheet=Object.assign({tipo,id:id||null},extra||{});
@@ -933,8 +1084,8 @@ function renderSheet(){
   if(!s){ r.innerHTML=""; document.body.classList.remove("sheet-open"); return; }
   document.body.classList.add("sheet-open");
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=k===todayKey?today.getDate():1;
-  if(!novo&&!it&&s.tipo!=="busca"){ closeSheet(); return; }
-  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência"};
+  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"){ closeSheet(); return; }
+  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -1037,6 +1188,28 @@ function renderSheet(){
       <div class="row"><label class="f">Dia${selDia(k,it?it.dia:diaPadrao)}</label><label class="f" style="flex:2 1 180px">Descrição (opcional)<input class="in" id="s-desc" maxlength="60" placeholder="ex.: saque, guardar na poupança" value="${esc(it?it.desc:"")}"></label></div>
       <p class="hint">Transferência só muda o saldo das contas. Não conta como receita nem como despesa.</p>`;
     botoes=novo?`<button class="btn" type="submit">Transferir</button>`:`${apagar}<button class="btn" type="submit">Salvar</button>`;
+  }else if(s.tipo==="importar"){
+    sub="";
+    if(!s.itens){
+      corpo=`<p class="hint">No app ou no site do seu banco, procure <b>Extrato</b> e a opção de <b>exportar / baixar</b> em <b>OFX</b> ou <b>CSV</b> (Excel). Depois escolha o arquivo aqui.</p>
+        ${selConta(s.contaImp,"Os lançamentos são da conta","s-impconta")}
+        <label class="switch"><input type="checkbox" id="s-impcartao" ${s.cartaoArq?"checked":""}><span></span>É a fatura de um cartão de crédito</label>
+        ${state.config.cartoes.length>1?`<div id="s-impcartaobox">${selCartao(s.cartaoImp)}</div>`:""}
+        <label class="btn wide" for="s-arquivo" style="cursor:pointer">Escolher arquivo do extrato<input type="file" id="s-arquivo" accept=".ofx,.csv,.txt,text/csv,application/x-ofx" hidden></label>
+        ${s.erroImp?`<p class="erro">${esc(s.erroImp)}</p>`:""}
+        <p class="hint">O app sugere a categoria de cada gasto e desmarca o que já foi lançado. Você confere antes de importar.</p>`;
+    } else {
+      const its=s.itens, inc=its.filter(x=>x.incluir&&!x.bloq), cats=state.config.categorias;
+      corpo=`<p class="hint"><b>${esc(s.arquivo||"Arquivo")}</b> · ${its.length} lançamentos · ${inc.filter(x=>x.tipo==="gasto").length} despesas (${brl(soma(inc.filter(x=>x.tipo==="gasto")))}) e ${inc.filter(x=>x.tipo==="receita").length} receitas (${brl(soma(inc.filter(x=>x.tipo==="receita")))}) marcadas</p>
+        <div class="implista">${its.slice(0,400).map((x,i)=>`<div class="imp ${x.incluir&&!x.bloq?"":"off"} ${x.tipo}">
+          <input type="checkbox" data-impi="${i}" ${x.incluir&&!x.bloq?"checked":""} ${x.bloq?"disabled":""} aria-label="Importar este lançamento">
+          <span class="d">${pad2(x.dia)}/${pad2(kM(x.k))}</span>
+          <span class="t"><b>${esc(x.desc||"sem descrição")}</b>${x.obs?`<small>${esc(x.obs)}</small>`:""}
+            ${x.tipo==="gasto"?`<select class="in mini" data-impcat="${i}" aria-label="Categoria">${cats.map(c=>`<option value="${esc(c.id)}" ${c.id===x.cat?"selected":""}>${esc(c.nome)}</option>`).join("")}</select>`:x.tipo==="receita"?`<small class="pos">receita</small>`:""}</span>
+          <span class="v ${x.tipo==="receita"?"pos":""}">${x.tipo==="receita"?"+":"−"}${brl(x.valor)}</span></div>`).join("")}</div>
+        ${its.length>400?`<p class="hint">Mostrando os 400 primeiros.</p>`:""}`;
+      botoes=`<button class="btn ghost" type="button" data-impvoltar="1">Outro arquivo</button><button class="btn" type="button" data-impok="1">Importar ${inc.length} lançamento${inc.length===1?"":"s"}</button>`;
+    }
   }else if(s.tipo==="meta"){
     const i=it?infoMeta(it,null):null;
     corpo=`<label class="f">Nome da meta<input class="in" id="s-nome" maxlength="40" placeholder="ex.: Viagem, Reserva de emergência" value="${esc(it?it.nome:"")}" data-autofocus></label>
@@ -1082,6 +1255,7 @@ function erroSheet(msg,campo){ const e=document.getElementById("s-erro"); if(e){
 function salvarSheet(outro){
   const s=ui.sheet, k=mesSheet();
   if(s.tipo==="busca") return;
+  if(s.tipo==="importar"){ if(s.itens) importarExtrato(); return; }
   if(s.tipo==="conta"){
     const nome=((document.getElementById("s-nome")||{}).value||"").trim(); if(!nome) return erroSheet("Dê um nome para a conta, ex.: Nubank","s-nome");
     const si=(document.getElementById("s-valor")||{}).value.trim(), saldoI=si===""?0:parseMoney(si); if(isNaN(saldoI)) return erroSheet("Saldo inválido","s-valor");
@@ -1201,11 +1375,13 @@ function salvarSheet(outro){
 }
 function bindSheet(r){
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(e.target===b||b.tagName==="BUTTON") closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
     if(b.dataset.outro){ e.preventDefault(); salvarSheet(true); return; }
+    if(b.dataset.impok){ importarExtrato(); return; }
+    if(b.dataset.impvoltar){ s.itens=null; s.erroImp=""; renderSheet(); return; }
     if(b.dataset.sguardarmeta){ const id=s.id; openSheet("caixinha",null,{cxTipo:"guardar",metaId:id}); return; }
     if(b.dataset.sexcluirfixo){ const id=s.id, apartir=b.dataset.sexcluirfixo==="todos"?null:(s.tipo==="fixoMes"||ui.tab==="mes"?k:todayKey); closeSheet(); excluirFixo(id,apartir); return; }
     if(b.dataset.snovacat){ const bx=document.getElementById("s-novacatbox"); bx.hidden=!bx.hidden; if(!bx.hidden) document.getElementById("s-novacat").focus(); return; }
@@ -1245,6 +1421,12 @@ function bindSheet(r){
     if(e.target.name==="s-tipo"){ const v=(document.getElementById("s-valor")||{}).value||""; ui.sheet={tipo:e.target.value,id:null,valorRasc:v,mes:ui.sheet.mes}; renderSheet(); const f=document.querySelector("#sheet [data-autofocus]"); if(f) f.focus(); return; }
     if(e.target.id==="s-parc"||e.target.name==="s-forma"||e.target.id==="s-dia"||e.target.id==="s-cartao") atualizaParc();
     if(e.target.name==="s-forma") atualizaFormaBox();
+    if(e.target.id==="s-arquivo"&&e.target.files&&e.target.files[0]){ abrirArquivoExtrato(e.target.files[0]); return; }
+    if(e.target.id==="s-impcartao"){ ui.sheet.cartaoArq=e.target.checked; return; }
+    if(e.target.id==="s-impconta"){ ui.sheet.contaImp=e.target.value; return; }
+    if(e.target.id==="s-cartao"&&ui.sheet&&ui.sheet.tipo==="importar"){ ui.sheet.cartaoImp=e.target.value; return; }
+    if(e.target.dataset.impi!==undefined){ const x=ui.sheet.itens[+e.target.dataset.impi]; x.incluir=e.target.checked; const row=e.target.closest(".imp"); if(row) row.classList.toggle("off",!x.incluir); const bt=document.querySelector("#sheet [data-impok]"); const n=ui.sheet.itens.filter(y=>y.incluir&&!y.bloq).length; if(bt) bt.textContent="Importar "+n+" lançamento"+(n===1?"":"s"); return; }
+    if(e.target.dataset.impcat!==undefined){ ui.sheet.itens[+e.target.dataset.impcat].cat=e.target.value; return; }
   });
   r.addEventListener("submit",e=>{ e.preventDefault(); salvarSheet(!!(e.submitter&&e.submitter.dataset.outro)); });
 }
@@ -1261,6 +1443,7 @@ app.addEventListener("click",e=>{
   const d=b.dataset;
   if(d.tab){ setTab(d.tab); return; }
   if(d.login){ entrar(); return; }
+  if(d.termos){ acaoTermos(d.termos); return; }
   if(d.logout){ fb.signOut(fb.auth); return; }
   if(d.tema){ trocaTema(); return; }
   if(d.export){ exportar(); return; }
@@ -1289,6 +1472,7 @@ app.addEventListener("change",e=>{
   const t=e.target, money=()=>t.value.trim()===""?0:parseMoney(t.value);
   if(t.name==="ptema"){ tema=t.value; try{localStorage.setItem("meucaixa.tema",tema)}catch(e){} aplicaTema(); render(); return; }
   if(t.name==="lmodo"){ ui.loginModo=t.value; render(); return; }
+  if(t.id==="t-li"){ const b=document.getElementById("t-aceitar"); if(b) b.disabled=!t.checked; return; }
   if(t.id==="impFile"&&t.files&&t.files[0]){ importar(t.files[0]); return; }
   if(t.dataset&&t.dataset.fatpaga){ marcaPago("fat",t.dataset.fatpaga,ui.month,t.checked); return; }
   if(t.id==="notifOn"){ ligaNotif(t.checked); return; }

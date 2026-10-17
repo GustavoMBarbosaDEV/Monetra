@@ -12,6 +12,16 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 2.8.0 — 17/10/2026
+**Importar extrato e termos de privacidade**
+- Importar extrato do banco em **OFX** ou **CSV** (Ajustes → Importar extrato), inclusive a fatura do cartão de crédito.
+- Prévia antes de importar: dá para desmarcar lançamentos e trocar a categoria de cada gasto.
+- Categoria sugerida automaticamente (pelo que você já lançou com a mesma descrição e por palavras como mercado, uber, farmácia, iFood).
+- Lançamentos já registrados e pagamentos de fatura vêm desmarcados, para não contar duas vezes.
+- Importação com **Desfazer**.
+- **Termos de privacidade**: na primeira vez que entrar (inclusive em contas que já existiam), o app mostra os termos e pede o aceite. Quem não aceita sai do app sem nenhum dado alterado.
+- Perfil → Privacidade: reler os termos, ver quando aceitou e retirar o aceite.
+
 ## 2.7.0 — 17/10/2026
 **Várias contas e vários cartões**
 - Contas: cadastre conta corrente, poupança, dinheiro etc. com o saldo inicial de cada uma. O card "Contas" mostra o saldo de cada conta mês a mês.

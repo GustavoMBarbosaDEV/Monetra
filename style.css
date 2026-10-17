@@ -349,3 +349,28 @@ body.sheet-open{overflow:hidden}
 .conta .desc b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .conta .desc small{font-size:12px;color:var(--muted)}
 .conta .v{font-weight:700;white-space:nowrap}
+
+/* ===== v2.8: termos de privacidade e importar extrato ===== */
+.termos{max-width:720px;margin:20px auto}
+.termos > p{margin:0}
+.termostexto{max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 16px 12px;background:var(--sunk);font-size:14px;line-height:1.55}
+.termostexto h3{font-size:15px;margin:16px 0 4px}
+.termostexto p{margin:0 0 6px;color:var(--fg)}
+.termostexto ul{margin:0 0 6px;padding-left:20px}
+.termostexto li{margin:3px 0}
+.termostexto a{color:var(--accent)}
+.checkline{display:flex;align-items:center;gap:10px;font-weight:600;cursor:pointer;margin:4px 0}
+.checkline input{width:20px;height:20px;accent-color:var(--accent)}
+.login .hint .link{padding:0;font-size:inherit}
+.implista{display:flex;flex-direction:column;max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.imp{display:grid;grid-template-columns:22px 44px 1fr auto;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);font-size:13.5px}
+.imp:last-child{border-bottom:0}
+.imp input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.imp .d{color:var(--muted);font-variant-numeric:tabular-nums}
+.imp .t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.imp .t b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.imp .t small{color:var(--muted);font-size:12px}
+.imp .v{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.imp .pos{color:var(--good)}
+.imp.off{opacity:.5}
+.in.mini{padding:4px 8px;font-size:12.5px;min-height:0;height:30px;max-width:100%}
