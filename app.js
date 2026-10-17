@@ -9,6 +9,15 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
+/* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
+const VERSAO="2.4.0";
+const NOVIDADES=[
+  "Compras no cartão de crédito aparecem em Contas fixas até o mês da última parcela.",
+  "Opção paga / não paga em cada compra no cartão, com o dia do pagamento.",
+  "Marcar a fatura como paga marca as compras e parcelas dela.",
+  "A lista \"Despesas do mês\" mostra só o que não é cartão.",
+  "Campos de valor corrigidos: começam vazios e o que você digita substitui o valor anterior."
+];
 
 /* ---------- utilidades ---------- */
 const pad2=n=>String(n).padStart(2,"0");
@@ -31,7 +40,14 @@ function parseMoney(s){
   else if(/^\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
   const n=Number(s); return isFinite(n)?Math.round(n*100)/100:NaN;
 }
-const moneyInput=v=>(v===null||v===undefined||v==="")?"":Number(v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+/* Valor para mostrar num campo: vazio quando é zero (para não juntar com o que a pessoa digitar) */
+const moneyInput=v=>(v===null||v===undefined||v===""||!Number(v))?"":Number(v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+/* Campos de dinheiro: seleciona tudo ao tocar, aceita só números/ponto/vírgula e formata ao sair */
+const ehCampoDinheiro=el=>el&&el.tagName==="INPUT"&&el.closest(".money");
+document.addEventListener("focusin",e=>{ const el=e.target; if(ehCampoDinheiro(el)&&el.value) setTimeout(()=>{ try{ el.select(); }catch(_){} },0); });
+document.addEventListener("input",e=>{ const el=e.target; if(!ehCampoDinheiro(el)) return;
+  const limpo=el.value.replace(/[^\d.,]/g,""); if(limpo!==el.value){ const pos=el.selectionStart-(el.value.length-limpo.length); el.value=limpo; try{ el.setSelectionRange(pos,pos); }catch(_){} } },true);
+document.addEventListener("blur",e=>{ const el=e.target; if(!ehCampoDinheiro(el)||!el.value.trim()) return; const v=parseMoney(el.value); if(v>0) el.value=moneyInput(v); },true);
 const ICON={
   lixo:'<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   busca:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
@@ -743,6 +759,9 @@ function viewPerfil(){
     <button class="btn ghost" type="button" data-planilha="1">Baixar planilha (Excel)</button>
     <div class="row"><button class="btn ghost" type="button" data-export="1">Baixar backup</button><label class="btn ghost" for="impFile" style="text-align:center">Restaurar backup<input type="file" id="impFile" accept="application/json,.json" hidden></label></div>
     ${ui.importMsg?`<p class="hint">${esc(ui.importMsg)}</p>`:""}</div>
+    <div class="card"><div class="cardhead"><h2>Novidades</h2><span class="versao">versão ${VERSAO}</span></div>
+    <ul class="novidades">${NOVIDADES.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>
+    <p class="hint">O histórico completo fica no arquivo CHANGELOG.md do projeto.</p></div>
     <div class="card"><h2>Privacidade</h2><p class="hint">Só você vê seus lançamentos. Eles ficam guardados na sua conta e protegidos por regras que impedem qualquer outra pessoa de ler ou alterar.</p></div>
     <div class="card perigo"><h2>Recomeçar do zero</h2><p class="hint">Apaga todos os seus lançamentos, contas fixas, parcelas e configurações. Não dá para desfazer; se quiser, baixe um backup antes.</p>
     ${ui.confirmaApagar?`<label class="f">Para confirmar, digite APAGAR<input class="in" id="txtApagar" autocomplete="off" placeholder="APAGAR"></label><div class="row2"><button class="btn ghost" type="button" data-apagar="nao">Cancelar</button><button class="btn danger" type="button" data-apagar="sim">Apagar tudo</button></div>`:`<button class="btn danger" type="button" data-apagar="pedir">Apagar todos os meus dados</button>`}</div></div></div>`;
@@ -1083,6 +1102,7 @@ app.addEventListener("touchstart",e=>{ if(ui.tab!=="mes"||ui.sheet||e.touches.le
 app.addEventListener("touchend",e=>{ if(tx===null) return; const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty; tx=null;
   if(Math.abs(dx)>70&&Math.abs(dy)<45){ if(passo(dx<0?1:-1)){ app.classList.remove("slide-l","slide-r"); void app.offsetWidth; app.classList.add(dx<0?"slide-l":"slide-r"); } } },{passive:true});
 
+setTimeout(()=>{ try{ const v=localStorage.getItem("mb.versao"); if(v&&v!==VERSAO&&mode!=="login") toast("MB Controle atualizado para a versão "+VERSAO+". Veja as novidades no Perfil."); localStorage.setItem("mb.versao",VERSAO); }catch(e){} },2500);
 setInterval(()=>verificaLembretes(true),30*60000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ verificaLembretes(true); if(ui.tab==="mes"&&!ui.sheet) render(); } });
 /* quando o mês do calendário virar com o app aberto, atualiza sozinho */
