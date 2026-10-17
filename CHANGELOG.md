@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.2.0 — 17/10/2026
+**Sininho de notificações**
+- Ícone de sino no topo, ao lado da foto do perfil, com o número de avisos.
+- Ao tocar, abre a central de notificações com: pedidos para entrar nos seus controles compartilhados, contas que vencem amanhã, hoje ou estão atrasadas (com botão **Paguei**), categorias perto ou acima do limite e dicas de gastos que parecem assinatura.
+- Cada aviso leva direto para o lugar certo (pedido, mês, assinaturas ou ativar notificações no Perfil).
+
 ## 3.1.0 — 17/10/2026
 **Assinaturas**
 - Novo card **Assinaturas e contas fixas** na Visão geral: lista tudo o que se repete todo mês, com o total por mês, por ano e a porcentagem da renda.

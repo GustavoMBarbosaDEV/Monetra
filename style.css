@@ -418,3 +418,24 @@ body.sheet-open{overflow:hidden}
 .item.repet .btn{flex:0 0 auto}
 .assintot{grid-template-columns:repeat(3,1fr)}
 @media (max-width:520px){ .assintot{gap:6px} .assintot > div{padding:8px 9px} .assintot b{font-size:15.5px} .assintot small{font-size:11px} }
+
+/* ===== v3.2: sininho ===== */
+.iconbtn.sino{position:relative}
+.iconbtn.sino .badge{position:absolute;top:-4px;right:-4px;left:auto;min-width:18px;height:18px;padding:0 5px;font-size:11px;line-height:18px}
+.avisos{display:flex;flex-direction:column;gap:2px}
+.aviso{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.aviso:last-child{border-bottom:0}
+.aviso .ic{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--sunk);color:var(--muted)}
+.aviso .ic svg{width:18px;height:18px}
+.aviso .ic .bola{width:14px;height:14px;border-radius:50%;display:block}
+.aviso .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.aviso .t b{font-weight:600;font-size:14.5px}
+.aviso .t small{color:var(--muted);font-size:12.5px}
+.aviso .btn{flex:0 0 auto}
+.aviso.atraso .ic{background:var(--bad-soft);color:var(--bad)}
+.aviso.hoje .ic,.aviso.amanha .ic{background:var(--warn-soft);color:var(--warn)}
+.aviso.pedido .ic{background:var(--accent-soft);color:var(--accent)}
+.aviso.atraso .t small{color:var(--bad)}
+.avisovazio{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:28px 10px;color:var(--muted)}
+.avisovazio svg{width:36px;height:36px;color:var(--accent)}
+.avisovazio b{color:var(--fg);font-size:16px}
