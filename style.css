@@ -149,3 +149,9 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--sunk)}
 .btn.google{display:inline-flex;align-items:center;gap:10px;background:var(--surface);color:var(--fg);border:1px solid var(--line);padding:12px 20px;font-size:15px}
 .btn.google:hover{border-color:var(--accent)}
 label.btn{cursor:pointer}
+
+.topright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.themebtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600}
+.themebtn:hover{border-color:var(--accent)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:50;max-width:calc(100% - 32px)}
+@media (max-width:420px){.themebtn span{display:none}}
