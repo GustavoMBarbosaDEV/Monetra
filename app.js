@@ -10,13 +10,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="3.6.0";
+const VERSAO="3.7.0";
 const NOVIDADES=[
-  "Subcategorias: em Ajustes → Categorias, crie divisões (ex.: Alimentação → Mercado, Restaurante, iFood). Ao lançar, escolha a subcategoria.",
-  "O card \"Para onde foi\" mostra o detalhe de cada subcategoria.",
-  "Etiquetas livres nos gastos (ex.: #viagem, #presente), com sugestões das que você já usa.",
-  "Card Etiquetas na Visão geral com o total de cada uma; na busca, procure por #etiqueta.",
-  "Marcar uma conta como paga (ou não paga) não faz mais a tela pular para o topo."
+  "Tutorial de boas-vindas: aparece para quem está começando e explica em 1 minuto como usar o app. Reveja quando quiser em Perfil → Tutorial.",
+  "Subcategorias e etiquetas nos gastos.",
+  "Marcar uma conta como paga não faz mais a tela pular para o topo."
 ];
 
 /* ---------- utilidades ---------- */
@@ -785,6 +783,65 @@ async function salvarPin(){
   await definePin(n); closeSheet(); render(); toast(s.pinModo==="criar"?"PIN criado. O app vai pedir ao abrir neste aparelho.":"PIN trocado.");
 }
 
+/* ---------- tutorial de boas-vindas ---------- */
+const TUTKEY="mb.tutorial";
+const tutVisto=()=>{ try{ return localStorage.getItem(TUTKEY)==="1"; }catch(e){ return true; } };
+const marcaTutVisto=()=>{ try{ localStorage.setItem(TUTKEY,"1"); }catch(e){} };
+let tutAberto=false, tutI=0;
+function passosTutorial(){
+  const nuvem=mode==="cloud", tecla=matchMedia("(hover:hover) and (pointer:fine)").matches;
+  const L=(...xs)=>`<ul>${xs.map(x=>`<li>${x}</li>`).join("")}</ul>`;
+  return [
+    {ic:"logo",t:"Bem-vindo ao MB Controle",d:`Seu controle de gastos, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
+    {ic:"mes",t:"1. Comece pelo salário",d:`Na aba <b>Mês</b>, informe o <b>salário deste mês</b> no card Receitas. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Lance como <b>receita avulsa</b>.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> no Perfil (ou em Ajustes → Contas).")},
+    {ic:"mais",t:"2. Lance seus gastos",d:`Toque no botão <b>+</b>${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Valor estilo app de banco: digite só os números.","Comprou parcelado? Ligue <b>Compra parcelada</b>.","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.")},
+    {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa e aparecem em Contas fixas até a última parcela.","<b>Categorias</b>: crie as suas, com cor, limite por mês e subcategorias.")},
+    {ic:"cofre",t:"4. Caixinha e metas",d:`Guarde dinheiro <b>separado do saldo do mês</b> na caixinha.`+L("Crie <b>metas</b> com valor e prazo (ex.: Viagem, R$ 3.000 até julho).","O app mostra quanto falta e quanto guardar por mês.")},
+    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O topo do mês mostra o <b>saldo</b> e quanto você <b>pode gastar por dia</b>.`+L("<b>Para onde foi</b>: gráfico por categoria, com aviso ao chegar em 80% do limite.","<b>Visão geral</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
+    {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo mostra contas que vencem amanhã, hoje ou estão atrasadas, com botão <b>Paguei</b>.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
+    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Ajustes</b> e no <b>Perfil</b>:`+L("<b>Importar extrato</b> do banco (OFX/CSV).","<b>Contas</b> (corrente, poupança, dinheiro) e transferências.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>Dívidas</b> com pessoas, <b>PIN e digital</b>, planilha para Excel e backup.")},
+    {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia.`,fim:true}
+  ];
+}
+function abrirTutorial(){ tutAberto=true; tutI=0; renderTutorial(); }
+function fecharTutorial(irSalario){
+  tutAberto=false; marcaTutVisto(); const el=document.getElementById("tutorial"); if(el) el.remove(); document.body.classList.remove("tutorial");
+  if(irSalario){ ui.tab="mes"; ui.month=todayKey; render(); window.scrollTo({top:0}); setTimeout(()=>{ const c=document.getElementById("salMes"); if(c){ c.scrollIntoView({block:"center",behavior:"smooth"}); c.focus({preventScroll:true}); } },150); }
+}
+function renderTutorial(){
+  const ps=passosTutorial(), p=ps[tutI]; let el=document.getElementById("tutorial");
+  if(!el){ el=document.createElement("div"); el.id="tutorial"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.setAttribute("aria-labelledby","tutTit"); document.body.appendChild(el); document.body.classList.add("tutorial"); }
+  const icone=p.ic==="logo"?`<span class="tutlogo">MB</span>`:p.ic==="cofre"?`<svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 9.5c0-2.5 3.1-4.5 7-4.5s7 2 7 4.5v4c0 2.6-2 4-3 4.5V20h-2.5v-1.6h-3V20H8v-2c-1.7-.8-3-2.3-3-4.5z"/><circle cx="15.5" cy="10.5" r=".9" fill="currentColor"/><path d="M10 7.5h3.5"/></svg>`:(ICON[p.ic]||"");
+  el.innerHTML=`<div class="tutbox">
+    <button type="button" class="tutpular" data-tut="pular">${p.fim?"Fechar":"Pular"}</button>
+    <span class="tutic">${icone}</span>
+    <h2 id="tutTit">${p.t}</h2>
+    <div class="tuttxt">${p.d}</div>
+    <div class="tutpontos" aria-label="Passo ${tutI+1} de ${ps.length}">${ps.map((_,i)=>`<i class="${i===tutI?"on":""}"></i>`).join("")}</div>
+    <div class="row2">${tutI>0?`<button class="btn ghost" type="button" data-tut="-1">Anterior</button>`:`<span></span>`}${p.fim?`<button class="btn" type="button" data-tut="fim">Informar o salário</button>`:`<button class="btn" type="button" data-tut="1">${tutI===0?"Começar":"Próximo"}</button>`}</div>
+  </div>`;
+  const b=el.querySelector('[data-tut="1"],[data-tut="fim"]'); if(b) b.focus({preventScroll:true});
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("#tutorial [data-tut]"); if(!b) return;
+  const a=b.dataset.tut, n=passosTutorial().length;
+  if(a==="pular") return fecharTutorial(false);
+  if(a==="fim") return fecharTutorial(true);
+  tutI=Math.max(0,Math.min(n-1,tutI+Number(a))); renderTutorial();
+});
+document.addEventListener("keydown",e=>{ if(!tutAberto||travado) return;
+  if(e.key==="Escape"){ e.preventDefault(); e.stopImmediatePropagation(); fecharTutorial(false); }
+  else if(e.key==="ArrowRight"){ e.preventDefault(); e.stopImmediatePropagation(); const n=passosTutorial().length; if(tutI<n-1){ tutI++; renderTutorial(); } }
+  else if(e.key==="ArrowLeft"){ e.preventDefault(); e.stopImmediatePropagation(); if(tutI>0){ tutI--; renderTutorial(); } }
+},true);
+/* aparece sozinho só para quem está começando (sem renda e quase sem lançamentos) */
+function talvezTutorial(){
+  if(tutAberto||tutVisto()||travado||ui.sheet||mode==="login"||!state.loaded||precisaTermos()) return;
+  const n=Object.values(state.months).reduce((a,m)=>a+((m.gastos||[]).length+(m.avulsos||[]).length),0);
+  if(inicioKey()||n>2){ marcaTutVisto(); return; }
+  setTimeout(()=>{ if(!tutAberto&&!tutVisto()&&!travado&&!ui.sheet) abrirTutorial(); },400);
+}
+
 /* ---------- central de notificações (sininho no topo) ---------- */
 function avisos(){
   if(mode==="login"||!state.loaded) return {itens:[],n:0};
@@ -963,7 +1020,7 @@ function render(){
   /* centraliza o mês escolhido na barra só na horizontal, sem mexer na rolagem da página */
   const on=document.querySelector(".chip.on"), barra=on&&on.parentElement; if(barra&&!fid){ barra.scrollLeft=Math.max(0,on.offsetLeft-barra.offsetLeft-(barra.clientWidth-on.clientWidth)/2); }
   if(Math.abs(window.scrollY-rolY)>1) window.scrollTo(0,rolY);
-  if(state.loaded&&mode!=="login"&&!precisaTermos()){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); }
+  if(state.loaded&&mode!=="login"&&!precisaTermos()){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); talvezTutorial(); }
   if(ui.rolarPara&&state.loaded){ const el=document.getElementById(ui.rolarPara); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 function header(){
@@ -1409,6 +1466,8 @@ function viewPerfil(){
     <div class="card"><div class="cardhead"><h2>Novidades</h2><span class="versao">versão ${VERSAO}</span></div>
     <ul class="novidades">${NOVIDADES.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>
     <p class="hint">O histórico completo fica no arquivo CHANGELOG.md do projeto.</p></div>
+    <div class="card" id="ajuda"><h2>Tutorial</h2><p class="hint">Reveja em 1 minuto como usar o app: salário, lançamentos, contas fixas, cartões, caixinha, avisos e muito mais.</p>
+    <button class="btn ghost" type="button" data-tutorial="1">Ver o tutorial</button></div>
     <div class="card"><h2>Privacidade</h2><p class="hint">Só você vê seus lançamentos. Eles ficam guardados na sua conta e protegidos por regras que impedem qualquer outra pessoa de ler ou alterar.</p>
     ${meusTermos()?`<p class="hint">Você aceitou os termos de privacidade (versão ${esc(meusTermos().v)})${meusTermos().em?" em "+esc(dataBR(meusTermos().em)):""}.</p>`:""}
     <div class="row2"><button class="btn ghost" type="button" data-termos="ler">Ler os termos</button><button class="btn ghost" type="button" data-termos="revogar">Retirar meu aceite</button></div></div>
@@ -2078,6 +2137,7 @@ app.addEventListener("click",e=>{
   if(d.gpago){ const g=getMonth(d.mes||ui.month).gastos.find(x=>x.id===d.gpago); if(g) marcaGastoPago(d.mes||ui.month,d.gpago,!g.pago); return; }
   if(d.pagar){ pagarPend(d.pagar); return; }
   if(d.avisos){ openSheet("avisos"); return; }
+  if(d.tutorial){ abrirTutorial(); return; }
   if(d.retro){ openSheet("retro",null,{ano:Number(d.retro),slide:0}); return; }
   if(d.calendario){ exportarCalendario(); return; }
   if(d.delcat){ apagarItem("config","categorias",d.delcat,"Campo retirado."); return; }
@@ -2104,7 +2164,7 @@ app.addEventListener("change",e=>{
 });
 /* teclado: N abre novo lançamento, Esc fecha, ← → trocam o mês */
 document.addEventListener("keydown",e=>{
-  if(travado) return;
+  if(travado||tutAberto) return;
   if(e.key==="Escape"&&ui.sheet){ closeSheet(); return; }
   if(ui.sheet&&ui.sheet.tipo==="retro"&&(e.key==="ArrowRight"||e.key==="ArrowLeft")){ const b=document.querySelector(e.key==="ArrowRight"?'#sheet [data-rpasso="1"]':'#sheet [data-rpasso="-1"]'); if(b&&!b.disabled) b.click(); return; }
   const tag=(e.target.tagName||"").toLowerCase(); if(tag==="input"||tag==="select"||tag==="textarea"||ui.sheet||e.ctrlKey||e.metaKey||e.altKey) return;

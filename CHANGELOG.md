@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.7.0 — 17/10/2026
+**Tutorial**
+- Tutorial de boas-vindas em 9 telas: salário, lançamentos, contas fixas e cartões, caixinha e metas, acompanhamento, avisos e os demais recursos.
+- Aparece sozinho só para quem está começando (sem renda e sem lançamentos); quem já usa o app não é interrompido.
+- No fim, o botão **Informar o salário** leva direto ao campo certo.
+- Pode ser pulado, e revisto quando quiser em **Perfil → Tutorial**. Setas do teclado e Esc funcionam no computador.
+- README do GitHub reescrito para quem vai usar o app (o que faz, como instalar, privacidade). O passo a passo técnico foi para o arquivo DESENVOLVIMENTO.md.
+
 ## 3.6.0 — 17/10/2026
 **Subcategorias e etiquetas**
 - **Subcategorias**: na categoria (Ajustes → Categorias), adicione, renomeie ou remova subcategorias (ex.: Alimentação → Mercado, Restaurante, iFood).
