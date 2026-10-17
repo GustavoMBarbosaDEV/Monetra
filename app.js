@@ -10,12 +10,12 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="3.2.0";
+const VERSAO="3.3.0";
 const NOVIDADES=[
-  "Sininho de notificações no topo, ao lado da sua foto: contas vencendo ou atrasadas, limites estourados, pedidos para entrar nos seus controles e dicas de assinatura.",
-  "Dá para marcar uma conta como paga direto pelo sininho.",
-  "Assinaturas e contas fixas na Visão geral, com o total por mês e por ano.",
-  "Controles compartilhados: crie um controle separado (ex.: Casa) para dividir com outra pessoa."
+  "Bloqueio com PIN: proteja o app com 4 números, pedidos ao abrir neste aparelho (Perfil → Bloqueio com PIN).",
+  "Escolha quando pedir de novo ao voltar para o app: na hora, depois de 1, 5 ou 15 minutos.",
+  "Esqueceu o PIN? Saia e entre de novo com a conta Google; seus lançamentos continuam na nuvem.",
+  "Sininho de notificações no topo, ao lado da sua foto."
 ];
 
 /* ---------- utilidades ---------- */
@@ -55,6 +55,8 @@ document.addEventListener("input",e=>{ const el=e.target; if(ehCampoDinheiro(el)
 document.addEventListener("paste",e=>{ const el=e.target; if(!ehCampoDinheiro(el)) return; const t=(e.clipboardData||window.clipboardData)?.getData("text")||""; const v=parseMoney(t); if(v>0){ e.preventDefault(); el.value=moneyInput(v); el.dispatchEvent(new Event("input",{bubbles:true})); } },true);
 document.addEventListener("blur",e=>{ const el=e.target; if(!ehCampoDinheiro(el)||!el.value.trim()) return; const v=parseMoney(el.value); if(v>0) el.value=moneyInput(v); },true);
 const ICON={
+  cadeado:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+  apagar:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 6h10a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 18H9l-5.5-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9.5l5 5M17 9.5l-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   sino:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 1.9H4.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.8 20.6a2.4 2.4 0 0 0 4.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   grupo:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="16.5" cy="9.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.9-3 3-4.6 5.5-4.6s4.6 1.6 5.5 4.6M14.5 14.6c.6-.2 1.3-.3 2-.3 2.1 0 3.7 1.3 4.4 3.9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   lixo:'<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -353,7 +355,7 @@ async function init(){
     U.getRedirectResult(auth).then(r=>{ if(r) boasVindas(r); }).catch(e=>{ loginErro=traduzErro(e); render(); });
     U.onAuthStateChanged(auth,user=>{
       pararEspaco(); dirty.clear();
-      if(!user){ unsubsFixos.forEach(f=>{ try{f()}catch(e){} }); unsubsFixos=[]; authUser=null; uid=null; aberto="pessoal"; eu={}; euCarregado=false; grupoDoc=null; pedidosG={}; mode="login"; resetState(); state.loaded=true; closeSheet(); render(); return; }
+      if(!user){ if(travado) destravar(); unsubsFixos.forEach(f=>{ try{f()}catch(e){} }); unsubsFixos=[]; authUser=null; uid=null; aberto="pessoal"; eu={}; euCarregado=false; grupoDoc=null; pedidosG={}; mode="login"; resetState(); state.loaded=true; closeSheet(); render(); return; }
       authUser=user; uid=user.uid; mode="cloud"; abrirEspaco();
     });
   }catch(e){ console.error(e); mode="local"; loadLocal(); state.loaded=true; setStatus("Sem conexão com o login — modo local","err"); render(); }
@@ -668,6 +670,86 @@ function cardLembretes(){
     ${ps.map(x=>{ const e=estadoPend(x); return `<div class="item lemb ${e.cls}"><span class="pill">${esc(e.txt)}</span><span class="desc"><b>${esc(x.nome)}</b><small>vencimento ${fmtData(x.data)}</small></span><span class="v">${brl(x.valor)}</span><button type="button" class="btn mini" data-pagar="${x.tipo}|${esc(x.id)}|${x.k}">Paguei</button></div>`; }).join("")}
     ${notifOn?"":`<p class="hint">Quer receber esses avisos como notificação? Ative em <b>Perfil → Lembretes</b>.</p>`}</div>`;
 }
+/* ---------- bloqueio com PIN (vale só para este aparelho) ---------- */
+const PINKEY="mb.pin", PINLEN=4;
+function pinCfg(){ try{ const c=JSON.parse(localStorage.getItem(PINKEY)||"null"); return c&&c.hash?c:null; }catch(e){ return null; } }
+function salvaPinCfg(c){ try{ if(c) localStorage.setItem(PINKEY,JSON.stringify(c)); else localStorage.removeItem(PINKEY); }catch(e){} }
+async function hashPin(pin,salt){ const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("mbc:"+salt+":"+pin)); return Array.from(new Uint8Array(h),b=>b.toString(16).padStart(2,"0")).join(""); }
+async function confere(pin){ const c=pinCfg(); return !!c&&(await hashPin(pin,c.salt))===c.hash; }
+async function definePin(pin,apos){ const salt=novoCodigo(16), c=pinCfg(); salvaPinCfg({salt,hash:await hashPin(pin,salt),apos:apos!=null?apos:(c&&c.apos!=null?c.apos:1)}); }
+let travado=false, pinDig="", saiuEm=0, pinMsg="", esqueciPin=false;
+const errosPin=()=>{ try{ return JSON.parse(localStorage.getItem("mb.pin.erros")||'{"n":0,"ate":0}'); }catch(e){ return {n:0,ate:0}; } };
+const salvaErros=x=>{ try{ localStorage.setItem("mb.pin.erros",JSON.stringify(x)); }catch(e){} };
+function travar(){ if(!pinCfg()||travado) return; travado=true; pinDig=""; pinMsg=""; esqueciPin=false; document.body.classList.add("travado"); renderLock(); }
+function destravar(){ travado=false; pinDig=""; document.body.classList.remove("travado"); const el=document.getElementById("lock"); if(el) el.remove(); }
+function renderLock(){
+  let el=document.getElementById("lock"); if(!el){ el=document.createElement("div"); el.id="lock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.setAttribute("aria-label","App bloqueado"); document.body.appendChild(el); }
+  const er=errosPin(), espera=Math.max(0,Math.ceil((er.ate-Date.now())/1000));
+  if(espera>0) setTimeout(()=>{ if(travado) renderLock(); },1000);
+  const nome=authUser&&authUser.displayName?primeiroNome(authUser.displayName):"";
+  const tec=n=>`<button type="button" class="tecla" data-k="${n}" ${espera?"disabled":""}>${n}</button>`;
+  el.innerHTML=esqueciPin?`<div class="lockbox">
+      <span class="lockic">${ICON.cadeado}</span><h2>Esqueceu o PIN?</h2>
+      ${mode==="cloud"?`<p>Para tirar o PIN deste aparelho, saia e entre de novo com a sua conta Google. Seus lançamentos continuam guardados na nuvem.</p>
+        <button class="btn wide" type="button" data-lk="sair">Sair e entrar de novo</button>`
+      :`<p>Sem login, os dados ficam só neste aparelho e não há como confirmar que é você. A única saída é apagar os dados deste aparelho e começar de novo.</p>
+        <button class="btn danger wide" type="button" data-lk="apagar">Apagar os dados deste aparelho</button>`}
+      <button class="link" type="button" data-lk="voltar">Voltar e tentar de novo</button></div>`
+  :`<div class="lockbox">
+    <span class="lockic">${ICON.cadeado}</span>
+    <h2>${nome?"Olá, "+esc(nome):"MB Controle"}</h2>
+    <p class="${pinMsg?"erro":""}" aria-live="polite">${espera?"Muitas tentativas. Tente de novo em "+espera+"s.":pinMsg?esc(pinMsg):"Digite seu PIN para abrir"}</p>
+    <div class="pontos ${pinMsg?"treme":""}">${Array.from({length:PINLEN},(_,i)=>`<i class="${i<pinDig.length?"on":""}"></i>`).join("")}</div>
+    <div class="teclado">${[1,2,3,4,5,6,7,8,9].map(tec).join("")}<span></span>${tec(0)}<button type="button" class="tecla del" data-k="del" aria-label="Apagar" ${espera?"disabled":""}>${ICON.apagar}</button></div>
+    <button class="link" type="button" data-lk="esqueci">Esqueci o PIN</button></div>`;
+}
+async function teclaPin(k){
+  if(!travado) return;
+  if(errosPin().ate>Date.now()) return;
+  if(k==="del"){ pinDig=pinDig.slice(0,-1); pinMsg=""; renderLock(); return; }
+  if(!/^\d$/.test(k)||pinDig.length>=PINLEN) return;
+  pinDig+=k; pinMsg=""; renderLock();
+  if(pinDig.length<PINLEN) return;
+  if(await confere(pinDig)){ salvaErros({n:0,ate:0}); destravar(); return; }
+  const er=errosPin(); er.n++; if(er.n>=5){ er.ate=Date.now()+30000*Math.pow(2,Math.min(4,er.n-5)); }
+  salvaErros(er); pinDig=""; pinMsg=er.n>=5?"":"PIN errado"+(er.n>=3?" ("+(5-er.n)+" tentativa"+(5-er.n===1?"":"s")+" antes de esperar)":""); renderLock();
+}
+document.addEventListener("click",e=>{
+  const lk=e.target.closest("#lock [data-k],#lock [data-lk]"); if(!lk) return;
+  if(lk.dataset.k) return teclaPin(lk.dataset.k);
+  const a=lk.dataset.lk;
+  if(a==="esqueci"){ esqueciPin=true; renderLock(); }
+  if(a==="voltar"){ esqueciPin=false; renderLock(); }
+  if(a==="sair"){ salvaPinCfg(null); salvaErros({n:0,ate:0}); destravar(); if(fb) fb.signOut(fb.auth); }
+  if(a==="apagar"){ if(!lk.dataset.ok){ lk.dataset.ok="1"; lk.textContent="Toque de novo para apagar tudo"; return; } try{ localStorage.removeItem(LSKEY); }catch(e){} salvaPinCfg(null); salvaErros({n:0,ate:0}); location.reload(); }
+});
+document.addEventListener("keydown",e=>{ if(!travado||esqueciPin) return; if(/^\d$/.test(e.key)){ e.preventDefault(); teclaPin(e.key); } else if(e.key==="Backspace"){ e.preventDefault(); teclaPin("del"); } },true);
+document.addEventListener("visibilitychange",()=>{
+  const c=pinCfg(); if(!c) return;
+  if(document.hidden){ saiuEm=Date.now(); return; }
+  if(saiuEm&&Date.now()-saiuEm>=(Number(c.apos)||0)*60000) travar();
+  saiuEm=0;
+});
+function cardPin(){
+  const c=pinCfg();
+  return `<div class="card" id="bloqueio"><div class="cardhead"><h2>Bloqueio com PIN</h2>${c?'<span class="tag">ligado</span>':""}</div>
+  ${c?`<p class="hint">O app pede o PIN de ${PINLEN} números ao abrir neste aparelho. Cada aparelho tem o seu.</p>
+    <label class="f">Pedir o PIN de novo quando voltar para o app<select class="in" id="pinApos">${[[0,"Na hora"],[1,"Depois de 1 minuto fora"],[5,"Depois de 5 minutos fora"],[15,"Depois de 15 minutos fora"]].map(([v,t])=>`<option value="${v}" ${Number(c.apos)===v?"selected":""}>${t}</option>`).join("")}</select></label>
+    <div class="row2"><button class="btn ghost" type="button" data-novo="pin" data-pinmodo="trocar">Trocar PIN</button><button class="btn ghost" type="button" data-novo="pin" data-pinmodo="desligar">Desligar</button></div>`
+  :`<p class="hint">Proteja o app com um PIN de ${PINLEN} números, pedido sempre que abrir neste aparelho. Bom para quando outras pessoas usam o seu celular.</p>
+    <button class="btn" type="button" data-novo="pin" data-pinmodo="criar">${ICON.cadeado}Criar PIN</button>`}</div>`;
+}
+async function salvarPin(){
+  const s=ui.sheet, v=id=>((document.getElementById(id)||{}).value||"").trim(), ok=x=>new RegExp("^\\d{"+PINLEN+"}$").test(x);
+  if(s.pinModo!=="criar"&&!(await confere(v("s-pinatual")))) return erroSheet("PIN atual errado.","s-pinatual");
+  if(s.pinModo==="desligar"){ salvaPinCfg(null); closeSheet(); render(); toast("Bloqueio com PIN desligado neste aparelho."); return; }
+  const n=v("s-pinnovo"), r=v("s-pinrep");
+  if(!ok(n)) return erroSheet("O PIN precisa ter "+PINLEN+" números.","s-pinnovo");
+  if(/^(\d)\1+$/.test(n)||"0123456789".includes(n)||"9876543210".includes(n)) return erroSheet("Escolha um PIN menos óbvio (evite 1111 ou 1234).","s-pinnovo");
+  if(n!==r) return erroSheet("Os dois PINs não são iguais.","s-pinrep");
+  await definePin(n); closeSheet(); render(); toast(s.pinModo==="criar"?"PIN criado. O app vai pedir ao abrir neste aparelho.":"PIN trocado.");
+}
+
 /* ---------- central de notificações (sininho no topo) ---------- */
 function avisos(){
   if(mode==="login"||!state.loaded) return {itens:[],n:0};
@@ -1155,6 +1237,7 @@ function viewPerfil(){
   <div class="col"><div class="card"><h2>Aparência</h2>
     <div class="seg" role="radiogroup" aria-label="Tema">${[["auto","Automático"],["claro","Claro"],["escuro","Escuro"]].map(([v,l])=>`<input type="radio" name="ptema" id="pt-${v}" value="${v}" ${tema===v?"checked":""}><label for="pt-${v}">${l}</label>`).join("")}</div>
     <p class="hint">Automático segue o tema do seu celular ou computador.</p></div>
+    ${cardPin()}
     <div class="card" id="lembretes"><h2>Lembretes</h2>
     <p class="hint">Avisa um dia antes do vencimento, no dia e, se não marcar como paga, no dia seguinte (atraso). Vale para contas fixas, parcelas e fatura do cartão.</p>
     <label class="switch"><input type="checkbox" id="notifOn" ${notifOn&&("Notification" in window)&&Notification.permission==="granted"?"checked":""}><span></span>Notificações neste aparelho</label>
@@ -1375,8 +1458,8 @@ function renderSheet(){
   if(!s){ r.innerHTML=""; document.body.classList.remove("sheet-open"); return; }
   document.body.classList.add("sheet-open");
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=k===todayKey?today.getDate():1;
-  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"){ closeSheet(); return; }
-  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações"};
+  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="pin"){ closeSheet(); return; }
+  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -1508,6 +1591,11 @@ function renderSheet(){
       <label class="f">Prazo (opcional)<input class="in" id="s-prazo" type="month" min="${todayKey}" value="${it&&it.prazo?it.prazo:""}"></label>
       ${i?`<div class="metas">${linhaMeta(it,null).replace('data-edit="meta"','data-x="1"')}</div><button class="btn ghost" type="button" data-sguardarmeta="1">+ Guardar nesta meta</button>`:`<p class="hint">Com prazo, o app mostra quanto guardar por mês para chegar lá.</p>`}`;
     sub=""; botoes=novo?`<button class="btn" type="submit">Criar meta</button>`:`<button class="btn danger" type="button" data-sapagar="1">Excluir meta</button><button class="btn" type="submit">Salvar</button>`;
+  }else if(s.tipo==="pin"){
+    const campo=(id,lab,auto)=>`<label class="f">${lab}<input class="in pinin" id="${id}" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="${PINLEN}" autocomplete="off" ${auto?"data-autofocus":""}></label>`;
+    corpo=(s.pinModo!=="criar"?campo("s-pinatual","PIN atual",true):"")+(s.pinModo!=="desligar"?campo("s-pinnovo","Novo PIN ("+PINLEN+" números)",s.pinModo==="criar")+campo("s-pinrep","Repita o novo PIN"):"")
+      +(s.pinModo==="criar"?`<p class="hint">Guarde bem: se esquecer, é preciso sair e entrar de novo com a conta Google para tirar o PIN.</p>`:"");
+    sub=""; botoes=`<button class="btn ${s.pinModo==="desligar"?"danger":""}" type="submit">${s.pinModo==="desligar"?"Desligar PIN":s.pinModo==="trocar"?"Trocar PIN":"Criar PIN"}</button>`;
   }else if(s.tipo==="avisos"){
     corpo=`<div class="avisos">${listaAvisos()}</div>`; sub=""; botoes="";
   }else if(s.tipo==="busca"){
@@ -1548,6 +1636,7 @@ function erroSheet(msg,campo){ const e=document.getElementById("s-erro"); if(e){
 function salvarSheet(outro){
   const s=ui.sheet, k=mesSheet();
   if(s.tipo==="busca") return;
+  if(s.tipo==="pin"){ salvarPin(); return; }
   if(s.tipo==="importar"){ if(s.itens) importarExtrato(); return; }
   if(s.tipo==="conta"){
     const nome=((document.getElementById("s-nome")||{}).value||"").trim(); if(!nome) return erroSheet("Dê um nome para a conta, ex.: Nubank","s-nome");
@@ -1752,7 +1841,7 @@ app.addEventListener("click",e=>{
   if(d.month){ goMonth(d.month); return; }
   if(d.nav){ passo(Number(d.nav)); return; }
   if(d.open){ ui.tab="mes"; goMonth(d.open); window.scrollTo({top:0}); return; }
-  if(d.novo){ openSheet(d.novo,null,d.cxtipo?{cxTipo:d.cxtipo}:null); return; }
+  if(d.novo){ openSheet(d.novo,null,d.cxtipo?{cxTipo:d.cxtipo}:d.pinmodo?{pinModo:d.pinmodo}:null); return; }
   if(d.edit){ openSheet(d.edit,d.id,d.mes?{mes:d.mes}:null); return; }
   if(d.busca){ openSheet("busca"); return; }
   if(d.planilha){ exportarPlanilha(); return; }
@@ -1773,6 +1862,7 @@ app.addEventListener("change",e=>{
   const t=e.target, money=()=>t.value.trim()===""?0:parseMoney(t.value);
   if(t.name==="ptema"){ tema=t.value; try{localStorage.setItem("meucaixa.tema",tema)}catch(e){} aplicaTema(); render(); return; }
   if(t.name==="lmodo"){ ui.loginModo=t.value; render(); return; }
+  if(t.id==="pinApos"){ const c=pinCfg(); if(c){ c.apos=Number(t.value)||0; salvaPinCfg(c); toast("Pronto."); } return; }
   if(t.id==="t-li"){ const b=document.getElementById("t-aceitar"); if(b) b.disabled=!t.checked; return; }
   if(t.id==="impFile"&&t.files&&t.files[0]){ importar(t.files[0]); return; }
   if(t.dataset&&t.dataset.fatpaga){ marcaPago("fat",t.dataset.fatpaga,ui.month,t.checked); return; }
@@ -1788,6 +1878,7 @@ app.addEventListener("change",e=>{
 });
 /* teclado: N abre novo lançamento, Esc fecha, ← → trocam o mês */
 document.addEventListener("keydown",e=>{
+  if(travado) return;
   if(e.key==="Escape"&&ui.sheet){ closeSheet(); return; }
   const tag=(e.target.tagName||"").toLowerCase(); if(tag==="input"||tag==="select"||tag==="textarea"||ui.sheet||e.ctrlKey||e.metaKey||e.altKey) return;
   if(ui.tab!=="mes"||mode==="login"||!state.loaded) return;
@@ -1808,6 +1899,7 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 /* quando o mês do calendário virar com o app aberto, atualiza sozinho */
 setInterval(()=>{ const d=new Date(); if(keyOf(d.getFullYear(),d.getMonth()+1)!==todayKey&&!ui.sheet&&!dirty.size) location.reload(); },60000);
 
+travar();
 render();
 init();
 })();

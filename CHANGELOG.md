@@ -12,6 +12,15 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.3.0 — 17/10/2026
+**Bloqueio com PIN**
+- Perfil → **Bloqueio com PIN**: crie um PIN de 4 números, pedido sempre que o app abrir neste aparelho (cada aparelho tem o seu).
+- Tela de desbloqueio com teclado numérico (também aceita o teclado do computador).
+- Escolha quando pedir de novo ao voltar para o app: na hora, depois de 1, 5 ou 15 minutos fora.
+- Depois de 5 tentativas erradas, o app espera 30 segundos (e mais a cada novo erro).
+- PINs óbvios (1111, 1234) não são aceitos. O PIN fica guardado só como código embaralhado (hash), nunca o número.
+- **Esqueci o PIN**: com login, basta sair e entrar de novo com a conta Google. Sem login, só apagando os dados do aparelho.
+
 ## 3.2.0 — 17/10/2026
 **Sininho de notificações**
 - Ícone de sino no topo, ao lado da foto do perfil, com o número de avisos.

@@ -439,3 +439,25 @@ body.sheet-open{overflow:hidden}
 .avisovazio{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:28px 10px;color:var(--muted)}
 .avisovazio svg{width:36px;height:36px;color:var(--accent)}
 .avisovazio b{color:var(--fg);font-size:16px}
+
+/* ===== v3.3: bloqueio com PIN ===== */
+body.travado #app,body.travado #sheet,body.travado #toast{visibility:hidden}
+#lock{position:fixed;inset:0;z-index:1000;background:var(--bg);display:grid;place-items:center;padding:24px 16px;overflow:auto}
+.lockbox{width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.lockic{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.lockic svg{width:30px;height:30px}
+.lockbox h2{margin:0;font-family:var(--display);font-size:24px}
+.lockbox p{margin:0;color:var(--muted);min-height:20px}
+.lockbox p.erro{color:var(--bad)}
+.pontos{display:flex;gap:16px;margin:6px 0 10px}
+.pontos i{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent);display:block}
+.pontos i.on{background:var(--accent)}
+.pontos.treme{animation:treme .35s}
+@keyframes treme{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.teclado{display:grid;grid-template-columns:repeat(3,72px);gap:14px 22px;justify-content:center}
+.tecla{width:72px;height:72px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 26px var(--display);cursor:pointer;display:grid;place-items:center}
+.tecla:active{background:var(--accent-soft)}
+.tecla:disabled{opacity:.4}
+.tecla.del{border-color:transparent;background:transparent}
+#bloqueio .btn svg{vertical-align:-5px;margin-right:6px}
+.pinin{letter-spacing:.5em;font-size:22px;text-align:center}
