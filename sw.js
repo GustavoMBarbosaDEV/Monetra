@@ -1,5 +1,5 @@
 // Service worker: deixa o app abrir mesmo sem internet.
-const CACHE = "mb-controle-3.7.0"; // acompanhe a versão do app (VERSAO em app.js)
+const CACHE = "mb-controle-3.8.0"; // acompanhe a versão do app (VERSAO em app.js)
 const SHELL = ["./", "index.html", "style.css", "app.js", "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 self.addEventListener("install", e => {
@@ -15,13 +15,13 @@ self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   // Bibliotecas do Firebase: guarda uma cópia para o app abrir offline.
   if (url.hostname === "www.gstatic.com" && url.pathname.startsWith("/firebasejs/")) {
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => { const c = res.clone(); caches.open(CACHE).then(k => k.put(e.request, c)); return res; })));
+    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => { if (res.ok) { const c = res.clone(); caches.open(CACHE).then(k => k.put(e.request, c)); } return res; })));
     return;
   }
   if (url.origin !== location.origin) return;
   // Sempre pede a versão mais nova ao servidor (sem usar cópia velha do navegador).
   const req = e.request.mode === "navigate" ? e.request : new Request(e.request, { cache: "no-cache" });
-  e.respondWith(fetch(req).then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r; })
+  e.respondWith(fetch(req).then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); } return r; })
     .catch(() => caches.match(e.request).then(r => r || caches.match("index.html"))));
 });
 

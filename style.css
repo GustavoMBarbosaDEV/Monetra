@@ -545,3 +545,14 @@ body.tutorial{overflow:hidden}
 .tutpontos i{width:8px;height:8px;border-radius:50%;background:var(--line)}
 .tutpontos i.on{background:var(--accent);width:22px;border-radius:4px}
 .tutbox .row2{width:100%}
+
+/* ===== v3.8: revisão — valores grandes e nomes longos ===== */
+@media (max-width:520px){ .donutwrap{grid-template-columns:minmax(0,1fr)} }
+.assintot > div{min-width:0}
+.assintot b{overflow-wrap:anywhere}
+.tile .val{text-overflow:clip}
+.bars .bar .t{min-width:0;gap:8px}
+.bars .bar .t b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bars .bar .t .num{flex:0 0 auto}
+.item .desc{min-width:0}
+.item .v{white-space:nowrap}

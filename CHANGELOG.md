@@ -12,6 +12,46 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.8.0 — 17/10/2026
+**Revisão geral**
+
+Segurança
+- Todo lançamento vindo da nuvem, de um backup ou de outro participante de um controle compartilhado é conferido (tipos e formato) antes de aparecer na tela. Isso fecha uma brecha em que um lançamento adulterado poderia rodar código no app de quem abrisse o controle.
+- A planilha para Excel não deixa descrições virarem fórmulas (proteção contra "injeção de fórmula").
+- Meses com identificação inválida em backups ou na nuvem são ignorados.
+
+Salvamento na nuvem
+- Mesclagem em 3 vias: quando duas pessoas (ou dois aparelhos) mexem no mesmo mês, o que cada uma mudou é mantido; edições e exclusões de um lado não são mais desfeitas pelo outro.
+- Duas edições muito rápidas no mesmo mês não se perdem mais.
+- Sem internet, nada sobrescreve a nuvem: as edições ficam guardadas no aparelho (mesmo se o app for fechado) e são enviadas e mescladas quando a conexão volta. Se o envio falhar, o app tenta de novo sozinho.
+- Trocar de controle ou sair da conta logo depois de editar salva antes de trocar, e nada vai parar no controle errado.
+- "Recomeçar do zero" em um aparelho limpa também os outros aparelhos abertos.
+- Abrir o app sem internet em um aparelho novo não tira mais você dos controles compartilhados; trocar de controle sem internet funciona.
+- Fatura marcada como não paga não volta sozinha para paga.
+- Restaurar backup só no controle Pessoal.
+
+Cálculos
+- Parcelas calculadas em centavos inteiros (ex.: R$ 19,90 em 2x = 9,95 + 9,95; antes podia sair 9,94 + 9,96). Vale para listas, limite do cartão e assinaturas.
+- Salário de R$ 0,00 num mês pode ser informado (antes voltava para o salário padrão). Saldo inicial negativo (conta no vermelho) é aceito.
+- Excluir uma conta fixa já encerrada não traz de volta meses passados.
+- Cartão com fechamento no dia 31: em meses mais curtos, o fechamento é o último dia do mês.
+- Importar extrato: "1.234" vira R$ 1.234,00 e datas impossíveis (31/02) são ignoradas.
+- Saldos arredondados em centavos (nada de "−R$ 0,00").
+- Calendário não cria lembrete de fatura zerada.
+
+Novidade e correção pedidas
+- Campo **Mês** na janela de nova despesa: escolha em que mês a despesa entra (ela fica só naquele mês). Ao editar, dá para mover a despesa para outro mês. Compras parceladas começam no mês escolhido.
+- Conta fixa criada em Ajustes começa no mês que você está vendo na barra de meses (antes começava sempre no mês atual e podia aparecer como atrasada).
+
+Interface
+- Arrastar o mouse de dentro da janela para fora não fecha mais a janela (nem perde o que foi digitado).
+- Salvar um item apagado em outro aparelho fecha a janela com aviso, em vez de travar.
+- Colar um valor negativo não vira um valor estranho.
+- Valores grandes (milhões) e nomes longos não estouram a tela do celular.
+- Filtro de categoria apagada volta para "Todas"; tecla "/" busca em qualquer aba; tocar no slide da retrospectiva avança.
+- Se o dia virar com o app aberto, ele se atualiza ao voltar.
+- O modo offline não guarda mais respostas com erro.
+
 ## 3.7.0 — 17/10/2026
 **Tutorial**
 - Tutorial de boas-vindas em 9 telas: salário, lançamentos, contas fixas e cartões, caixinha e metas, acompanhamento, avisos e os demais recursos.
