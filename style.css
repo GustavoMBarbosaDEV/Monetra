@@ -339,3 +339,13 @@ body.sheet-open{overflow:hidden}
 .metageral{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);padding:0 4px}
 .lemb.orc .pill{background:transparent}
 @media (min-width:761px){#toast.toast{max-width:min(640px,calc(100vw - 40px))}}
+
+/* ===================== v2.7: contas e cartões ===================== */
+.contas{display:flex;flex-direction:column;gap:8px}
+.conta{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font:inherit;color:inherit;width:100%}
+.conta:hover{border-color:var(--accent)}
+.conta .ic{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.conta .desc{display:flex;flex-direction:column;min-width:0}
+.conta .desc b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conta .desc small{font-size:12px;color:var(--muted)}
+.conta .v{font-weight:700;white-space:nowrap}

@@ -12,6 +12,16 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 2.7.0 — 17/10/2026
+**Várias contas e vários cartões**
+- Contas: cadastre conta corrente, poupança, dinheiro etc. com o saldo inicial de cada uma. O card "Contas" mostra o saldo de cada conta mês a mês.
+- Transferências entre contas (não contam como receita nem despesa).
+- Ao lançar despesa, receita, conta fixa, parcela ou renda fixa, escolha a conta. O salário vai para a conta marcada como "recebe o salário".
+- Vários cartões de crédito, cada um com nome, dia de fechamento, dia de vencimento, limite e conta que paga a fatura.
+- Uma fatura por cartão na tela do mês, com o limite disponível; lembretes e calendário por cartão.
+- O cartão único das versões anteriores vira automaticamente o primeiro cartão da lista.
+- A planilha para Excel ganhou a coluna "Conta / cartão" e as transferências.
+
 ## 2.6.0 — 17/10/2026
 **Metas de economia e alertas de orçamento**
 - Metas de economia: caixinhas com nome, valor e prazo. O app mostra o progresso e quanto guardar por mês para chegar lá.
