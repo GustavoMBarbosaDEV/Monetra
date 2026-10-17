@@ -1,6 +1,6 @@
 # MB Controle — controle de gastos
 
-App de controle de gastos pessoal, de setembro de 2026 em diante (dá para acrescentar meses em Ajustes):
+App de controle de gastos pessoal. A barra de meses mostra do início do seu controle até 2 meses à frente e avança sozinha com o calendário:
 salário, recebimentos avulsos, despesas diárias por campo, caixinha (guardar/retirar), limites por campo,
 visão geral com gráfico e backup.
 
