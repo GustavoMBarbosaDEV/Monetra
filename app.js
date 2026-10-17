@@ -72,6 +72,7 @@ function normMonth(d){
     caixinha:Array.isArray(d?.caixinha)?d.caixinha:[],
     fixos:(d&&typeof d.fixos==="object"&&!Array.isArray(d.fixos))?d.fixos:{},
     rendas:(d&&typeof d.rendas==="object"&&!Array.isArray(d.rendas))?d.rendas:{},
+    parcelas:(d&&typeof d.parcelas==="object"&&!Array.isArray(d.parcelas))?d.parcelas:{},
     faturaPaga:!!(d&&d.faturaPaga)};
 }
 function normConfig(d){
@@ -80,7 +81,7 @@ function normConfig(d){
   const fixos=Array.isArray(d?.fixos)?d.fixos.map(f=>({id:String(f.id),nome:String(f.nome||"Conta fixa"),cat:String(f.cat||""),valor:Number(f.valor)||0,dia:Math.min(31,Math.max(1,Number(f.dia)||1)),forma:String(f.forma||"boleto"),desde:/^\d{4}-\d{2}$/.test(f.desde||"")?f.desde:INICIO,ate:/^\d{4}-\d{2}$/.test(f.ate||"")?f.ate:null})):[];
   const inicio=(typeof d?.inicio==="string"&&/^\d{4}-\d{2}$/.test(d.inicio))?d.inicio:null;
   const mk=x=>/^\d{4}-\d{2}$/.test(x||"");
-  const parcelas=Array.isArray(d?.parcelas)?d.parcelas.filter(p=>p&&p.id).map(p=>({id:String(p.id),desc:String(p.desc||""),cat:String(p.cat||""),forma:String(p.forma||"credito"),total:Number(p.total)||0,n:Math.min(48,Math.max(2,Math.round(Number(p.n)||2))),compra:mk(p.compra)?p.compra:INICIO,dia:Math.min(31,Math.max(1,Number(p.dia)||1))})):[];
+  const parcelas=Array.isArray(d?.parcelas)?d.parcelas.filter(p=>p&&p.id).map(p=>({id:String(p.id),desc:String(p.desc||""),cat:String(p.cat||""),forma:String(p.forma||"credito"),total:Number(p.total)||0,n:Math.min(48,Math.max(2,Math.round(Number(p.n)||2))),compra:mk(p.compra)?p.compra:INICIO,dia:Math.min(31,Math.max(1,Number(p.dia)||1)),venc:(Number(p.venc)>=1&&Number(p.venc)<=31)?Math.round(Number(p.venc)):null})):[];
   const rendas=Array.isArray(d?.rendas)?d.rendas.filter(r=>r&&r.id).map(r=>({id:String(r.id),nome:String(r.nome||"Renda fixa"),valor:Number(r.valor)||0,desde:mk(r.desde)?r.desde:INICIO,ate:mk(r.ate)?r.ate:null})):[];
   const dd=n=>{ n=Math.round(Number(n)); return n>=1&&n<=31?n:null; };
   const cartao={fecha:dd(d?.cartao?.fecha),vence:dd(d?.cartao?.vence)};
@@ -133,9 +134,19 @@ function parcelasDoMes(k){
     const primeiro=cartao?faturaMes(p.compra,p.dia):p.compra, i=entre(primeiro,k);
     if(i<0||i>=p.n) return;
     const base=Math.floor(p.total/p.n*100)/100, valor=i===p.n-1?Math.round((p.total-base*(p.n-1))*100)/100:base;
-    out.push({id:p.id,parcela:true,idx:i+1,n:p.n,desc:p.desc,cat:p.cat,forma:p.forma,dia:Math.min(p.dia,dim),valor,total:p.total,cartao});
+    const o=((state.months[k]||{}).parcelas||{})[p.id]||{};
+    const dia=cartao?Math.min(state.config.cartao.vence,dim):Math.min(p.venc||p.dia,dim);
+    out.push({id:p.id,parcela:true,idx:i+1,n:p.n,desc:p.desc,cat:p.cat,forma:p.forma,dia,valor,total:p.total,cartao,pago:!!o.pago,pagoEm:o.pagoEm||null});
   });
   return out;
+}
+/* Compras no cartão de crédito que caem no mês k: à vista (no mês da fatura, ou da compra sem cartão configurado) e parcelas até a última */
+function cartaoDoMes(k){
+  const avista=[];
+  if(cartaoAtivo()) faturaDoMes(k).filter(x=>!x.parcela).forEach(x=>avista.push(x));
+  else ((state.months[k]||{}).gastos||[]).filter(g=>g.forma==="credito").forEach(g=>avista.push(Object.assign({},g,{compraK:k})));
+  const parc=parcelasDoMes(k).filter(p=>p.forma==="credito");
+  return avista.concat(parc).sort((a,b)=>a.dia-b.dia);
 }
 /* Compras no crédito (lançadas em qualquer mês) cuja fatura vence em k */
 function faturaDoMes(k){
@@ -194,7 +205,7 @@ const LISTAS_MES=["gastos","avulsos","caixinha"], LISTAS_CFG=["categorias","fixo
 function mescla(local,servidor,id){
   const del=apagados[id]||new Set(), listas=id==="config"?LISTAS_CFG:LISTAS_MES, extra={};
   listas.forEach(l=>{ const ids=new Set((local[l]||[]).map(x=>x.id)); const add=(servidor[l]||[]).filter(x=>x&&x.id&&!ids.has(x.id)&&!del.has(x.id)); if(add.length){ local[l]=(local[l]||[]).concat(add); extra[l]=add; } });
-  if(id!=="config") ["fixos","rendas"].forEach(mp=>{ const s=servidor[mp]||{}; for(const key in s) if(!(local[mp]||{})[key]){ local[mp]=local[mp]||{}; local[mp][key]=s[key]; (extra[mp]=extra[mp]||{})[key]=s[key]; } });
+  if(id!=="config") ["fixos","rendas","parcelas"].forEach(mp=>{ const s=servidor[mp]||{}; for(const key in s) if(!(local[mp]||{})[key]){ local[mp]=local[mp]||{}; local[mp][key]=s[key]; (extra[mp]=extra[mp]||{})[key]=s[key]; } });
   return extra;
 }
 async function flush(id){
@@ -320,6 +331,96 @@ function excluirFixo(id,apartir){
   const antes=f.ate; f.ate=shiftKey(apartir,-1); save("config"); render();
   toast("“"+f.nome+"” excluída a partir de "+abrMes(apartir)+".","Desfazer",()=>{ const g=state.config.fixos.find(x=>x.id===id); if(g){ g.ate=antes; save("config"); render(); toast("Desfeito."); } });
 }
+/* Marca conta fixa, parcela ou fatura como paga (guarda a data do pagamento) */
+function marcaPago(tipo,id,k,pago,silencioso){
+  const m=getMonth(k), hoje=new Date(), data=hoje.getFullYear()+"-"+pad2(hoje.getMonth()+1)+"-"+pad2(hoje.getDate());
+  if(tipo==="fat"){ m.faturaPaga=pago; m.faturaPagaEm=pago?data:null;
+    parcelasDoMes(k).filter(x=>x.cartao).forEach(x=>{ const o=Object.assign({},m.parcelas[x.id]||{}); o.pago=pago; if(pago) o.pagoEm=data; else delete o.pagoEm; m.parcelas[x.id]=o; });
+    faturaDoMes(k).filter(x=>!x.parcela).forEach(x=>{ const g=getMonth(x.compraK).gastos.find(y=>y.id===x.id); if(g){ g.pago=pago; if(pago) g.pagoEm=data; else delete g.pagoEm; if(x.compraK!==k) save(x.compraK); } }); }
+  else { const mapa=tipo==="fixo"?"fixos":"parcelas"; const o=Object.assign({},m[mapa][id]||{}); o.pago=pago; if(pago) o.pagoEm=data; else delete o.pagoEm; m[mapa][id]=o; }
+  save(k); if(!silencioso){ render(); toast(pago?"Pagamento registrado.":"Marcado como não pago."); }
+}
+/* Paga / não paga numa despesa do cartão de crédito */
+function marcaGastoPago(k,id,pago){
+  const g=getMonth(k).gastos.find(x=>x.id===id); if(!g) return;
+  const h=new Date(); g.pago=pago; if(pago) g.pagoEm=h.getFullYear()+"-"+pad2(h.getMonth()+1)+"-"+pad2(h.getDate()); else delete g.pagoEm;
+  save(k); render(); toast(pago?"Despesa do cartão marcada como paga.":"Despesa do cartão marcada como não paga.");
+}
+/* Contas que vencem amanhã, hoje ou já venceram (mês anterior e atual) */
+function pendencias(){
+  if(mode==="login"||!state.loaded) return [];
+  const agora=new Date(); agora.setHours(0,0,0,0);
+  const kAtual=keyOf(agora.getFullYear(),agora.getMonth()+1), out=[];
+  [shiftKey(kAtual,-1),kAtual,shiftKey(kAtual,1)].forEach(k=>{
+    const venc=d=>new Date(kY(k),kM(k)-1,d);
+    fixosDoMes(k).filter(f=>!f.pular&&!f.pago).forEach(f=>out.push({tipo:"fixo",id:f.id,k,nome:f.desc,valor:f.valor,data:venc(f.dia)}));
+    parcelasDoMes(k).filter(p=>!p.cartao&&!p.pago).forEach(p=>out.push({tipo:"parc",id:p.id,k,nome:(p.desc||"Parcela")+" ("+p.idx+"/"+p.n+")",valor:p.valor,data:venc(p.dia)}));
+    if(cartaoAtivo()){ const t=soma(faturaDoMes(k)), m=state.months[k]; if(t>0&&!(m&&m.faturaPaga)) out.push({tipo:"fat",id:"fatura",k,nome:"Fatura do cartão",valor:t,data:venc(Math.min(state.config.cartao.vence,diasMes(k)))}); }
+  });
+  return out.map(x=>Object.assign(x,{dd:Math.round((x.data-agora)/86400000)})).filter(x=>x.dd<=1).sort((a,b)=>a.dd-b.dd);
+}
+const fmtData=d=>pad2(d.getDate())+"/"+pad2(d.getMonth()+1);
+const estadoPend=x=>x.dd===1?{cls:"amanha",txt:"vence amanhã"}:x.dd===0?{cls:"hoje",txt:"vence hoje"}:{cls:"atraso",txt:"atrasada desde "+fmtData(x.data)};
+function cardLembretes(){
+  const ps=pendencias(); if(!ps.length) return "";
+  return `<div class="card lembretes"><div class="cardhead"><h2>Lembretes</h2><span class="num muted">${ps.length} conta${ps.length===1?"":"s"}</span></div>
+    ${ps.map(x=>{ const e=estadoPend(x); return `<div class="item lemb ${e.cls}"><span class="pill">${esc(e.txt)}</span><span class="desc"><b>${esc(x.nome)}</b><small>vencimento ${fmtData(x.data)}</small></span><span class="v">${brl(x.valor)}</span><button type="button" class="btn mini" data-pagar="${x.tipo}|${esc(x.id)}|${x.k}">Paguei</button></div>`; }).join("")}
+    ${notifOn?"":`<p class="hint">Quer receber esses avisos como notificação? Ative em <b>Perfil → Lembretes</b>.</p>`}</div>`;
+}
+/* Notificações do navegador (funcionam com o app aberto ou em segundo plano) */
+let notifOn=false; try{ notifOn=localStorage.getItem("mb.notif")==="1"; }catch(e){}
+let ultimaVerif=0;
+async function mostraNotif(titulo,corpo,tag){
+  try{ const reg=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();
+    const op={body:corpo,tag,icon:"icons/icon-192.png",badge:"icons/icon-192.png",renotify:false};
+    if(reg) await reg.showNotification(titulo,op); else new Notification(titulo,op); }catch(e){ console.warn(e); }
+}
+function verificaLembretes(forcar){
+  if(!notifOn||!("Notification" in window)||Notification.permission!=="granted") return;
+  if(!forcar&&Date.now()-ultimaVerif<60000) return; ultimaVerif=Date.now();
+  let vistos={}; try{ vistos=JSON.parse(localStorage.getItem("mb.notif.vistos")||"{}"); }catch(e){}
+  const d=new Date(), hoje=d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+  pendencias().forEach(x=>{
+    const e=x.dd===1?"amanha":x.dd===0?"hoje":"atraso", chave=[x.tipo,x.id,x.k,e,e==="atraso"?hoje:""].join(":");
+    if(vistos[chave]) return; vistos[chave]=hoje;
+    const titulo=e==="amanha"?"Vence amanhã: "+x.nome:e==="hoje"?"Vence hoje: "+x.nome:"Conta atrasada: "+x.nome;
+    mostraNotif(titulo,brl(x.valor)+(e==="atraso"?" · venceu em "+fmtData(x.data):"")+" — toque para abrir o MB Controle.",chave);
+  });
+  for(const k in vistos) if(vistos[k]<shiftKey(hoje.slice(0,7),-2)) delete vistos[k];
+  try{ localStorage.setItem("mb.notif.vistos",JSON.stringify(vistos)); }catch(e){}
+}
+async function ligaNotif(on){
+  if(!on){ notifOn=false; try{localStorage.setItem("mb.notif","0")}catch(e){} render(); return; }
+  if(!("Notification" in window)){ toast("Este navegador não permite notificações. Use os lembretes no calendário."); render(); return; }
+  const p=Notification.permission==="granted"?"granted":await Notification.requestPermission();
+  notifOn=p==="granted"; try{localStorage.setItem("mb.notif",notifOn?"1":"0")}catch(e){}
+  render();
+  if(notifOn){ toast("Notificações ativadas."); mostraNotif("MB Controle","Pronto! Você vai ser avisado um dia antes, no dia e se uma conta atrasar.","teste"); verificaLembretes(true); }
+  else toast("O navegador bloqueou as notificações. Libere nas configurações do site.");
+}
+/* Lembretes no calendário (avisam mesmo com o app fechado) */
+function exportarCalendario(){
+  const esc2=t=>String(t||"").replace(/\\/g,"\\\\").replace(/[,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
+  const ymd=d=>d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate());
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//MB Controle//PT-BR","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:MB Controle - contas"];
+  let n=0;
+  const ev=(uid,data,titulo,desc)=>{ n++; L.push("BEGIN:VEVENT","UID:"+uid+"@mbcontrole","DTSTAMP:"+stamp,"DTSTART:"+ymd(data)+"T090000","DTEND:"+ymd(data)+"T091500","SUMMARY:"+esc2(titulo),"DESCRIPTION:"+esc2(desc),"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+esc2(titulo),"TRIGGER:PT0M","END:VALARM","END:VEVENT"); };
+  const tres=(base,data,nome,valor)=>{ const ant=new Date(data); ant.setDate(ant.getDate()-1); const dep=new Date(data); dep.setDate(dep.getDate()+1);
+    ev(base+"-antes",ant,"Amanhã vence: "+nome+" ("+brl(valor)+")","Lembrete do MB Controle.");
+    ev(base+"-dia",data,"Hoje vence: "+nome+" ("+brl(valor)+")","Depois de pagar, marque como paga no MB Controle.");
+    ev(base+"-atraso",dep,"Atrasou? "+nome+" venceu ontem","Se ainda não pagou, a conta está atrasada. Se já pagou, ignore."); };
+  for(let i=0;i<12;i++){ const k=shiftKey(todayKey,i), dim=diasMes(k);
+    state.config.fixos.filter(f=>f.desde<=k&&(!f.ate||k<=f.ate)&&(!inicioKey()||k>=inicioKey())).forEach(f=>{ const o=((state.months[k]||{}).fixos||{})[f.id]||{}; if(o.pago||o.pular) return; tres("f"+f.id+k,new Date(kY(k),kM(k)-1,Math.min(f.dia,dim)),f.nome,typeof o.valor==="number"?o.valor:f.valor); });
+    parcelasDoMes(k).filter(p=>!p.cartao&&!p.pago).forEach(p=>tres("p"+p.id+k,new Date(kY(k),kM(k)-1,p.dia),(p.desc||"Parcela")+" "+p.idx+"/"+p.n,p.valor));
+    if(cartaoAtivo()){ const m=state.months[k]; if(!(m&&m.faturaPaga)) tres("fat"+k,new Date(kY(k),kM(k)-1,Math.min(state.config.cartao.vence,dim)),"Fatura do cartão",soma(faturaDoMes(k))); }
+  }
+  L.push("END:VCALENDAR");
+  if(!n){ toast("Nenhuma conta com vencimento para colocar no calendário."); return; }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([L.join("\r\n")],{type:"text/calendar;charset=utf-8"})); a.download="mb-controle-lembretes.ics"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  toast("Arquivo de lembretes baixado ("+(n/3)+" vencimentos). Abra para adicionar ao calendário.");
+}
+
 /* Desfazer item por item (não sobrescreve outras mudanças feitas no meio tempo) */
 function apagarItem(chave,lista,id,msg){
   const alvo=chave==="config"?state.config:getMonth(chave), arr=alvo[lista], idx=arr.findIndex(x=>x.id===id);
@@ -383,6 +484,7 @@ function render(){
   app.innerHTML=header()+corpo+bottomNav();
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus({preventScroll:true}); if(sel&&el.setSelectionRange){ try{el.setSelectionRange(sel[0],sel[1])}catch(e){} } } }
   const on=document.querySelector(".chip.on"); if(on&&on.scrollIntoView&&!fid) on.scrollIntoView({block:"nearest",inline:"center"});
+  if(state.loaded&&mode!=="login") setTimeout(()=>verificaLembretes(false),500);
 }
 function header(){
   const t=(id,l)=>`<button role="tab" data-tab="${id}" aria-selected="${ui.tab===id}">${l}</button>`;
@@ -404,7 +506,8 @@ function avatar(px){
 }
 function bottomNav(){
   if(mode==="login"||!state.loaded) return "";
-  const b=(id,l)=>`<button type="button" data-tab="${id}" class="${ui.tab===id?"on":""}" aria-current="${ui.tab===id?"page":"false"}">${ICON[id]}<span>${l}</span></button>`;
+  const np=pendencias().length;
+  const b=(id,l)=>`<button type="button" data-tab="${id}" class="${ui.tab===id?"on":""}" aria-current="${ui.tab===id?"page":"false"}">${ICON[id]}${id==="mes"&&np?`<i class="badge">${np}</i>`:""}<span>${l}</span></button>`;
   return `<nav class="bottomnav" aria-label="Navegação">${b("mes","Mês")}${b("ano","Visão geral")}${b("ajustes","Ajustes")}${b("perfil","Perfil")}</nav>
   ${ui.tab==="mes"?`<button class="fab" type="button" data-novo="gasto" aria-label="Novo lançamento">${ICON.mais}</button>`:""}`;
 }
@@ -430,9 +533,15 @@ function donut(itens,total,centro,sub){
 
 /* ---------- aba Mês ---------- */
 function linhaLanc(g,k){
-  if(g.parcela) return `<button type="button" class="item" data-edit="parcela" data-id="${esc(g.id)}" style="--dot:${catColor(g.cat)}">
-    <span class="pill">${esc(catName(g.cat))}</span><span class="desc"><b>${esc(g.desc||"Compra parcelada")}</b><small>parcela ${g.idx}/${g.n} · ${esc(formaNome(g.forma))}</small></span><span class="v">${brl(g.valor)}</span></button>`;
+  if(g.parcela) return `<div class="item fixrow parcrow" style="--dot:${catColor(g.cat)}">
+    <button type="button" class="check ${g.pago?"on":""}" data-pagar="parc|${esc(g.id)}|${k}" aria-pressed="${g.pago}" aria-label="${g.pago?"Marcar parcela como não paga":"Marcar parcela como paga"}">${ICON.check}</button>
+    <button type="button" class="fixinfo" data-edit="parcela" data-id="${esc(g.id)}"><b>${esc(g.desc||"Compra parcelada")}</b><small>parcela ${g.idx}/${g.n} · vence dia ${pad2(g.dia)}${g.pago?" · paga"+(g.pagoEm?" em "+g.pagoEm.slice(8,10)+"/"+g.pagoEm.slice(5,7):""):""}</small></button>
+    <span class="v">${brl(g.valor)}</span></div>`;
   const nota=noCartao(g)?" · fatura de "+abrMes(faturaMes(k,g.dia)):"";
+  if(g.forma==="credito") return `<div class="item fixrow parcrow" style="--dot:${catColor(g.cat)}">
+    <button type="button" class="check ${g.pago?"on":""}" data-gpago="${esc(g.id)}" data-mes="${k}" aria-pressed="${!!g.pago}" aria-label="${g.pago?"Marcar como não paga":"Marcar como paga"}">${ICON.check}</button>
+    <button type="button" class="fixinfo" data-edit="gasto" data-id="${esc(g.id)}" data-mes="${k}"><b class="${g.desc?"":"empty"}">${esc(g.desc||"sem descrição")}</b><small>${esc(catName(g.cat))} · Crédito${esc(nota)} · ${g.pago?"paga"+(g.pagoEm?" em "+g.pagoEm.slice(8,10)+"/"+g.pagoEm.slice(5,7):""):"não paga"}</small></button>
+    <span class="v">${brl(g.valor)}</span></div>`;
   return `<button type="button" class="item" data-edit="gasto" data-id="${esc(g.id)}" style="--dot:${catColor(g.cat)}">
     <span class="pill">${esc(catName(g.cat))}</span>
     <span class="desc"><b class="${g.desc?"":"empty"}">${esc(g.desc||"sem descrição")}</b><small>${esc(formaNome(g.forma)+nota)}</small></span>
@@ -454,7 +563,7 @@ function viewMes(){
     <div class="tile"><span class="lab">Caixinha</span><span class="val">${brl(cx)}</span><span class="sub">neste mês: +${brl(c.guardado)} · −${brl(c.retirado)}</span></div>
   </div>`;
   /* lançamentos do mês (compras feitas neste mês + parcelas fora do cartão) */
-  const todos=m.gastos.concat(parcelasDoMes(k).filter(p=>!p.cartao));
+  const todos=m.gastos.filter(g=>g.forma!=="credito").concat(parcelasDoMes(k).filter(p=>p.forma!=="credito"));
   const gastos=todos.filter(g=>!ui.filtro||g.cat===ui.filtro);
   const byDay={}; gastos.forEach(g=>{(byDay[g.dia]=byDay[g.dia]||[]).push(g)});
   const days=Object.keys(byDay).map(Number).sort((a,b)=>b-a);
@@ -465,7 +574,7 @@ function viewMes(){
       const lab=new Date(kY(k),kM(k)-1,d).toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short"}).replace(/\./g,"");
       return `<div class="day"><div class="dayhead"><span>${esc(lab)}${isCur&&d===today.getDate()?" · hoje":""}</span><span class="num">${brl(tot)}</span></div>${its.map(g=>linhaLanc(g,k)).join("")}</div>`; }).join("")
     :`<div class="empty-state">${ui.filtro?"Nenhuma despesa nessa categoria em "+NOMES[kM(k)-1].toLowerCase()+".":"Nenhuma despesa em "+NOMES[kM(k)-1].toLowerCase()+" ainda.<br>Toque em <b>+</b> para lançar a primeira."}</div>`}
-    <p class="hint">Toque num lançamento para editar ou apagar.${cartaoAtivo()&&todos.some(noCartao)?" Compras no crédito contam no mês da fatura.":""}</p></div>`;
+    <p class="hint">Toque num lançamento para editar ou apagar. Compras no cartão de crédito ficam em Contas fixas.</p></div>`;
   /* fatura do cartão */
   let fatura="";
   if(cartaoAtivo()){
@@ -476,16 +585,26 @@ function viewMes(){
         <label class="switch"><input type="checkbox" id="fatPaga" ${m.faturaPaga?"checked":""}><span></span>Fatura paga</label>`:`<p class="hint">Nenhuma compra no crédito para esta fatura.</p>`}
       ${prox>0?`<p class="hint">Já lançado para a fatura de ${esc(abrMes(shiftKey(k,1)))}: <b>${brl(prox)}</b></p>`:""}</div>`;
   }
-  /* contas fixas */
-  const fx=fixosDoMes(k);
-  const fixas=`<div class="card"><div class="cardhead"><h2>Contas fixas</h2><span class="num muted">${fx.length?brl(c.fixosTotal):""}</span></div>
+  /* contas fixas + compras no cartão de crédito (aparecem até o mês da última parcela) */
+  const fx=fixosDoMes(k), cc=cartaoDoMes(k);
+  const totalFix=c.fixosTotal+soma(cc), faltam=c.fixosPend+soma(cc.filter(x=>!x.pago));
+  const linhaCartao=g=>{
+    const chk=g.parcela?`data-pagar="parc|${esc(g.id)}|${k}"`:`data-gpago="${esc(g.id)}" data-mes="${g.compraK}"`;
+    const edit=g.parcela?`data-edit="parcela" data-id="${esc(g.id)}" data-mes="${k}"`:`data-edit="gasto" data-id="${esc(g.id)}" data-mes="${g.compraK}"`;
+    const info=g.parcela?`parcela ${g.idx}/${g.n}${g.idx===g.n?" · última parcela":" · até "+abrMes(shiftKey(k,g.n-g.idx))}`:`à vista · compra em ${pad2(g.dia)}/${pad2(kM(g.compraK))}`;
+    return `<div class="item fixrow parcrow" style="--dot:${catColor(g.cat)}">
+      <button type="button" class="check ${g.pago?"on":""}" ${chk} aria-pressed="${!!g.pago}" aria-label="${g.pago?"Marcar como não paga":"Marcar como paga"}">${ICON.check}</button>
+      <button type="button" class="fixinfo" ${edit}><b class="${g.desc?"":"empty"}">${esc(g.desc||"Compra no cartão")}${g.parcela?` <em class="tag">${g.idx}/${g.n}</em>`:""}</b><small>${esc(info)} · ${g.pago?"paga"+(g.pagoEm?" em "+g.pagoEm.slice(8,10)+"/"+g.pagoEm.slice(5,7):""):"não paga"}</small></button>
+      <span class="v">${brl(g.valor)}</span></div>`; };
+  const fixas=`<div class="card"><div class="cardhead"><h2>Contas fixas</h2><span class="num muted">${fx.length||cc.length?brl(totalFix):""}</span></div>
     ${fx.length?`<div>${fx.map(f=>`<div class="item fixrow ${f.pular?"skip":""}" style="--dot:${catColor(f.cat)}">
       <button type="button" class="check ${f.pago?"on":""}" data-pago="${esc(f.id)}" aria-pressed="${f.pago}" aria-label="${f.pago?"Marcar como não paga":"Marcar como paga"}" ${f.pular?"disabled":""}>${ICON.check}</button>
       <button type="button" class="fixinfo" data-edit="fixoMes" data-id="${esc(f.id)}"><b>${esc(f.desc)}</b><small>${f.pular?"pulada neste mês":"vence dia "+pad2(f.dia)+" · "+esc(catName(f.cat))}</small></button>
       <span class="v">${f.pular?"—":brl(f.valor)}</span>
-      <button type="button" class="x lixo" data-delfixo="${esc(f.id)}" aria-label="Excluir ${esc(f.desc)}" title="Excluir conta fixa">${ICON.lixo}</button></div>`).join("")}</div>
-      <p class="hint">${c.fixosPend>0?"Falta pagar "+brl(c.fixosPend)+" este mês.":"Todas as contas fixas deste mês estão pagas."}</p>`
-    :ativo(k)?`<p class="hint">Cadastre contas que se repetem todo mês (aluguel, internet, academia). Elas entram sozinhas nas despesas.</p>`:`<p class="hint">As contas fixas entram a partir do mês em que seu controle começa.</p>`}
+      <button type="button" class="x lixo" data-delfixo="${esc(f.id)}" aria-label="Excluir ${esc(f.desc)}" title="Excluir conta fixa">${ICON.lixo}</button></div>`).join("")}</div>`:""}
+    ${cc.length?`<div class="subhead">Cartão de crédito</div><div>${cc.map(linhaCartao).join("")}</div>`:""}
+    ${fx.length||cc.length?`<p class="hint">${faltam>0?"Falta pagar "+brl(faltam)+" este mês.":"Tudo pago neste mês."}</p>`
+    :ativo(k)?`<p class="hint">Cadastre contas que se repetem todo mês (aluguel, internet, academia). Compras no cartão de crédito também aparecem aqui até a última parcela.</p>`:`<p class="hint">As contas fixas entram a partir do mês em que seu controle começa.</p>`}
     <button type="button" class="btn ghost" data-novo="fixo">+ Conta fixa</button></div>`;
   /* receitas */
   const rd=rendasDoMes(k);
@@ -517,7 +636,7 @@ function viewMes(){
   const pag=`<div class="card"><div class="cardhead"><h2>Forma de pagamento</h2></div>
     ${formas.length?`<div class="bars">${formas.map(x=>`<div class="bar" style="--dot:var(--fm-${x.id==="?"?"na":x.id})"><div class="t"><b>${esc(x.n)}</b><span class="num">${brl(x.v)} · ${Math.round(x.v/c.despesas*100)}%</span></div><div class="track"><div style="width:${(x.v/formas[0].v*100).toFixed(1)}%"></div></div></div>`).join("")}</div>`:'<p class="hint">Mostra quanto saiu no Pix, débito, crédito, dinheiro e boleto.</p>'}
     ${!cartaoAtivo()&&c.porForma.credito>0?`<p class="hint">Dica: em Ajustes → Cartão de crédito, informe o dia de fechamento para as compras no crédito contarem no mês da fatura.</p>`:""}</div>`;
-  return aviso+tiles+`<div class="grid"><div class="col">${lista}${onde}</div><div class="col">${fatura}${fixas}${receitas}${caixa}${pag}</div></div>`;
+  return aviso+cardLembretes()+tiles+`<div class="grid"><div class="col">${lista}${onde}</div><div class="col">${fatura}${fixas}${receitas}${caixa}${pag}</div></div>`;
 }
 
 /* ---------- aba Visão geral (só meses que já passaram + o atual) ---------- */
@@ -614,6 +733,12 @@ function viewPerfil(){
   <div class="col"><div class="card"><h2>Aparência</h2>
     <div class="seg" role="radiogroup" aria-label="Tema">${[["auto","Automático"],["claro","Claro"],["escuro","Escuro"]].map(([v,l])=>`<input type="radio" name="ptema" id="pt-${v}" value="${v}" ${tema===v?"checked":""}><label for="pt-${v}">${l}</label>`).join("")}</div>
     <p class="hint">Automático segue o tema do seu celular ou computador.</p></div>
+    <div class="card"><h2>Lembretes</h2>
+    <p class="hint">Avisa um dia antes do vencimento, no dia e, se não marcar como paga, no dia seguinte (atraso). Vale para contas fixas, parcelas e fatura do cartão.</p>
+    <label class="switch"><input type="checkbox" id="notifOn" ${notifOn&&("Notification" in window)&&Notification.permission==="granted"?"checked":""}><span></span>Notificações neste aparelho</label>
+    <p class="hint">${!("Notification" in window)?"Este navegador não permite notificações. Use o calendário abaixo.":Notification.permission==="denied"?"As notificações estão bloqueadas. Libere em: ícone ao lado do endereço → Configurações do site → Notificações → Permitir.":"Chegam enquanto o app estiver aberto ou em segundo plano. No celular, instale o app na tela inicial para funcionar melhor."}</p>
+    <button class="btn ghost" type="button" data-calendario="1">Adicionar lembretes ao calendário</button>
+    <p class="hint">Para avisar mesmo com o app fechado: baixa um arquivo com os vencimentos dos próximos 12 meses. No celular, abra o arquivo e escolha o Google Agenda (ou Calendário, no iPhone). No computador: Google Agenda → Configurações → Importar. Se cadastrar contas novas, baixe de novo.</p></div>
     <div class="card"><h2>Exportar e backup</h2><p class="hint">A planilha abre no Excel e no Google Planilhas. O backup serve para restaurar tudo depois.</p>
     <button class="btn ghost" type="button" data-planilha="1">Baixar planilha (Excel)</button>
     <div class="row"><button class="btn ghost" type="button" data-export="1">Baixar backup</button><label class="btn ghost" for="impFile" style="text-align:center">Restaurar backup<input type="file" id="impFile" accept="application/json,.json" hidden></label></div>
@@ -673,10 +798,11 @@ function renderSheet(){
     const forma=it?(it.forma||""):ui.gForma;
     corpo=`${valorCampo(it&&it.valor)}
       ${novo?`<label class="switch"><input type="checkbox" id="s-parc"><span></span>Compra parcelada</label>
-      <div class="row" id="s-parcbox" hidden><label class="f narrow">Parcelas<input class="in num" id="s-n" type="number" min="2" max="48" value="2" inputmode="numeric"></label><p class="hint" id="s-parcinfo" style="flex:2 1 160px;align-self:center"></p></div>`:""}
+      <div class="row" id="s-parcbox" hidden><label class="f narrow">Parcelas<input class="in num" id="s-n" type="number" min="2" max="48" value="2" inputmode="numeric"></label><label class="f narrow">Vence dia<input class="in num" id="s-venc" type="number" min="1" max="31" value="${diaPadrao}" inputmode="numeric"></label><p class="hint" id="s-parcinfo" style="flex:2 1 160px;align-self:center"></p></div>`:""}
       <div class="f"><span>Categoria</span>${chipsCampo(cat)}${it&&catIndex(it.cat)<0?'<p class="hint">A categoria desta despesa foi excluída. Escolha outra.</p>':""}</div>
       <div class="row"><label class="f">Dia${selDia(k,it?it.dia:diaPadrao)}</label><label class="f" style="flex:2 1 180px">Descrição (opcional)<input class="in" id="s-desc" maxlength="80" placeholder="ex.: feira, gasolina, farmácia" value="${esc(it?it.desc:"")}"></label></div>
       <div class="f"><span>Forma de pagamento</span>${chipsForma(forma)}</div>
+      ${it&&it.forma==="credito"?`<label class="switch"><input type="checkbox" id="s-gpago" ${it.pago?"checked":""}><span></span>Já paguei esta compra</label>`:""}
       <p class="hint" id="s-fatinfo">${cartaoAtivo()?"No crédito, conta na fatura do cartão.":""}</p>`;
     botoes=novo?`<button class="btn ghost" type="submit" data-outro="1">Salvar e lançar outra</button><button class="btn" type="submit">Salvar</button>`:`${apagar}<button class="btn" type="submit">Salvar</button>`;
   }else if(s.tipo==="avulso"){
@@ -712,7 +838,8 @@ function renderSheet(){
     const cartao=it.forma==="credito"&&cartaoAtivo(), prim=cartao?faturaMes(it.compra,it.dia):it.compra;
     corpo=`<p class="hint">Comprado em ${pad2(it.dia)}/${pad2(kM(it.compra))}/${kY(it.compra)} · parcelas de ${esc(abrMes(prim))} a ${esc(abrMes(shiftKey(prim,it.n-1)))}${cartao?" (na fatura)":""}</p>
       ${valorCampo(it.total,"Valor total da compra")}
-      <div class="row"><label class="f narrow">Parcelas<input class="in num" id="s-n" type="number" min="2" max="48" value="${it.n}"></label><label class="f" style="flex:2 1 180px">Descrição<input class="in" id="s-desc" maxlength="80" value="${esc(it.desc)}"></label></div>
+      <div class="row"><label class="f narrow">Parcelas<input class="in num" id="s-n" type="number" min="2" max="48" value="${it.n}"></label>${cartao?"":`<label class="f narrow">Vence dia<input class="in num" id="s-venc" type="number" min="1" max="31" value="${it.venc||it.dia}"></label>`}<label class="f" style="flex:2 1 160px">Descrição<input class="in" id="s-desc" maxlength="80" value="${esc(it.desc)}"></label></div>
+      ${(()=>{ const pm=parcelasDoMes(k).find(x=>x.id===it.id); return pm?`<label class="switch"><input type="checkbox" id="s-ppago" ${pm.pago?"checked":""}><span></span>Paguei a parcela ${pm.idx}/${pm.n} de ${esc(abrMes(k))} (${brl(pm.valor)})</label>`:""; })()}
       <div class="f"><span>Categoria</span>${chipsCampo(it.cat)}</div>
       <div class="f"><span>Forma de pagamento</span>${chipsForma(it.forma)}</div>`;
     sub=""; botoes=`<button class="btn danger" type="button" data-sapagar="1">Apagar compra</button><button class="btn" type="submit">Salvar</button>`;
@@ -785,7 +912,7 @@ function salvarSheet(outro){
   if(s.tipo==="fixoMes"||s.tipo==="rendaMes"){
     if(!(v>=0)) return erroSheet("Digite um valor válido, ex.: 99,90","s-valor");
     const mapa=s.tipo==="fixoMes"?"fixos":"rendas", m=getMonth(k), o=Object.assign({},m[mapa][s.id]||{});
-    if(s.tipo==="fixoMes") o.pago=document.getElementById("s-pago").checked;
+    if(s.tipo==="fixoMes"){ const pg=document.getElementById("s-pago").checked; if(pg&&!o.pago){ const h=new Date(); o.pagoEm=h.getFullYear()+"-"+pad2(h.getMonth()+1)+"-"+pad2(h.getDate()); } o.pago=pg; }
     const base=state.config[mapa].find(x=>x.id===s.id);
     if(base&&Math.abs(v-base.valor)<0.005) delete o.valor; else o.valor=v;
     m[mapa][s.id]=o; save(k); closeSheet(); render(); toast(o.pago?"Conta marcada como paga.":"Atualizado para "+abrMes(k)+"."); return;
@@ -801,7 +928,10 @@ function salvarSheet(outro){
   if(s.tipo==="parcela"){
     const n=Math.round(Number(val("s-n"))||0); if(!(v>0)) return erroSheet("Digite o valor total da compra","s-valor"); if(n<2||n>48) return erroSheet("Escolha de 2 a 48 parcelas","s-n");
     const cat=radio("s-cat"); if(!cat) return erroSheet("Escolha uma categoria para a compra.");
-    Object.assign(itemAtual(),{total:v,n,desc,cat,forma:radio("s-forma")||"credito"}); save("config"); closeSheet(); render(); toast("Compra parcelada atualizada."); return;
+    const vc=Math.round(Number(val("s-venc"))||0), it=itemAtual();
+    Object.assign(it,{total:v,n,desc,cat,forma:radio("s-forma")||"credito"}); if(vc>=1&&vc<=31) it.venc=vc; save("config");
+    const sw=document.getElementById("s-ppago"); if(sw){ marcaPago("parc",it.id,k,sw.checked,true); }
+    closeSheet(); render(); toast("Compra parcelada atualizada."); return;
   }
   if(!(v>0)) return erroSheet("Digite um valor maior que zero, ex.: 25,90","s-valor");
   const m=getMonth(k);
@@ -809,11 +939,14 @@ function salvarSheet(outro){
     const cat=radio("s-cat"), forma=radio("s-forma")||"";
     if(!cat) return erroSheet("Escolha uma categoria para esta despesa.");
     ui.gCat=cat; if(forma){ ui.gForma=forma; try{localStorage.setItem("meucaixa.ui.forma",forma)}catch(e){} }
-    if(s.id){ Object.assign(itemAtual(),{valor:v,cat,dia,desc,forma}); save(k); closeSheet(); render(); toast("Despesa atualizada."); return; }
+    if(s.id){ const it=itemAtual(); Object.assign(it,{valor:v,cat,dia,desc,forma}); const sw=document.getElementById("s-gpago");
+      if(forma!=="credito"){ delete it.pago; delete it.pagoEm; } else if(sw&&sw.checked!==!!it.pago){ it.pago=sw.checked; if(sw.checked){ const h=new Date(); it.pagoEm=h.getFullYear()+"-"+pad2(h.getMonth()+1)+"-"+pad2(h.getDate()); } else delete it.pagoEm; }
+      save(k); closeSheet(); render(); toast("Despesa atualizada."); return; }
     const parc=document.getElementById("s-parc"), n=Math.round(Number(val("s-n"))||0);
     if(parc&&parc.checked){
       if(n<2||n>48) return erroSheet("Escolha de 2 a 48 parcelas","s-n");
-      const p={id:"p"+uidGen(),desc,cat,forma:forma||"credito",total:v,n,compra:k,dia};
+      const vc=Math.round(Number(val("s-venc"))||dia);
+      const p={id:"p"+uidGen(),desc,cat,forma:forma||"credito",total:v,n,compra:k,dia,venc:vc>=1&&vc<=31?vc:dia};
       state.config.parcelas.push(p); save("config");
       const fim=()=>toast(n+"x de "+brl(v/n)+" lançado.","Desfazer",()=>apagarItem("config","parcelas",p.id,"Compra parcelada desfeita."));
       if(outro){ ui.sheet={tipo:"gasto",id:null,mes:s.mes}; renderSheet(); document.getElementById("s-valor").focus(); render(); fim(); } else { closeSheet(); render(); fim(); }
@@ -908,7 +1041,12 @@ app.addEventListener("click",e=>{
   if(d.apagar==="nao"){ ui.confirmaApagar=false; render(); return; }
   if(d.apagar==="sim"){ const el=document.getElementById("txtApagar"); if(!el||el.value.trim().toUpperCase()!=="APAGAR"){ toast("Digite APAGAR para confirmar."); if(el) el.focus(); return; } apagarTudo(); return; }
   if(d.delfixo){ excluirFixo(d.delfixo,ui.month); return; }
-  if(d.pago){ const k=ui.month, m=getMonth(k), o=Object.assign({},m.fixos[d.pago]||{}); o.pago=!o.pago; m.fixos[d.pago]=o; save(k); render(); toast(o.pago?"Conta marcada como paga.":"Conta marcada como não paga."); return; }
+  if(d.pago){ const o=getMonth(ui.month).fixos[d.pago]||{}; marcaPago("fixo",d.pago,ui.month,!o.pago); return; }
+  if(d.gpago){ const g=getMonth(d.mes||ui.month).gastos.find(x=>x.id===d.gpago); if(g) marcaGastoPago(d.mes||ui.month,d.gpago,!g.pago); return; }
+  if(d.pagar){ const [t,id,k]=d.pagar.split("|"); let atual=false; const m=getMonth(k);
+    if(t==="fat") atual=m.faturaPaga; else atual=!!((m[t==="fixo"?"fixos":"parcelas"][id]||{}).pago);
+    marcaPago(t,id,k,!atual); return; }
+  if(d.calendario){ exportarCalendario(); return; }
   if(d.delcat){ apagarItem("config","categorias",d.delcat,"Campo retirado."); return; }
   if(d.addcat){ const id="c"+uidGen(); state.config.categorias.push({id,nome:"Novo gasto",orcamento:0}); save("config"); render(); const el=document.getElementById("cn-"+id); if(el){ el.focus(); el.select(); } return; }
 });
@@ -917,7 +1055,8 @@ app.addEventListener("change",e=>{
   if(t.name==="ptema"){ tema=t.value; try{localStorage.setItem("meucaixa.tema",tema)}catch(e){} aplicaTema(); render(); return; }
   if(t.name==="lmodo"){ ui.loginModo=t.value; render(); return; }
   if(t.id==="impFile"&&t.files&&t.files[0]){ importar(t.files[0]); return; }
-  if(t.id==="fatPaga"){ getMonth(ui.month).faturaPaga=t.checked; save(ui.month); render(); toast(t.checked?"Fatura marcada como paga.":"Fatura marcada como não paga."); return; }
+  if(t.id==="fatPaga"){ marcaPago("fat","fatura",ui.month,t.checked); return; }
+  if(t.id==="notifOn"){ ligaNotif(t.checked); return; }
   if(t.id==="ccFecha"||t.id==="ccVence"){ const n=Math.round(Number(t.value)); state.config.cartao=Object.assign({fecha:null,vence:null},state.config.cartao); state.config.cartao[t.id==="ccFecha"?"fecha":"vence"]=n>=1&&n<=31?n:null; save("config"); render(); if(cartaoAtivo()) toast("Cartão configurado: compras no crédito contam no mês da fatura."); return; }
   if(t.id==="filtroCat"){ ui.filtro=t.value; render(); return; }
   if(t.id==="salMes"){ const v=t.value.trim()===""?null:parseMoney(t.value); if(v!==null&&isNaN(v)){ toast("Valor inválido. Use, por exemplo, 2.800,00"); return; } getMonth(ui.month).salario=v; save(ui.month); render(); return; }
@@ -944,6 +1083,8 @@ app.addEventListener("touchstart",e=>{ if(ui.tab!=="mes"||ui.sheet||e.touches.le
 app.addEventListener("touchend",e=>{ if(tx===null) return; const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty; tx=null;
   if(Math.abs(dx)>70&&Math.abs(dy)<45){ if(passo(dx<0?1:-1)){ app.classList.remove("slide-l","slide-r"); void app.offsetWidth; app.classList.add(dx<0?"slide-l":"slide-r"); } } },{passive:true});
 
+setInterval(()=>verificaLembretes(true),30*60000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ verificaLembretes(true); if(ui.tab==="mes"&&!ui.sheet) render(); } });
 /* quando o mês do calendário virar com o app aberto, atualiza sozinho */
 setInterval(()=>{ const d=new Date(); if(keyOf(d.getFullYear(),d.getMonth()+1)!==todayKey&&!ui.sheet&&!dirty.size) location.reload(); },60000);
 

@@ -296,3 +296,16 @@ body.sheet-open{overflow:hidden}
 .x.lixo{display:grid;place-items:center;width:32px;height:32px;padding:0}
 .link.danger{color:var(--bad)}
 .zona{display:flex;flex-direction:column;gap:4px;align-items:flex-start;border-top:1px dashed var(--line);padding-top:10px}
+
+/* ===================== v5: lembretes e parcelas pagas ===================== */
+.lembretes{border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+.lemb{grid-template-columns:auto minmax(0,1fr) auto auto;padding:8px 0}
+.lemb.amanha{--dot:var(--warn)} .lemb.hoje{--dot:var(--accent)} .lemb.atraso{--dot:var(--bad)}
+.lemb.atraso .pill{background:var(--bad-soft)}
+.btn.mini{padding:6px 12px;font-size:13px}
+.bottomnav button{position:relative}
+.badge{position:absolute;top:2px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;font-style:normal;font-weight:700;display:grid;place-items:center;padding:0 5px}
+.parcrow{padding:8px 4px}
+@media (max-width:420px){.lemb{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.lemb .pill{grid-column:1/-1;justify-self:start}.lemb .btn{grid-column:1/-1}}
+.subhead{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:10px 0 2px;border-top:1px solid var(--line);margin-top:4px}
+.tag{font-style:normal;font-size:11.5px;font-weight:700;color:var(--dot);border:1px solid var(--dot);border-radius:999px;padding:0 6px;margin-left:4px}
