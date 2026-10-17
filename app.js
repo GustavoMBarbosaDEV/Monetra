@@ -10,13 +10,13 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="3.0.0";
+const VERSAO="3.0.1";
 const NOVIDADES=[
+  "Botão “Excluir” bem visível nos controles compartilhados (no fim do card e na lista de controles). Quem participa tem o botão “Sair”.",
   "Controles compartilhados: crie um controle separado (ex.: Casa) para dividir com outra pessoa. Ele começa do zero e ninguém vê o seu Pessoal.",
   "Botões no topo da tela para trocar entre o Pessoal e os compartilhados.",
-  "Convite por código ou link: a pessoa pede para entrar e você aceita. Dá para remover alguém, sair ou excluir o controle.",
-  "Cada lançamento num controle compartilhado mostra quem fez (ex.: \"Pix · Maria\").",
-  "Termos de privacidade atualizados (versão 1.1). O aceite agora é de cada pessoa."
+  "Convite por código ou link: a pessoa pede para entrar e você aceita.",
+  "Cada lançamento num controle compartilhado mostra quem fez (ex.: \"Pix · Maria\")."
 ];
 
 /* ---------- utilidades ---------- */
@@ -539,10 +539,13 @@ function cardCompartilhado(){
       <div class="row2"><button class="btn" type="button" data-comp="enviar">Enviar convite</button><button class="btn ghost" type="button" data-comp="novo">Gerar outro código</button></div>
       <p class="hint">A pessoa abre o link (ou digita o código no Perfil dela) e você aceita o pedido aqui.</p>`
       :`<button class="btn" type="button" data-comp="novo">Convidar alguém</button>`):""}
-    ${dono?`<button class="link perigo" type="button" data-comp="excluir">Excluir o controle “${esc(gd.nome)}”</button>`:`<button class="btn ghost" type="button" data-comp="sair">Sair de “${esc(gd.nome)}”</button>`}`;
+    <div class="zonaperigo" id="excluirgrupo">${dono?`<p class="hint">Excluir apaga este controle compartilhado e todos os lançamentos dele, para todas as pessoas. O seu controle Pessoal não é afetado.</p>
+      <button class="btn danger wide" type="button" data-comp="excluir">${ICON.lixo||""}Excluir o controle “${esc(gd.nome)}”</button>`
+      :`<p class="hint">Ao sair, você deixa de ver este controle. O seu controle Pessoal não é afetado.</p>
+      <button class="btn danger wide" type="button" data-comp="sair">Sair de “${esc(gd.nome)}”</button>`}</div>`;
   }
   const gs=meusGrupos(), pend=Object.entries(eu.pendentes||{});
-  const lista=aberto==="pessoal"&&gs.length?`<div class="subhead">Seus controles compartilhados</div><div class="membros">${gs.map(x=>`<div class="membro"><span class="avatar" style="width:34px;height:34px">${ICON.grupo}</span><span class="t"><b>${esc(x.nome)}</b><small>${x.dono?"você criou":"participante"}${(pedidosG[x.id]||[]).length?" · "+(pedidosG[x.id]||[]).length+" pedido(s) para entrar":""}</small></span><button class="btn ghost mini" type="button" data-espaco="${esc(x.id)}" data-irpara="compartilhado">Abrir</button></div>`).join("")}</div>`:"";
+  const lista=aberto==="pessoal"&&gs.length?`<div class="subhead">Seus controles compartilhados</div><div class="membros">${gs.map(x=>`<div class="membro"><span class="avatar" style="width:34px;height:34px">${ICON.grupo}</span><span class="t"><b>${esc(x.nome)}</b><small>${x.dono?"você criou":"participante"}${(pedidosG[x.id]||[]).length?" · "+(pedidosG[x.id]||[]).length+" pedido(s) para entrar":""}</small></span><span class="acoes"><button class="btn ghost mini" type="button" data-espaco="${esc(x.id)}" data-irpara="compartilhado">Abrir</button><button class="btn danger mini" type="button" data-espaco="${esc(x.id)}" data-irpara="excluirgrupo">${x.dono?"Excluir":"Sair"}</button></span></div>`).join("")}</div>`:"";
   const pendTxt=pend.length?`<div class="subhead">Pedidos que você enviou</div><div class="membros">${pend.map(([g,x])=>`<div class="membro"><span class="avatar" style="width:34px;height:34px">${ICON.grupo}</span><span class="t"><b>${esc(x.nome||"Controle compartilhado")}</b><small>aguardando ${esc(primeiroNome(x.donoNome))} aceitar</small></span><button class="link" type="button" data-comp="cancelar" data-id="${esc(g)}">cancelar</button></div>`).join("")}</div>`:"";
   return `<div class="card" id="compartilhado"><h2>Controles compartilhados</h2>
   ${topo||`<p class="hint">Crie um controle separado para dividir com outra pessoa (a casa, uma viagem, a família). Ele começa do zero e quem participa <b>não vê o seu controle Pessoal</b>. Para trocar de um para o outro, use os botões no topo da tela.</p>`}
@@ -800,6 +803,7 @@ function render(){
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus({preventScroll:true}); if(sel&&el.setSelectionRange){ try{el.setSelectionRange(sel[0],sel[1])}catch(e){} } } }
   const on=document.querySelector(".chip.on"); if(on&&on.scrollIntoView&&!fid) on.scrollIntoView({block:"nearest",inline:"center"});
   if(state.loaded&&mode!=="login"&&!precisaTermos()){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); }
+  if(ui.rolarPara&&state.loaded){ const el=document.getElementById(ui.rolarPara); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 function header(){
   const t=(id,l)=>`<button role="tab" data-tab="${id}" aria-selected="${ui.tab===id}">${l}</button>`;
@@ -1657,7 +1661,7 @@ function setTab(t){ ui.tab=t; render(); window.scrollTo({top:0}); }
 app.addEventListener("click",e=>{
   const b=e.target.closest("button,tr[data-open]"); if(!b) return;
   const d=b.dataset;
-  if(d.espaco){ const ir=d.irpara; if(ir) ui.tab="perfil"; trocarEspaco(d.espaco).then(()=>{ if(ir) setTimeout(()=>{ const el=document.getElementById(ir); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); },400); }); return; }
+  if(d.espaco){ if(d.irpara){ ui.tab="perfil"; ui.rolarPara=d.irpara; } if(d.espaco===aberto) render(); else trocarEspaco(d.espaco); return; }
   if(d.irpara){ ui.tab="perfil"; render(); setTimeout(()=>{ const el=document.getElementById(d.irpara); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); },60); return; }
   if(d.tab){ setTab(d.tab); return; }
   if(d.login){ entrar(); return; }

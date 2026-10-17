@@ -12,6 +12,10 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.0.1 — 17/10/2026
+**Correção**
+- Botão **Excluir** do controle compartilhado bem visível: no fim do card (com aviso do que é apagado) e na lista de controles do Perfil. Quem participa tem o botão **Sair** nos mesmos lugares.
+
 ## 3.0.0 — 17/10/2026
 **Controles compartilhados**
 - Crie um controle compartilhado separado (ex.: Casa, Viagem) para dividir com outra pessoa, cada uma com a própria conta Google. Ele começa do zero.

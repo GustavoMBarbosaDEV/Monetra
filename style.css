@@ -404,3 +404,6 @@ body.sheet-open{overflow:hidden}
 .membro .avatar svg{width:18px;height:18px}
 .convrow .in.nome{text-transform:none;letter-spacing:0}
 .link.perigo{color:var(--bad);margin-top:6px}
+.zonaperigo{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
+.zonaperigo .btn svg{width:18px;height:18px;margin-right:6px;vertical-align:-3px}
+.btn.danger.mini{padding:6px 12px}
