@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 2.4.1 — 17/10/2026
+**Correção**
+- Campos de valor no estilo dos apps de banco: digite só os números e o campo se forma sozinho, com ponto do milhar e vírgula dos centavos (ex.: 1, 8, 9, 3, 2, 0 → 1.893,20).
+- No celular, abre o teclado numérico.
+- Colar um valor (ex.: "1.200" ou "1200,50") mantém o número certo.
+
 ## 2.4.0 — 16/10/2026
 **Cartão de crédito em Contas fixas**
 - Compras no cartão de crédito aparecem no card **Contas fixas** até o mês da última parcela.

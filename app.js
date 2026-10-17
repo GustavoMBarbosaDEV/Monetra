@@ -10,13 +10,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="2.4.0";
+const VERSAO="2.4.1";
 const NOVIDADES=[
-  "Compras no cartão de crédito aparecem em Contas fixas até o mês da última parcela.",
-  "Opção paga / não paga em cada compra no cartão, com o dia do pagamento.",
-  "Marcar a fatura como paga marca as compras e parcelas dela.",
-  "A lista \"Despesas do mês\" mostra só o que não é cartão.",
-  "Campos de valor corrigidos: começam vazios e o que você digita substitui o valor anterior."
+  "Campos de valor no estilo dos apps de banco: digite só os números e o ponto do milhar e a vírgula dos centavos aparecem sozinhos (ex.: 189320 vira 1.893,20).",
+  "No celular, os campos de valor abrem o teclado numérico.",
+  "Colar um valor (ex.: \"1.200\") mantém o número certo."
 ];
 
 /* ---------- utilidades ---------- */
@@ -45,8 +43,15 @@ const moneyInput=v=>(v===null||v===undefined||v===""||!Number(v))?"":Number(v).t
 /* Campos de dinheiro: seleciona tudo ao tocar, aceita só números/ponto/vírgula e formata ao sair */
 const ehCampoDinheiro=el=>el&&el.tagName==="INPUT"&&el.closest(".money");
 document.addEventListener("focusin",e=>{ const el=e.target; if(ehCampoDinheiro(el)&&el.value) setTimeout(()=>{ try{ el.select(); }catch(_){} },0); });
-document.addEventListener("input",e=>{ const el=e.target; if(!ehCampoDinheiro(el)) return;
-  const limpo=el.value.replace(/[^\d.,]/g,""); if(limpo!==el.value){ const pos=el.selectionStart-(el.value.length-limpo.length); el.value=limpo; try{ el.setSelectionRange(pos,pos); }catch(_){} } },true);
+/* Máscara estilo banco: os números entram da direita para a esquerda, já com ponto do milhar e vírgula dos centavos */
+function mascaraDinheiro(el){
+  const dig=el.value.replace(/\D/g,"").replace(/^0+/,"").slice(0,13);
+  el.value=dig?(Number(dig)/100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
+  try{ const n=el.value.length; el.setSelectionRange(n,n); }catch(_){}
+}
+document.addEventListener("input",e=>{ const el=e.target; if(ehCampoDinheiro(el)) mascaraDinheiro(el); },true);
+/* Colar "1.200" ou "1200,50" mantém o valor certo */
+document.addEventListener("paste",e=>{ const el=e.target; if(!ehCampoDinheiro(el)) return; const t=(e.clipboardData||window.clipboardData)?.getData("text")||""; const v=parseMoney(t); if(v>0){ e.preventDefault(); el.value=moneyInput(v); el.dispatchEvent(new Event("input",{bubbles:true})); } },true);
 document.addEventListener("blur",e=>{ const el=e.target; if(!ehCampoDinheiro(el)||!el.value.trim()) return; const v=parseMoney(el.value); if(v>0) el.value=moneyInput(v); },true);
 const ICON={
   lixo:'<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -625,7 +630,7 @@ function viewMes(){
   /* receitas */
   const rd=rendasDoMes(k);
   const receitas=`<div class="card"><div class="cardhead"><h2>Receitas</h2><span class="num muted">${brl(c.receitas)}</span></div>
-    <label class="f money">Salário / renda fixa deste mês<input class="in num" id="salMes" inputmode="decimal" value="${esc(moneyInput(m.salario))}" placeholder="${esc(moneyInput(ativo(k)?state.config.salarioPadrao:0))}${ativo(k)?" (padrão)":""}"></label>
+    <label class="f money">Salário / renda fixa deste mês<input class="in num" id="salMes" inputmode="numeric" value="${esc(moneyInput(m.salario))}" placeholder="${esc(moneyInput(ativo(k)?state.config.salarioPadrao:0))}${ativo(k)?" (padrão)":""}"></label>
     <p class="hint">Em branco, usa o salário padrão definido no Perfil.</p>
     ${rd.length?`<div>${rd.map(r=>`<button type="button" class="item ${r.pular?"skip":""}" data-edit="rendaMes" data-id="${esc(r.id)}" style="--dot:var(--good)"><span class="pill">todo mês</span><span class="desc"><b>${esc(r.nome)}</b>${r.pular?"<small>pulada neste mês</small>":""}</span><span class="v pos">${r.pular?"—":brl(r.valor)}</span></button>`).join("")}</div>`:""}
     ${m.avulsos.length?`<div>${m.avulsos.slice().sort((a,b)=>a.dia-b.dia).map(x=>`<button type="button" class="item" data-edit="avulso" data-id="${esc(x.id)}" style="--dot:var(--good)"><span class="pill">dia ${pad2(x.dia)}</span><span class="desc"><b class="${x.desc?"":"empty"}">${esc(x.desc||"sem descrição")}</b></span><span class="v pos">${brl(x.valor)}</span></button>`).join("")}</div>`:""}
@@ -737,15 +742,15 @@ function viewPerfil(){
     <p class="small muted">${criado?"Conta criada em "+esc(criado)+" · ":""}${ini?"controle desde "+esc(nomeMes(ini).toLowerCase()):"controle ainda não começou"} · ${nLanc} lançamento${nLanc===1?"":"s"}</p></div>
     ${u?`<button class="btn ghost" type="button" data-logout="1">Sair da conta</button>`:""}</div>
   <div class="grid"><div class="col"><div class="card"><h2>Renda e saldos</h2>
-    <label class="f money">Salário / renda fixa padrão (todo mês)<input class="in num" id="cfSal" inputmode="decimal" value="${esc(moneyInput(cf.salarioPadrao))}" placeholder="0,00"></label>
+    <label class="f money">Salário / renda fixa padrão (todo mês)<input class="in num" id="cfSal" inputmode="numeric" value="${esc(moneyInput(cf.salarioPadrao))}" placeholder="0,00"></label>
     <p class="hint">Entra automaticamente a partir do mês em que seu controle começa. Se um mês for diferente, ajuste na aba Mês.</p>
     <div class="f"><span>Outras rendas que se repetem todo mês</span>
     ${rendas.length?`<div>${rendas.map(r=>`<button type="button" class="item" data-edit="renda" data-id="${esc(r.id)}" style="--dot:var(--good)"><span class="pill">todo mês</span><span class="desc"><b>${esc(r.nome)}</b>${r.desde>todayKey?`<small>começa em ${esc(abrMes(r.desde))}</small>`:""}</span><span class="v pos">${brl(r.valor)}</span></button>`).join("")}</div>`:`<p class="hint">Ex.: bolsa, pensão, aluguel que você recebe.</p>`}
     <button class="btn ghost" type="button" data-novo="renda">+ Renda fixa</button></div>
     <label class="f">Começar a contar em<select class="in" id="cfInicio"><option value="">Automático${ini&&!cf.inicio?" ("+esc(nomeMes(ini))+")":" (primeiro mês com renda)"}</option>${MESES.map(k=>`<option value="${k}" ${k===cf.inicio?"selected":""}>${esc(nomeMes(k))}</option>`).join("")}</select></label>
     <p class="hint">Antes desse mês, salário padrão, rendas e contas fixas não entram nas contas.</p>
-    <label class="f money">Saldo inicial (o que você já tinha em conta)<input class="in num" id="cfSaldo" inputmode="decimal" value="${esc(moneyInput(cf.saldoInicial))}" placeholder="0,00"></label>
-    <label class="f money">Saldo inicial da caixinha<input class="in num" id="cfCx" inputmode="decimal" value="${esc(moneyInput(cf.saldoCaixinha))}" placeholder="0,00"></label></div></div>
+    <label class="f money">Saldo inicial (o que você já tinha em conta)<input class="in num" id="cfSaldo" inputmode="numeric" value="${esc(moneyInput(cf.saldoInicial))}" placeholder="0,00"></label>
+    <label class="f money">Saldo inicial da caixinha<input class="in num" id="cfCx" inputmode="numeric" value="${esc(moneyInput(cf.saldoCaixinha))}" placeholder="0,00"></label></div></div>
   <div class="col"><div class="card"><h2>Aparência</h2>
     <div class="seg" role="radiogroup" aria-label="Tema">${[["auto","Automático"],["claro","Claro"],["escuro","Escuro"]].map(([v,l])=>`<input type="radio" name="ptema" id="pt-${v}" value="${v}" ${tema===v?"checked":""}><label for="pt-${v}">${l}</label>`).join("")}</div>
     <p class="hint">Automático segue o tema do seu celular ou computador.</p></div>
@@ -809,7 +814,7 @@ function renderSheet(){
   if(!novo&&!it&&s.tipo!=="busca"){ closeSheet(); return; }
   const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
-  const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="decimal" placeholder="0,00" value="${esc(v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
+  const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
   let corpo="", botoes="", sub=esc(nomeMes(k));
   if(s.tipo==="gasto"){
@@ -878,7 +883,7 @@ function renderSheet(){
     const corSel=it?corIdx(it):[...Array(NCORES).keys()].find(i=>!usadas.has(i))??0;
     corpo=`<label class="f">Nome<input class="in" id="s-nome" maxlength="40" placeholder="ex.: Pets, Presentes, Viagem" value="${esc(it?it.nome:"")}" data-autofocus></label>
       <div class="f"><span>Cor</span><div class="cores" role="radiogroup" aria-label="Cor">${[...Array(NCORES).keys()].map(i=>`<input type="radio" name="s-cor" id="s-cor-${i}" value="${i}" ${i===corSel?"checked":""}><label for="s-cor-${i}" style="--dot:var(--c${i})" title="Cor ${i+1}"><span class="sr">Cor ${i+1}</span></label>`).join("")}</div></div>
-      <label class="f money">Limite por mês (opcional)<input class="in num" id="s-valor" inputmode="decimal" placeholder="sem limite" value="${esc(it&&it.orcamento?moneyInput(it.orcamento):"")}"></label>
+      <label class="f money">Limite por mês (opcional)<input class="in num" id="s-valor" inputmode="numeric" placeholder="sem limite" value="${esc(it&&it.orcamento?moneyInput(it.orcamento):"")}"></label>
       ${it&&usada?`<p class="hint">Usada em ${usada} lançamento(s). Se excluir, eles continuam nas contas como "Sem categoria".</p>`:""}`;
     sub=""; botoes=novo?`<button class="btn" type="submit">Criar categoria</button>`:`<button class="btn danger" type="button" data-sapagar="1" ${state.config.categorias.length<=1?"disabled":""}>Excluir</button><button class="btn" type="submit">Salvar</button>`;
   }else if(s.tipo==="busca"){
