@@ -407,3 +407,14 @@ body.sheet-open{overflow:hidden}
 .zonaperigo{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
 .zonaperigo .btn svg{width:18px;height:18px;margin-right:6px;vertical-align:-3px}
 .btn.danger.mini{padding:6px 12px}
+
+/* ===== v3.1: assinaturas ===== */
+.assintot{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:4px 0 10px}
+.assintot > div{display:flex;flex-direction:column;gap:1px;padding:10px 12px;border-radius:10px;background:var(--sunk)}
+.assintot .lab{font-size:12px;color:var(--muted)}
+.assintot b{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.assintot small{font-size:12px;color:var(--muted)}
+.item.repet{cursor:default;align-items:center}
+.item.repet .btn{flex:0 0 auto}
+.assintot{grid-template-columns:repeat(3,1fr)}
+@media (max-width:520px){ .assintot{gap:6px} .assintot > div{padding:8px 9px} .assintot b{font-size:15.5px} .assintot small{font-size:11px} }

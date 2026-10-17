@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.1.0 — 17/10/2026
+**Assinaturas**
+- Novo card **Assinaturas e contas fixas** na Visão geral: lista tudo o que se repete todo mês, com o total por mês, por ano e a porcentagem da renda.
+- **Parcelas em andamento**: parcela atual, quanto falta pagar e o mês em que termina.
+- **Parece que se repete**: gastos lançados à mão com a mesma descrição em 3 dos últimos 4 meses aparecem como sugestão, com o botão **Virar conta fixa** (começa no mês seguinte, com Desfazer).
+
 ## 3.0.1 — 17/10/2026
 **Correção**
 - Botão **Excluir** do controle compartilhado bem visível: no fim do card (com aviso do que é apagado) e na lista de controles do Perfil. Quem participa tem o botão **Sair** nos mesmos lugares.

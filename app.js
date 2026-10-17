@@ -10,13 +10,12 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="3.0.1";
+const VERSAO="3.1.0";
 const NOVIDADES=[
-  "Botão “Excluir” bem visível nos controles compartilhados (no fim do card e na lista de controles). Quem participa tem o botão “Sair”.",
-  "Controles compartilhados: crie um controle separado (ex.: Casa) para dividir com outra pessoa. Ele começa do zero e ninguém vê o seu Pessoal.",
-  "Botões no topo da tela para trocar entre o Pessoal e os compartilhados.",
-  "Convite por código ou link: a pessoa pede para entrar e você aceita.",
-  "Cada lançamento num controle compartilhado mostra quem fez (ex.: \"Pix · Maria\")."
+  "Assinaturas e contas fixas na Visão geral: tudo o que se repete todo mês, com o total por mês, por ano e quanto pesa na sua renda.",
+  "Parcelas em andamento: quanto falta pagar e em que mês termina cada compra.",
+  "O app avisa quando um gasto aparece quase todo mês (ex.: Netflix lançado à mão) e transforma em conta fixa com um toque.",
+  "Controles compartilhados: crie um controle separado (ex.: Casa) para dividir com outra pessoa. Ninguém vê o seu Pessoal."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1018,6 +1017,7 @@ function viewAno(){
   </div>
   ${maior||melhor?`<div class="destaques">${maior?`<div><span class="lab">Mês que mais gastou</span><b>${esc(nomeMes(maior.k))}</b><span>${brl(maior.c.despesas)}</span></div>`:""}${melhor&&melhor.c.saldo>0?`<div><span class="lab">Melhor saldo</span><b>${esc(nomeMes(melhor.k))}</b><span class="pos">${brl(melhor.c.saldo)}</span></div>`:""}${catTot[0]?`<div><span class="lab">Categoria que mais pesou</span><b>${esc(catTot[0].ct.nome)}</b><span>${brl(catTot[0].v)} · ${Math.round(catTot[0].v/T.des*100)}%</span></div>`:""}</div>`:""}
   <div class="card chart"><div class="cardhead"><h2>Receitas x despesas</h2><div class="legend"><span><i style="background:var(--accent)"></i>Receitas</span><span><i style="background:var(--c2)"></i>Despesas</span></div></div><div class="tablewrap">${svg}</div></div>
+  ${cardAssinaturas(rows.length?T.rec/rows.length:0)}
   <div class="grid"><div class="card"><div class="cardhead"><h2>Mês a mês</h2><span class="num muted">toque para abrir</span></div><div class="tablewrap"><table>
     <thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Saldo</th><th>Acumulado</th></tr></thead>
     <tbody>${rows.slice().reverse().map(r=>`<tr class="click ${r.k===todayKey?"cur":""}" data-open="${r.k}"><td>${esc(nomeMes(r.k))}${r.k===todayKey?' <small class="muted">atual</small>':""}</td><td>${brl(r.c.receitas)}</td><td>${brl(r.c.despesas)}</td><td class="${r.c.saldo<0?"neg":""}">${brl(r.c.saldo)}</td><td class="${r.ac<0?"neg":""}">${brl(r.ac)}</td></tr>`).join("")}</tbody>
@@ -1025,6 +1025,40 @@ function viewAno(){
   </table></div></div>
   <div class="col"><div class="card"><h2>Para onde foi o dinheiro</h2>${catTot.length?`<div class="donutwrap">${donut(catTot.map(z=>({nome:z.ct.nome,v:z.v,cor:catColor(z.ct.id)})),T.des,brl(T.des),"no período")}<div class="bars">${catTot.map(z=>`<div class="bar" style="--dot:${catColor(z.ct.id)}"><div class="t"><b>${esc(z.ct.nome)}</b><span class="num">${brl(z.v)} · ${Math.round(z.v/T.des*100)}%</span></div><div class="track"><div style="width:${(z.v/catTot[0].v*100).toFixed(1)}%"></div></div><div class="delta">média ${brl(z.v/ks.length)}/mês</div></div>`).join("")}</div></div>`:`<div class="empty-state">Assim que você lançar despesas, o total por categoria aparece aqui.</div>`}</div>
   ${fTot.length?`<div class="card"><h2>Forma de pagamento no período</h2><div class="bars">${fTot.map(x=>`<div class="bar" style="--dot:var(--fm-${x.id})"><div class="t"><b>${esc(x.n)}</b><span class="num">${brl(x.v)} · ${Math.round(x.v/T.des*100)}%</span></div><div class="track"><div style="width:${(x.v/fTot[0].v*100).toFixed(1)}%"></div></div></div>`).join("")}</div></div>`:""}</div></div>`;
+}
+
+/* ---------- assinaturas: o que se repete todo mês ---------- */
+function assinaturas(){
+  const fixos=state.config.fixos.filter(f=>f.desde<=todayKey&&(!f.ate||f.ate>=todayKey)).slice().sort((a,b)=>b.valor-a.valor);
+  const parcelas=parcelasDoMes(todayKey).map(p=>{ const base=Math.floor(p.total/p.n*100)/100; return Object.assign({},p,{falta:Math.max(0,Math.round((p.total-base*(p.idx-1))*100)/100),fim:shiftKey(todayKey,p.n-p.idx)}); }).sort((a,b)=>b.valor-a.valor);
+  /* gastos com a mesma descrição em pelo menos 3 dos últimos 4 meses que ainda não são conta fixa */
+  const ks=[0,1,2,3].map(i=>shiftKey(todayKey,-i)), nomesFixos=new Set(state.config.fixos.map(f=>norm(f.nome))), mapa={};
+  ks.forEach(k=>((state.months[k]||{}).gastos||[]).forEach(g=>{ const d=norm(g.desc); if(!d||nomesFixos.has(d)) return;
+    const x=mapa[d]||(mapa[d]={nome:g.desc.trim(),meses:new Set(),vals:[],cat:g.cat,forma:g.forma,dia:g.dia}); if(x.nome===x.nome.toLowerCase()&&/[A-ZÀ-Ý]/.test(g.desc)) x.nome=g.desc.trim(); if(!x.meses.has(k)){ x.meses.add(k); x.vals.push(g.valor); } }));
+  const repetidos=Object.values(mapa).filter(x=>x.meses.size>=3).map(x=>Object.assign(x,{media:Math.round(x.vals.reduce((a,v)=>a+v,0)/x.vals.length*100)/100})).sort((a,b)=>b.media-a.media);
+  const mes=fixos.reduce((a,f)=>a+f.valor,0), mesParc=parcelas.reduce((a,p)=>a+p.valor,0);
+  return {fixos,parcelas,repetidos,mes,mesParc};
+}
+function cardAssinaturas(rendaMedia){
+  const A=assinaturas(); ui.repetidos=A.repetidos;
+  const tot=A.mes+A.mesParc;
+  if(!A.fixos.length&&!A.parcelas.length&&!A.repetidos.length) return `<div class="card"><h2>Assinaturas e contas fixas</h2>
+    <p class="hint">Aqui aparece tudo o que se repete todo mês (aluguel, internet, Netflix, academia...) com o total por mês e por ano. Cadastre como conta fixa e elas entram sozinhas todo mês.</p>
+    <button class="btn" type="button" data-novo="fixo">+ Nova conta fixa</button></div>`;
+  return `<div class="card assin"><div class="cardhead"><h2>Assinaturas e contas fixas</h2><span class="tag">${brl(tot)}/mês</span></div>
+  <div class="assintot"><div><span class="lab">Por mês</span><b>${brl(A.mes)}</b><small>contas fixas</small></div><div><span class="lab">Por ano</span><b>${brl(A.mes*12)}</b><small>se nada mudar</small></div>${rendaMedia>0?`<div><span class="lab">Da sua renda</span><b>${Math.round(tot/rendaMedia*100)}%</b><small>fixas + parcelas</small></div>`:""}</div>
+  ${A.fixos.length?`<div class="subhead">Contas fixas (${A.fixos.length})</div><div>${A.fixos.map(f=>`<button type="button" class="item" data-edit="fixo" data-id="${esc(f.id)}" style="--dot:${catColor(f.cat)}"><span class="pill">dia ${pad2(f.dia)}</span><span class="desc"><b>${esc(f.nome)}</b><small>${esc(catName(f.cat))} · ${brl(f.valor*12)} por ano</small></span><span class="v">${brl(f.valor)}</span></button>`).join("")}</div>`:""}
+  ${A.parcelas.length?`<div class="subhead">Parcelas em andamento (${brl(A.mesParc)}/mês)</div><div>${A.parcelas.map(p=>`<button type="button" class="item" data-edit="parcela" data-id="${esc(p.id)}" style="--dot:${catColor(p.cat)}"><span class="pill">${p.idx}/${p.n}</span><span class="desc"><b>${esc(p.desc||"Compra parcelada")}</b><small>${p.idx===p.n?"última parcela":"termina em "+esc(abrMes(p.fim))} · faltam ${brl(p.falta)}</small></span><span class="v">${brl(p.valor)}</span></button>`).join("")}</div>`:""}
+  ${A.repetidos.length?`<div class="subhead">Parece que se repete</div><p class="hint">Estes gastos apareceram em quase todos os últimos meses. Se for assinatura, transforme em conta fixa para entrar sozinha.</p>
+    <div>${A.repetidos.map((r,i)=>`<div class="item repet" style="--dot:${catColor(r.cat)}"><span class="desc"><b>${esc(r.nome)}</b><small>${r.meses.size} dos últimos 4 meses · média ${brl(r.media)}</small></span><button class="btn ghost mini" type="button" data-virafixo="${i}">Virar conta fixa</button></div>`).join("")}</div>`:""}
+  </div>`;
+}
+function virarFixo(i){
+  const r=(ui.repetidos||[])[i]; if(!r) return;
+  const id="f"+uidGen(), desde=shiftKey(todayKey,1);
+  state.config.fixos.push({id,nome:r.nome,cat:r.cat,valor:r.media,dia:Math.min(31,Math.max(1,r.dia||1)),forma:r.forma||"debito",desde,ate:null,contaId:null});
+  save("config"); render();
+  toast("“"+r.nome+"” virou conta fixa a partir de "+abrMes(desde)+".","Desfazer",()=>apagarItem("config","fixos",id,"Conta fixa desfeita."));
 }
 
 /* ---------- aba Ajustes ---------- */
@@ -1667,6 +1701,7 @@ app.addEventListener("click",e=>{
   if(d.login){ entrar(); return; }
   if(d.termos){ acaoTermos(d.termos); return; }
   if(d.comp){ acaoComp(d.comp,d.id); return; }
+  if(d.virafixo!==undefined){ virarFixo(+d.virafixo); return; }
   if(d.logout){ fb.signOut(fb.auth); return; }
   if(d.tema){ trocaTema(); return; }
   if(d.export){ exportar(); return; }
