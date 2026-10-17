@@ -12,6 +12,7 @@ const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
 const VERSAO="3.9.0";
 const NOVIDADES=[
+  "Despesas e receitas avulsas do mês mostram só as 5 mais recentes, com o botão \"Ver todas\" para abrir o resto.",
   "Modo viagem (Ajustes → Modo viagem): cadastre a viagem com a moeda do destino, a cotação (dá para buscar a de hoje), as taxas do cartão e um orçamento.",
   "Nos dias da viagem, a nova despesa já abre como gasto da viagem: digite o valor na moeda de lá e o app converte para real.",
   "Card da viagem no topo do mês: quanto já gastou, quanto ainda pode gastar e a cotação usada.",
@@ -1197,15 +1198,21 @@ function viewMes(){
   const todos=m.gastos.filter(g=>g.forma!=="credito").concat(parcelasDoMes(k).filter(p=>p.forma!=="credito"));
   if(ui.filtro&&catIndex(ui.filtro)<0) ui.filtro="";
   const gastos=todos.filter(g=>!ui.filtro||g.cat===ui.filtro);
-  const byDay={}; gastos.forEach(g=>{(byDay[g.dia]=byDay[g.dia]||[]).push(g)});
+  /* mostra só as 5 mais recentes (dia mais novo primeiro; no mesmo dia, a lançada por último); "Ver todas" abre o resto */
+  const LIM=5, ordem=gastos.map((g,i)=>({g,i})).sort((a,b)=>(b.g.dia-a.g.dia)||(b.i-a.i)).map(x=>x.g);
+  const todasAbertas=ui.verTodas===k, visiveis=todasAbertas?ordem:ordem.slice(0,LIM);
+  const totDia={}; gastos.forEach(g=>{ totDia[g.dia]=(totDia[g.dia]||0)+(Number(g.valor)||0); });
+  const byDay={}; visiveis.forEach(g=>{(byDay[g.dia]=byDay[g.dia]||[]).push(g)});
   const days=Object.keys(byDay).map(Number).sort((a,b)=>b-a);
   const lista=`<div class="card"><div class="cardhead"><h2>Despesas do mês</h2>
     <select class="in mini" id="filtroCat" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${cats.map(ct=>`<option value="${esc(ct.id)}" ${ui.filtro===ct.id?"selected":""}>${esc(ct.nome)}</option>`).join("")}</select></div>
     <button type="button" class="btn wide desk" data-novo="gasto">${ICON.mais} Lançar despesa</button>
-    ${days.length?days.map(d=>{ const its=byDay[d], tot=soma(its);
+    ${gastos.length?`<p class="listaresumo">${gastos.length} despesa${gastos.length===1?"":"s"}${ui.filtro?" nesta categoria":""} · ${brl(soma(gastos))}</p>`:""}
+    ${days.length?days.map(d=>{ const its=byDay[d], tot=totDia[d]||soma(its);
       const lab=new Date(kY(k),kM(k)-1,d).toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short"}).replace(/\./g,"");
       return `<div class="day"><div class="dayhead"><span>${esc(lab)}${isCur&&d===today.getDate()?" · hoje":""}</span><span class="num">${brl(tot)}</span></div>${its.map(g=>linhaLanc(g,k)).join("")}</div>`; }).join("")
     :`<div class="empty-state">${ui.filtro?"Nenhuma despesa nessa categoria em "+NOMES[kM(k)-1].toLowerCase()+".":"Nenhuma despesa em "+NOMES[kM(k)-1].toLowerCase()+" ainda.<br>Toque em <b>+</b> para lançar a primeira."}</div>`}
+    ${gastos.length>LIM?`<button type="button" class="btn ghost wide vermais" data-vertodas="${k}">${todasAbertas?"Mostrar só as 5 mais recentes":"Ver todas as "+gastos.length+" despesas"}</button>`:""}
     <p class="hint">Toque num lançamento para editar ou apagar. Compras no cartão de crédito ficam em Contas fixas.</p></div>`;
   /* faturas dos cartões (uma por cartão configurado) */
   const fatura=cartoesOk().map(cc=>{
@@ -1254,7 +1261,9 @@ function viewMes(){
     <label class="f money">Salário / renda fixa deste mês<input class="in num" id="salMes" inputmode="numeric" value="${esc(m.salario===0?"0,00":moneyInput(m.salario))}" placeholder="${esc(moneyInput(ativo(k)?state.config.salarioPadrao:0))}${ativo(k)?" (padrão)":""}"></label>
     <p class="hint">Em branco, usa o salário padrão definido no Perfil.</p>
     ${rd.length?`<div>${rd.map(r=>`<button type="button" class="item ${r.pular?"skip":""}" data-edit="rendaMes" data-id="${esc(r.id)}" style="--dot:var(--good)"><span class="pill">todo mês</span><span class="desc"><b>${esc(r.nome)}</b>${r.pular?"<small>pulada neste mês</small>":""}</span><span class="v pos">${r.pular?"—":brl(r.valor)}</span></button>`).join("")}</div>`:""}
-    ${m.avulsos.length?`<div>${m.avulsos.slice().sort((a,b)=>a.dia-b.dia).map(x=>`<button type="button" class="item" data-edit="avulso" data-id="${esc(x.id)}" style="--dot:var(--good)"><span class="pill">dia ${pad2(x.dia)}</span><span class="desc"><b class="${x.desc?"":"empty"}">${esc(x.desc||"sem descrição")}</b></span><span class="v pos">${brl(x.valor)}</span></button>`).join("")}</div>`:""}
+    ${m.avulsos.length?(()=>{ const ord=m.avulsos.map((x,i)=>({x,i})).sort((p1,p2)=>(p2.x.dia-p1.x.dia)||(p2.i-p1.i)).map(o=>o.x), abertas=ui.verTodasRec===k, vis=abertas?ord:ord.slice(0,5);
+      return `<div>${vis.map(x=>`<button type="button" class="item" data-edit="avulso" data-id="${esc(x.id)}" style="--dot:var(--good)"><span class="pill">dia ${pad2(x.dia)}</span><span class="desc"><b class="${x.desc?"":"empty"}">${esc(x.desc||"sem descrição")}</b></span><span class="v pos">${brl(x.valor)}</span></button>`).join("")}</div>
+      ${ord.length>5?`<button type="button" class="btn ghost wide vermais" data-vertodasrec="${k}">${abertas?"Mostrar só as 5 mais recentes":"Ver todas as "+ord.length+" receitas avulsas"}</button>`:""}`; })():""}
     <button type="button" class="btn ghost" data-novo="avulso">+ Receita</button></div>`;
   /* caixinha (geral + metas de economia) */
   const metas=state.config.metas, somaMetas=soma(metas.map(mt=>({valor:saldoMeta(mt.id,k)}))), geral=cx-somaMetas;
@@ -2337,6 +2346,8 @@ app.addEventListener("click",e=>{
   if(d.nav){ passo(Number(d.nav)); return; }
   if(d.open){ ui.tab="mes"; goMonth(d.open); window.scrollTo({top:0}); return; }
   if(d.vertag){ openSheet("busca",null,{q:"#"+d.vertag}); return; }
+  if(d.vertodasrec){ ui.verTodasRec=ui.verTodasRec===d.vertodasrec?null:d.vertodasrec; render(); return; }
+  if(d.vertodas){ const abrindo=ui.verTodas!==d.vertodas; ui.verTodas=abrindo?d.vertodas:null; render(); if(!abrindo){ const c=document.querySelector(".listaresumo"); if(c) c.closest(".card").scrollIntoView({block:"start",behavior:"smooth"}); } return; }
   if(d.verquit){ ui.verQuit=!ui.verQuit; render(); return; }
   if(d.novo){ openSheet(d.novo,null,d.cxtipo?{cxTipo:d.cxtipo}:d.pinmodo?{pinModo:d.pinmodo}:d.dtipo?{dTipo:d.dtipo}:null); return; }
   if(d.edit){ openSheet(d.edit,d.id,d.mes?{mes:d.mes}:null); return; }

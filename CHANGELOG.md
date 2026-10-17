@@ -23,6 +23,10 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 - Os gastos da viagem continuam contando normalmente no mês (saldo, categorias, limites).
 - Compras parceladas feitas na viagem entram no total da viagem; a prévia das parcelas já mostra o valor convertido.
 
+**Listas do mês mais curtas**
+- A lista "Despesas do mês" mostra só as 5 mais recentes, com o total e a quantidade do mês no topo. O botão **Ver todas as N despesas** abre o resto (e "Mostrar só as 5 mais recentes" fecha). O total de cada dia continua considerando todas as despesas daquele dia.
+- O mesmo vale para as receitas avulsas no card Receitas.
+
 **Segunda revisão (correções)**
 - Salvamento: três situações raras em que um lançamento de outro aparelho podia se perder (editar enquanto um envio está em andamento, edição guardada sem internet em um mês ainda vazio, primeiro uso offline em um aparelho novo) foram corrigidas.
 - Editar um gasto da viagem mantém a cotação do dia em que foi lançado; se a viagem for excluída, o valor em reais é mantido.

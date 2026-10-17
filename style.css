@@ -592,3 +592,5 @@ body.tutorial{overflow:hidden}
 .vgnums b{white-space:nowrap;overflow:hidden}
 @media (max-width:420px){ .assintot{grid-template-columns:repeat(2,minmax(0,1fr))} .assintot > div:nth-child(3):last-child{grid-column:1/-1} }
 @media (max-width:560px){ .item:has(> .pill.gcat){grid-template-columns:minmax(0,1fr) auto} }
+.listaresumo{margin:2px 0 4px;font-size:13px;color:var(--muted);font-weight:600}
+.btn.vermais{margin-top:8px}
