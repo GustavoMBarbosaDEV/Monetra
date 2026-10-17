@@ -104,7 +104,7 @@ async function init(){
     const app=A.initializeApp(cfg), auth=U.getAuth(app);
     let db; try{ db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})}); }catch(e){ db=F.getFirestore(app); }
     fb={...U,...F,db,auth};
-    U.getRedirectResult(auth).catch(e=>{ loginErro=traduzErro(e); render(); });
+    U.getRedirectResult(auth).then(r=>{ if(r) boasVindas(r); }).catch(e=>{ loginErro=traduzErro(e); render(); });
     U.onAuthStateChanged(auth,user=>{
       if(unsub){ unsub(); unsub=null; }
       dirty.clear();
@@ -131,16 +131,44 @@ let loginErro="";
 function traduzErro(e){ const c=e&&e.code||""; if(c.includes("unauthorized-domain")) return "Este endereço ainda não foi autorizado no Firebase (Authentication → Configurações → Domínios autorizados)."; if(c.includes("popup-closed")||c.includes("cancelled")) return ""; if(c.includes("network")) return "Sem internet. Tente de novo."; return "Não foi possível entrar ("+c+")."; }
 async function entrar(){
   loginErro=""; const p=new fb.GoogleAuthProvider(); p.setCustomParameters({prompt:"select_account"});
-  try{ await fb.signInWithPopup(fb.auth,p); }
+  try{ const r=await fb.signInWithPopup(fb.auth,p); boasVindas(r); }
   catch(e){ if((e.code||"").includes("popup-blocked")||(e.code||"").includes("operation-not-supported")){ await fb.signInWithRedirect(fb.auth,p); } else { loginErro=traduzErro(e); render(); } }
 }
-function viewLogin(){
-  return `<div class="login card"><h2>Seu controle de gastos, só seu</h2>
-  <p>Entre com sua conta Google. Cada pessoa tem a própria página: ninguém vê os lançamentos de outra pessoa.</p>
-  <button class="btn google" data-login="1" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Entrar com Google</button>
-  ${loginErro?`<p class="note">${esc(loginErro)}</p>`:""}
-  <p class="hint">Seus dados ficam salvos na nuvem e aparecem em qualquer aparelho onde você entrar.</p></div>`;
+function boasVindas(r){
+  try{ const info=fb.getAdditionalUserInfo(r); const nome=((r.user&&r.user.displayName)||"").split(" ")[0];
+    toast(info&&info.isNewUser?"Conta criada! Bem-vindo(a)"+(nome?", "+nome:"")+".":"Bem-vindo(a) de volta"+(nome?", "+nome:"")+"."); }catch(e){}
 }
+function viewLogin(){
+  const novo=ui.loginModo==="criar";
+  return `<div class="login card">
+  <div class="seg" role="tablist" style="width:100%"><input type="radio" name="lmodo" id="lmE" value="entrar" ${novo?"":"checked"}><label for="lmE">Entrar</label><input type="radio" name="lmodo" id="lmC" value="criar" ${novo?"checked":""}><label for="lmC">Criar conta</label></div>
+  <h2>${novo?"Crie sua conta grátis":"Seu controle de gastos, só seu"}</h2>
+  <p>${novo?"Use sua conta Google: não precisa inventar senha nem preencher cadastro. Sua página começa vazia e só você vê os seus lançamentos.":"Entre com a conta Google que você usou para criar sua conta. Cada pessoa tem a própria página: ninguém vê os lançamentos de outra pessoa."}</p>
+  <button class="btn google" data-login="1" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${novo?"Criar conta com Google":"Entrar com Google"}</button>
+  ${loginErro?`<p class="note">${esc(loginErro)}</p>`:""}
+  <p class="hint">${novo?"Já tem conta? Clique em Entrar.":"Primeira vez aqui? Clique em Criar conta."} Seus dados ficam salvos na nuvem e aparecem em qualquer aparelho onde você entrar.</p></div>`;
+}
+/* ---------- tema (claro / escuro / automático) ---------- */
+let tema="auto"; try{ tema=localStorage.getItem("meucaixa.tema")||"auto"; }catch(e){}
+function aplicaTema(){
+  const r=document.documentElement;
+  if(tema==="claro") r.setAttribute("data-theme","light"); else if(tema==="escuro") r.setAttribute("data-theme","dark"); else r.removeAttribute("data-theme");
+  const escuro=tema==="escuro"||(tema==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);
+  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=escuro?"#0F1613":"#0E6B55";
+}
+function trocaTema(){ tema={auto:"escuro",escuro:"claro",claro:"auto"}[tema]||"auto"; try{localStorage.setItem("meucaixa.tema",tema)}catch(e){} aplicaTema(); render(); }
+function botaoTema(){
+  const ic={claro:'<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>',
+    escuro:'<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>',
+    auto:'<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M12 3a9 9 0 0 1 0 18z"/></svg>'}[tema];
+  const nome={claro:"Claro",escuro:"Escuro",auto:"Automático"}[tema];
+  return `<button class="themebtn" data-tema="1" type="button" title="Tema: ${nome} (clique para trocar)" aria-label="Tema: ${nome}. Clique para trocar">${ic}<span>${nome}</span></button>`;
+}
+if(window.matchMedia) try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",aplicaTema); }catch(e){}
+aplicaTema();
+let toastTimer=null;
+function toast(msg){ let el=document.getElementById("toast"); if(!el){ el=document.createElement("div"); el.id="toast"; el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); } el.textContent=msg; el.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{el.hidden=true},4000); }
+
 function exportar(){
   const blob=new Blob([JSON.stringify({app:"meu-caixa",versao:1,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="meu-caixa-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
@@ -166,9 +194,9 @@ function render(){
 function header(){
   const t=(id,l)=>`<button role="tab" data-tab="${id}" aria-selected="${ui.tab===id}">${l}</button>`;
   const i=MESES.findIndex(x=>x.key===ui.month);
-  return `<div class="top"><div class="brand"><h1>Meu <span>Caixa</span></h1><span class="status ${statusCls}" id="status"><i></i>${esc(statusTxt)}</span></div>
+  return `<div class="top"><div class="brand"><h1>Meu <span>Caixa</span></h1><span class="status ${statusCls}" id="status"><i></i>${esc(statusTxt)}</span></div><div class="topright">${botaoTema()}
   ${mode==="login"?"":`<div class="tabs" role="tablist">${t("mes","Mês")}${t("ano","Visão geral")}${t("ajustes","Ajustes")}</div>`}
-  ${authUser?`<div class="who">${authUser.photoURL?`<img src="${esc(authUser.photoURL)}" alt="" referrerpolicy="no-referrer">`:""}<span>${esc((authUser.displayName||authUser.email||"").split(" ")[0])}</span><button class="link" data-logout="1" type="button">Sair</button></div>`:""}</div>
+  ${authUser?`<div class="who">${authUser.photoURL?`<img src="${esc(authUser.photoURL)}" alt="" referrerpolicy="no-referrer">`:""}<span>${esc((authUser.displayName||authUser.email||"").split(" ")[0])}</span><button class="link" data-logout="1" type="button">Sair</button></div>`:""}</div></div>
   ${ui.tab==="mes"&&mode!=="login"?`<div class="months"><button class="arrow" data-nav="-1" aria-label="Mês anterior" ${i<=0?"disabled":""}>‹</button>
   <div class="chips">${MESES.map(x=>`<button class="chip ${x.key===ui.month?"on":""} ${x.key===todayKey?"now":""}" data-month="${x.key}">${ABR[x.m-1]} <small>${String(x.y).slice(2)}</small></button>`).join("")}${(state.config.ate||PADRAO_ATE)<LIMITE_ATE?`<button class="chip add" data-addmonth="1" title="Acrescentar mais um mês">+ mês</button>`:""}</div>
   <button class="arrow" data-nav="1" aria-label="Próximo mês" ${i>=MESES.length-1?"disabled":""}>›</button></div>`:""}
@@ -306,6 +334,7 @@ app.addEventListener("click",e=>{
   if(b.dataset.delg){ const m=getMonth(ui.month); m.gastos=m.gastos.filter(g=>g.id!==b.dataset.delg); save(ui.month); render(); return; }
   if(b.dataset.dela){ const m=getMonth(ui.month); m.avulsos=m.avulsos.filter(g=>g.id!==b.dataset.dela); save(ui.month); render(); return; }
   if(b.dataset.login){ entrar(); return; }
+  if(b.dataset.tema){ trocaTema(); return; }
   if(b.dataset.logout){ fb.signOut(fb.auth); return; }
   if(b.dataset.export){ exportar(); return; }
   if(b.dataset.addmonth){ addMeses(1); goMonth(MESES[MESES.length-1].key); return; }
@@ -319,6 +348,7 @@ app.addEventListener("change",e=>{
   if(t.name==="gcat"){ ui.gCat=t.value; return; }
   if(t.id==="gDia"){ ui.gDia=Number(t.value); return; }
   if(t.id==="impFile"&&t.files&&t.files[0]){ importar(t.files[0]); return; }
+  if(t.name==="lmodo"){ ui.loginModo=t.value; render(); return; }
   if(t.name==="cxtipo"){ ui.cxTipo=t.value; return; }
   if(t.id==="cfAte"){ state.config.ate=t.value; buildMeses(); if(!MESES.some(x=>x.key===ui.month)) ui.month=MESES[MESES.length-1].key; save("config"); render(); return; }
   if(t.id==="salMes"){ const v=t.value.trim()===""?null:parseMoney(t.value); if(v!==null&&isNaN(v)){t.setCustomValidity("Valor inválido");t.reportValidity();return;} t.setCustomValidity(""); getMonth(ui.month).salario=v; save(ui.month); render(); return; }
