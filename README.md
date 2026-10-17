@@ -88,6 +88,19 @@ Para cada pessoa ter a própria conta e sincronizar entre aparelhos, faça o pas
 | `firestore.rules` | Regras de segurança para colar no Firebase |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Deixam o app instalável e abrindo sem internet |
 
+## Controles compartilhados
+
+Desde a versão 3.0, dá para criar controles separados para dividir com outras pessoas (a casa, uma viagem).
+O controle **Pessoal** de cada um continua só dele.
+
+1. Em **Perfil → Controles compartilhados**, dê um nome (ex.: Casa) e toque em **Criar**.
+2. Toque em **Convidar alguém** e depois em **Enviar convite**.
+3. A outra pessoa abre o link (ou digita o código no Perfil dela) e toca em **Pedir para entrar**.
+4. Você aceita o pedido. Os botões no topo da tela trocam entre **Pessoal** e **Casa**.
+
+> Para isso funcionar, as regras do arquivo `firestore.rules` precisam estar publicadas no Firebase
+> (Firestore Database → Regras → colar → Publicar).
+
 ## Versões
 
 O número da versão aparece no app em **Perfil → Novidades**, e o histórico completo fica no

@@ -10,12 +10,13 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="2.8.0";
+const VERSAO="3.0.0";
 const NOVIDADES=[
-  "Importar extrato do banco (OFX ou CSV): traga todos os lançamentos de uma vez, em Ajustes → Importar extrato.",
-  "O app sugere a categoria de cada gasto (pelo que você já lançou e por palavras como mercado, uber, farmácia).",
-  "Lançamentos repetidos e pagamentos de fatura são desmarcados sozinhos. Dá para desfazer a importação.",
-  "Termos de privacidade: o app explica quais dados guarda e pede o seu aceite. Dá para reler ou retirar o aceite no Perfil."
+  "Controles compartilhados: crie um controle separado (ex.: Casa) para dividir com outra pessoa. Ele começa do zero e ninguém vê o seu Pessoal.",
+  "Botões no topo da tela para trocar entre o Pessoal e os compartilhados.",
+  "Convite por código ou link: a pessoa pede para entrar e você aceita. Dá para remover alguém, sair ou excluir o controle.",
+  "Cada lançamento num controle compartilhado mostra quem fez (ex.: \"Pix · Maria\").",
+  "Termos de privacidade atualizados (versão 1.1). O aceite agora é de cada pessoa."
 ];
 
 /* ---------- utilidades ---------- */
@@ -55,6 +56,7 @@ document.addEventListener("input",e=>{ const el=e.target; if(ehCampoDinheiro(el)
 document.addEventListener("paste",e=>{ const el=e.target; if(!ehCampoDinheiro(el)) return; const t=(e.clipboardData||window.clipboardData)?.getData("text")||""; const v=parseMoney(t); if(v>0){ e.preventDefault(); el.value=moneyInput(v); el.dispatchEvent(new Event("input",{bubbles:true})); } },true);
 document.addEventListener("blur",e=>{ const el=e.target; if(!ehCampoDinheiro(el)||!el.value.trim()) return; const v=parseMoney(el.value); if(v>0) el.value=moneyInput(v); },true);
 const ICON={
+  grupo:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="16.5" cy="9.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.9-3 3-4.6 5.5-4.6s4.6 1.6 5.5 4.6M14.5 14.6c.6-.2 1.3-.3 2-.3 2.1 0 3.7 1.3 4.4 3.9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   lixo:'<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   banco:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 9l9-5 9 5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   dinheiro:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
@@ -301,7 +303,7 @@ function mescla(local,servidor,id){
 async function flush(id){
   if(writing[id]){ again[id]=true; return; }
   writing[id]=true; let ok=false;
-  const ref=fb.doc(fb.db,"users",uid,"docs",id);
+  const ref=fb.doc(fb.db,...docsPath(),id);
   try{
     if(navigator.onLine){
       let extra={};
@@ -335,6 +337,9 @@ function loadLocal(){
 }
 function resetState(){ state.config=defaultConfig(); state.months={}; buildMeses(); }
 let fb=null, authUser=null, unsub=null, loginErro="";
+/* espaço = de quem são os dados abertos (o próprio uid ou o do dono do controle compartilhado) */
+/* aberto = "pessoal" (users/{uid}/docs) ou o id de um controle compartilhado (grupos/{id}/docs) */
+let aberto="pessoal", eu={}, euCarregado=false, grupoDoc=null, pedidosG={}, unsubs=[], unsubsFixos=[], seqEspaco=0, perdendo={};
 const FB_V="10.12.2";
 async function init(){
   const cfg=window.FIREBASE_CONFIG;
@@ -347,25 +352,226 @@ async function init(){
     fb={...U,...F,db,auth};
     U.getRedirectResult(auth).then(r=>{ if(r) boasVindas(r); }).catch(e=>{ loginErro=traduzErro(e); render(); });
     U.onAuthStateChanged(auth,user=>{
-      if(unsub){ unsub(); unsub=null; }
-      dirty.clear();
-      if(!user){ authUser=null; uid=null; mode="login"; resetState(); state.loaded=true; closeSheet(); render(); return; }
-      authUser=user; uid=user.uid; mode="cloud"; resetState(); state.loaded=false; setStatus("Carregando…",""); render();
-      unsub=F.onSnapshot(F.collection(db,"users",uid,"docs"),snap=>{
-        let changed=!state.loaded;
-        docIds.clear(); snap.docs.forEach(doc=>docIds.add(doc.id));
-        snap.docs.forEach(doc=>{
-          if(dirty.has(doc.id)) return;
-          const d=doc.data();
-          if(doc.id==="config"){ const c=normConfig(d); if(JSON.stringify(c)!==JSON.stringify(state.config)){ state.config=c; buildMeses(); changed=true; } }
-          else if(doc.id.startsWith("m-")){ const k=doc.id.slice(2), mm=normMonth(d); if(JSON.stringify(mm)!==JSON.stringify(state.months[k]||null)){ state.months[k]=mm; changed=true; } }
-        });
-        if(!state.loaded){ state.loaded=true; if(!mesesVisiveis().includes(ui.month)) ui.month=todayKey; }
-        if(!dirty.size) setStatus(snap.metadata.fromCache&&!navigator.onLine?"Sem internet — salvo no aparelho":"Sincronizado","ok");
-        if(changed) render();
-      },err=>{ console.error(err); setStatus("Sem acesso aos dados ("+(err.code||"erro")+")","err"); state.loaded=true; render(); });
+      pararEspaco(); dirty.clear();
+      if(!user){ unsubsFixos.forEach(f=>{ try{f()}catch(e){} }); unsubsFixos=[]; authUser=null; uid=null; aberto="pessoal"; eu={}; euCarregado=false; grupoDoc=null; pedidosG={}; mode="login"; resetState(); state.loaded=true; closeSheet(); render(); return; }
+      authUser=user; uid=user.uid; mode="cloud"; abrirEspaco();
     });
   }catch(e){ console.error(e); mode="local"; loadLocal(); state.loaded=true; setStatus("Sem conexão com o login — modo local","err"); render(); }
+}
+/* ---------- controles compartilhados (separados do Pessoal) ---------- */
+const docsPath=()=>aberto==="pessoal"?["users",uid,"docs"]:["grupos",aberto,"docs"];
+function pararEspaco(){ if(unsub){ unsub(); unsub=null; } unsubs.forEach(f=>{ try{f()}catch(e){} }); unsubs=[]; }
+async function salvaEu(obj){ Object.assign(eu,obj); try{ await fb.setDoc(fb.doc(fb.db,"users",uid,"meta","eu"),obj,{merge:true}); }catch(e){ console.error(e); } }
+async function euSet(chave,sub,valor){
+  let remoto;
+  if(sub){ eu[chave]=Object.assign({},eu[chave]||{}); if(valor==null){ delete eu[chave][sub]; remoto={[chave]:{[sub]:fb.deleteField()}}; } else { eu[chave][sub]=valor; remoto={[chave]:{[sub]:valor}}; } }
+  else { eu[chave]=valor; remoto={[chave]:valor}; }
+  try{ await fb.setDoc(fb.doc(fb.db,"users",uid,"meta","eu"),remoto,{merge:true}); }catch(e){ console.error(e); }
+}
+const negado=e=>e&&e.code==="permission-denied";
+const meusGrupos=()=>Object.entries(eu.grupos||{}).map(([id,x])=>Object.assign({id},x)).sort((a,b)=>String(a.nome).localeCompare(String(b.nome)));
+async function abrirEspaco(aviso){
+  const F=fb, meu=uid, seq=++seqEspaco;
+  pararEspaco(); dirty.clear(); resetState(); state.loaded=false; grupoDoc=null; setStatus("Carregando…",""); render();
+  if(!euCarregado){
+    try{ const d=await F.getDoc(F.doc(F.db,"users",meu,"meta","eu")); eu=d.exists()?d.data():{}; }catch(e){ eu={}; }
+    if(seq!==seqEspaco||uid!==meu) return;
+    euCarregado=true; refazVigias();
+  }
+  aberto=eu.ativo&&eu.grupos&&eu.grupos[eu.ativo]?eu.ativo:"pessoal";
+  if(aberto!=="pessoal"){
+    let ok;
+    try{ const g=await F.getDoc(F.doc(F.db,"grupos",aberto)); ok=!!(g.exists()&&g.data().m&&g.data().m[meu]); if(ok) grupoDoc=g.data(); }
+    catch(e){ ok=negado(e)?false:true; } /* sem internet: continua no compartilhado */
+    if(seq!==seqEspaco) return;
+    if(!ok){ const nome=(eu.grupos[aberto]||{}).nome||""; await euSet("grupos",aberto,null); await euSet("ativo",null,"pessoal"); refazVigias(); aberto="pessoal"; aviso="Você não faz mais parte do controle “"+nome+"”. Voltou para o Pessoal."; }
+  }
+  const g=aberto;
+  unsub=F.onSnapshot(F.collection(F.db,...docsPath()),snap=>{
+    let changed=!state.loaded;
+    docIds.clear(); snap.docs.forEach(doc=>docIds.add(doc.id));
+    snap.docs.forEach(doc=>{
+      if(dirty.has(doc.id)) return;
+      const d=doc.data();
+      if(doc.id==="config"){ const c=normConfig(d); if(JSON.stringify(c)!==JSON.stringify(state.config)){ state.config=c; buildMeses(); changed=true; } }
+      else if(doc.id.startsWith("m-")){ const k=doc.id.slice(2), mm=normMonth(d); if(JSON.stringify(mm)!==JSON.stringify(state.months[k]||null)){ state.months[k]=mm; changed=true; } }
+    });
+    if(!state.loaded){ state.loaded=true; if(!mesesVisiveis().includes(ui.month)) ui.month=todayKey; }
+    if(!dirty.size) setStatus(snap.metadata.fromCache&&!navigator.onLine?"Sem internet — salvo no aparelho":"Sincronizado","ok");
+    if(changed) render();
+  },err=>{ console.error(err); if(negado(err)&&g!=="pessoal"){ perdeuGrupo(g); return; } setStatus("Sem acesso aos dados ("+(err.code||"erro")+")","err"); state.loaded=true; render(); });
+  if(g!=="pessoal") unsubs.push(F.onSnapshot(F.doc(F.db,"grupos",g),d=>{
+    grupoDoc=d.exists()?d.data():null;
+    if(!(grupoDoc&&grupoDoc.m&&grupoDoc.m[meu])){ perdeuGrupo(g); return; }
+    const x=(eu.grupos||{})[g]; if(x&&grupoDoc.nome&&x.nome!==grupoDoc.nome) euSet("grupos",g,Object.assign({},x,{nome:grupoDoc.nome}));
+    render();
+  },err=>{ if(negado(err)) perdeuGrupo(g); }));
+  if(aviso) setTimeout(()=>toast(aviso),300);
+}
+async function perdeuGrupo(g){
+  if(perdendo[g]||!(eu.grupos||{})[g]) return; perdendo[g]=true;
+  const nome=((eu.grupos||{})[g]||{}).nome||"compartilhado";
+  await euSet("grupos",g,null); if(eu.ativo===g||aberto===g) await euSet("ativo",null,"pessoal"); refazVigias();
+  perdendo[g]=false; if(aberto===g) abrirEspaco("Você não faz mais parte do controle “"+nome+"”. Voltou para o Pessoal."); else { render(); toast("Você não faz mais parte do controle “"+nome+"”."); }
+}
+/* avisos que valem em qualquer controle aberto: pedidos para os meus controles e respostas aos meus pedidos */
+function refazVigias(){
+  unsubsFixos.forEach(f=>{ try{f()}catch(e){} }); unsubsFixos=[]; pedidosG={};
+  const F=fb, meu=uid;
+  meusGrupos().filter(x=>x.dono).forEach(x=>unsubsFixos.push(F.onSnapshot(F.collection(F.db,"grupos",x.id,"pedidos"),q=>{ pedidosG[x.id]=q.docs.map(d=>Object.assign({uid:d.id},d.data())); render(); },()=>{})));
+  meusGrupos().forEach(x=>unsubsFixos.push(F.onSnapshot(F.doc(F.db,"grupos",x.id),d=>{ if(!(d.exists()&&d.data().m&&d.data().m[meu])) perdeuGrupo(x.id); },e=>{ if(negado(e)) perdeuGrupo(x.id); })));
+  Object.keys(eu.pendentes||{}).forEach(g=>unsubsFixos.push(F.onSnapshot(F.doc(F.db,"grupos",g,"pedidos",meu),d=>{ if(!d.exists()) resolvePendente(g); },()=>{})));
+}
+async function resolvePendente(g){
+  const p=(eu.pendentes||{})[g]; if(!p) return;
+  let ok=false, nome=p.nome||"";
+  try{ const d=await fb.getDoc(fb.doc(fb.db,"grupos",g)); ok=!!(d.exists()&&d.data().m&&d.data().m[uid]); if(ok) nome=d.data().nome||nome; }catch(e){}
+  if(!(eu.pendentes||{})[g]) return;
+  await euSet("pendentes",g,null);
+  if(ok){ await euSet("grupos",g,{nome,dono:false}); toast("Pedido aceito! “"+nome+"” já aparece no topo da tela."); }
+  else toast("Seu pedido para entrar em “"+nome+"” não foi aceito.");
+  refazVigias(); render();
+}
+const primeiroNome=n=>String(n||"").trim().split(/[\s@]+/)[0]||"alguém";
+const meuNome=()=>(authUser&&(authUser.displayName||authUser.email))||"Alguém";
+const euMembro=()=>({nome:meuNome(),email:(authUser&&authUser.email)||"",foto:(authUser&&authUser.photoURL)||"",desde:new Date().toISOString()});
+const compartilhado=()=>mode==="cloud"&&aberto!=="pessoal";
+const souDono=()=>mode!=="cloud"||aberto==="pessoal"||!!(grupoDoc&&grupoDoc.dono===uid);
+function nomeDe(id){ if(id===uid) return "você"; const x=grupoDoc&&grupoDoc.m&&grupoDoc.m[id]; return x?primeiroNome(x.nome):""; }
+const marcaPor=o=>{ if(compartilhado()) o.por=uid; return o; };
+const porTxt=g=>compartilhado()&&g.por&&nomeDe(g.por)?" · "+nomeDe(g.por):"";
+const CODE_ALF="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function novoCodigo(n){ const a=new Uint32Array(n||8); crypto.getRandomValues(a); return Array.from(a,x=>CODE_ALF[x%32]).join(""); }
+const linkConvite=c=>location.origin+location.pathname+"?convite="+c;
+const falhou=e=>{ console.error(e); toast("Não deu certo ("+(e&&e.code||"erro")+")."+(negado(e)?" Confira se as regras novas do Firebase foram publicadas.":"")); };
+async function trocarEspaco(g){ if(g===aberto) return; await euSet("ativo",null,g); abrirEspaco(); }
+async function criarGrupo(){
+  const el=document.getElementById("grNome"), nome=String(el?el.value:"").trim().slice(0,40);
+  if(!nome){ ui.compErro="Dê um nome, por exemplo: Casa, Viagem, Família."; render(); return; }
+  const F=fb, g="g"+novoCodigo(16).toLowerCase();
+  try{
+    await F.setDoc(F.doc(F.db,"grupos",g),{nome,dono:uid,codigo:null,criado:new Date().toISOString(),m:{[uid]:euMembro()}});
+    await euSet("grupos",g,{nome,dono:true}); refazVigias(); ui.compErro="";
+    await euSet("ativo",null,g); ui.tab="perfil"; abrirEspaco("Controle “"+nome+"” criado. Ele começa do zero; convide quem vai usar com você.");
+  }catch(e){ falhou(e); }
+}
+async function gerarConvite(){
+  const F=fb, g=aberto, cod=novoCodigo(8);
+  try{
+    if(grupoDoc&&grupoDoc.codigo) await F.deleteDoc(F.doc(F.db,"convites",grupoDoc.codigo)).catch(()=>{});
+    await F.setDoc(F.doc(F.db,"convites",cod),{grupo:g,dono:uid,nome:(grupoDoc&&grupoDoc.nome)||"",donoNome:meuNome(),em:new Date().toISOString()});
+    await F.updateDoc(F.doc(F.db,"grupos",g),{codigo:cod});
+    toast("Código de convite criado.");
+  }catch(e){ falhou(e); }
+}
+async function compartilharConvite(){
+  const c=grupoDoc&&grupoDoc.codigo; if(!c) return;
+  const txt="Entre no controle “"+grupoDoc.nome+"” no MB Controle. Código: "+c+"\n"+linkConvite(c);
+  try{ if(navigator.share){ await navigator.share({title:"MB Controle",text:txt}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(txt); toast("Convite copiado. Cole no WhatsApp ou onde quiser."); }catch(e){ toast("Código: "+c); }
+}
+async function pedirEntrada(){
+  const el=document.getElementById("convCod"), F=fb, cod=String(el?el.value:"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  const erro=m=>{ ui.convErro=m; render(); };
+  if(cod.length!==8) return erro("O código tem 8 letras e números.");
+  try{
+    const c=await F.getDoc(F.doc(F.db,"convites",cod));
+    if(!c.exists()) return erro("Código não encontrado. Confira com quem te convidou ou peça um código novo.");
+    const g=c.data().grupo, nome=c.data().nome||"compartilhado";
+    if((eu.grupos||{})[g]) return erro("Você já participa do controle “"+nome+"”.");
+    await F.setDoc(F.doc(F.db,"grupos",g,"pedidos",uid),{codigo:cod,nome:meuNome(),email:authUser.email||"",foto:authUser.photoURL||"",em:new Date().toISOString()});
+    await euSet("pendentes",g,{nome,donoNome:c.data().donoNome||""}); refazVigias();
+    ui.convErro=""; ui.conviteUrl=null; render();
+    toast("Pedido enviado. Agora é só "+primeiroNome(c.data().donoNome)+" aceitar.");
+  }catch(e){ console.error(e); erro("Não foi possível enviar o pedido ("+(e.code||"erro")+")."); }
+}
+async function cancelarPedido(g){
+  await euSet("pendentes",g,null); refazVigias(); render();
+  try{ await fb.deleteDoc(fb.doc(fb.db,"grupos",g,"pedidos",uid)); }catch(e){}
+  toast("Pedido cancelado.");
+}
+async function responderPedido(g,id,aceitar){
+  const F=fb, p=(pedidosG[g]||[]).find(x=>x.uid===id); if(!p) return;
+  try{
+    if(aceitar) await F.updateDoc(F.doc(F.db,"grupos",g),{["m."+id]:{nome:p.nome||"",email:p.email||"",foto:p.foto||"",desde:new Date().toISOString()}});
+    await F.deleteDoc(F.doc(F.db,"grupos",g,"pedidos",id));
+    toast(aceitar?primeiroNome(p.nome)+" agora participa de “"+(((eu.grupos||{})[g]||{}).nome||"")+"”.":"Pedido recusado.");
+  }catch(e){ falhou(e); }
+}
+async function removerMembro(id){
+  const nome=nomeDe(id);
+  try{ await fb.updateDoc(fb.doc(fb.db,"grupos",aberto),{["m."+id]:fb.deleteField()}); toast(nome+" não participa mais deste controle."); }catch(e){ falhou(e); }
+}
+async function sairDoGrupo(){
+  const g=aberto, nome=((eu.grupos||{})[g]||{}).nome||""; seqEspaco++; pararEspaco();
+  try{ await fb.updateDoc(fb.doc(fb.db,"grupos",g),{["m."+uid]:fb.deleteField()}); }catch(e){ console.error(e); }
+  await euSet("grupos",g,null); await euSet("ativo",null,"pessoal"); refazVigias();
+  abrirEspaco("Você saiu de “"+nome+"”. Voltou para o Pessoal.");
+}
+async function excluirGrupo(){
+  const F=fb, g=aberto, nome=(grupoDoc&&grupoDoc.nome)||"";
+  try{
+    seqEspaco++; pararEspaco();
+    if(grupoDoc&&grupoDoc.codigo) await F.deleteDoc(F.doc(F.db,"convites",grupoDoc.codigo)).catch(()=>{});
+    await Promise.all([...docIds].map(id=>F.deleteDoc(F.doc(F.db,"grupos",g,"docs",id))));
+    await Promise.all((pedidosG[g]||[]).map(p=>F.deleteDoc(F.doc(F.db,"grupos",g,"pedidos",p.uid)).catch(()=>{})));
+    await F.deleteDoc(F.doc(F.db,"grupos",g));
+    await euSet("grupos",g,null); await euSet("ativo",null,"pessoal"); refazVigias();
+    abrirEspaco("Controle “"+nome+"” excluído.");
+  }catch(e){ falhou(e); abrirEspaco(); }
+}
+function seletorEspaco(){
+  const gs=meusGrupos(); if(mode!=="cloud"||!gs.length) return "";
+  const b=(id,nome,np)=>`<button type="button" role="tab" data-espaco="${esc(id)}" class="${aberto===id?"on":""}" aria-selected="${aberto===id}">${id==="pessoal"?ICON.perfil:ICON.grupo}<span>${esc(nome)}</span>${np?`<i class="badge">${np}</i>`:""}</button>`;
+  return `<div class="espacos" role="tablist" aria-label="Qual controle abrir">${b("pessoal","Pessoal")}${gs.map(x=>b(x.id,x.nome,(pedidosG[x.id]||[]).length)).join("")}</div>`;
+}
+function cardCompartilhado(){
+  if(mode!=="cloud") return "";
+  const pessoa=(nome,email,extra)=>`<div class="membro"><span class="avatar" style="width:34px;height:34px">${esc(primeiroNome(nome).slice(0,1).toUpperCase())}</span><span class="t"><b>${esc(nome||email||"Pessoa")}</b><small>${esc(email||"")}</small></span>${extra||""}</div>`;
+  let topo="";
+  if(aberto!=="pessoal"&&grupoDoc){
+    const gd=grupoDoc, dono=gd.dono===uid, ms=Object.entries(gd.m||{}).sort((a,b)=>(a[0]===gd.dono?-1:b[0]===gd.dono?1:0)), ped=pedidosG[aberto]||[];
+    topo=`<div class="grupoatual"><span class="lab">Aberto agora</span><b>${esc(gd.nome)}</b><small>${ms.length} pessoa${ms.length===1?"":"s"} · seu controle Pessoal continua só seu</small></div>
+    ${ped.length&&dono?`<div class="subhead">Pedidos para entrar</div><div class="membros">${ped.map(p=>pessoa(p.nome,p.email,`<span class="acoes"><button class="btn ghost mini" type="button" data-comp="recusar" data-id="${esc(p.uid)}">Recusar</button><button class="btn mini" type="button" data-comp="aceitar" data-id="${esc(p.uid)}">Aceitar</button></span>`)).join("")}</div>`:""}
+    <div class="subhead">Quem participa</div>
+    <div class="membros">${ms.map(([id,x])=>pessoa(x.nome,x.email,(id===gd.dono?'<span class="tag">dono</span>':"")+(id===uid?'<span class="tag">você</span>':"")+(dono&&id!==uid?`<button class="link" type="button" data-comp="remover" data-id="${esc(id)}">remover</button>`:""))).join("")}</div>
+    ${dono?(gd.codigo?`<div class="convite"><span class="lab">Código de convite</span><b>${esc(gd.codigo)}</b></div>
+      <div class="row2"><button class="btn" type="button" data-comp="enviar">Enviar convite</button><button class="btn ghost" type="button" data-comp="novo">Gerar outro código</button></div>
+      <p class="hint">A pessoa abre o link (ou digita o código no Perfil dela) e você aceita o pedido aqui.</p>`
+      :`<button class="btn" type="button" data-comp="novo">Convidar alguém</button>`):""}
+    ${dono?`<button class="link perigo" type="button" data-comp="excluir">Excluir o controle “${esc(gd.nome)}”</button>`:`<button class="btn ghost" type="button" data-comp="sair">Sair de “${esc(gd.nome)}”</button>`}`;
+  }
+  const gs=meusGrupos(), pend=Object.entries(eu.pendentes||{});
+  const lista=aberto==="pessoal"&&gs.length?`<div class="subhead">Seus controles compartilhados</div><div class="membros">${gs.map(x=>`<div class="membro"><span class="avatar" style="width:34px;height:34px">${ICON.grupo}</span><span class="t"><b>${esc(x.nome)}</b><small>${x.dono?"você criou":"participante"}${(pedidosG[x.id]||[]).length?" · "+(pedidosG[x.id]||[]).length+" pedido(s) para entrar":""}</small></span><button class="btn ghost mini" type="button" data-espaco="${esc(x.id)}" data-irpara="compartilhado">Abrir</button></div>`).join("")}</div>`:"";
+  const pendTxt=pend.length?`<div class="subhead">Pedidos que você enviou</div><div class="membros">${pend.map(([g,x])=>`<div class="membro"><span class="avatar" style="width:34px;height:34px">${ICON.grupo}</span><span class="t"><b>${esc(x.nome||"Controle compartilhado")}</b><small>aguardando ${esc(primeiroNome(x.donoNome))} aceitar</small></span><button class="link" type="button" data-comp="cancelar" data-id="${esc(g)}">cancelar</button></div>`).join("")}</div>`:"";
+  return `<div class="card" id="compartilhado"><h2>Controles compartilhados</h2>
+  ${topo||`<p class="hint">Crie um controle separado para dividir com outra pessoa (a casa, uma viagem, a família). Ele começa do zero e quem participa <b>não vê o seu controle Pessoal</b>. Para trocar de um para o outro, use os botões no topo da tela.</p>`}
+  ${lista}${pendTxt}
+  <div class="subhead">Criar um controle compartilhado</div>
+  <div class="convrow"><input class="in nome" id="grNome" maxlength="40" autocomplete="off" placeholder="Nome (ex.: Casa)"><button class="btn" type="button" data-comp="criar">Criar</button></div>
+  ${ui.compErro?`<p class="erro">${esc(ui.compErro)}</p>`:""}
+  <div class="subhead">Entrar com um código de convite</div>
+  <div class="convrow"><input class="in" id="convCod" maxlength="9" autocomplete="off" autocapitalize="characters" placeholder="Código de 8 letras" value="${esc(ui.conviteUrl||"")}"><button class="btn" type="button" data-comp="entrar">Pedir para entrar</button></div>
+  ${ui.convErro?`<p class="erro">${esc(ui.convErro)}</p>`:""}</div>`;
+}
+function avisoCompart(){
+  if(mode!=="cloud") return "";
+  const g=Object.keys(pedidosG).find(k=>(pedidosG[k]||[]).length); if(!g) return "";
+  const p=pedidosG[g], nome=((eu.grupos||{})[g]||{}).nome||"";
+  return `<div class="note info">${esc(primeiroNome(p[0].nome))}${p.length>1?" e mais "+(p.length-1):""} quer entrar em “${esc(nome)}”. <button class="link" type="button" data-espaco="${esc(g)}" data-irpara="compartilhado">Ver pedido</button></div>`;
+}
+function acaoComp(a,id){
+  const dois=(chave,msg)=>{ if(ui[chave]!==(id||true)){ ui[chave]=id||true; toast(msg); setTimeout(()=>{ ui[chave]=null; },5000); return false; } ui[chave]=null; return true; };
+  if(a==="criar") return criarGrupo();
+  if(a==="novo") return gerarConvite();
+  if(a==="enviar") return compartilharConvite();
+  if(a==="entrar") return pedirEntrada();
+  if(a==="cancelar") return cancelarPedido(id);
+  if(a==="aceitar") return responderPedido(aberto,id,true);
+  if(a==="recusar") return responderPedido(aberto,id,false);
+  if(a==="remover"){ if(dois("confRem","Toque de novo em “remover” para confirmar.")) removerMembro(id); return; }
+  if(a==="sair"){ if(dois("confSair","Toque de novo em “Sair” para confirmar.")) sairDoGrupo(); return; }
+  if(a==="excluir"){ if(dois("confExc","Toque de novo para excluir. Todos os lançamentos deste controle compartilhado serão apagados.")) excluirGrupo(); return; }
 }
 function traduzErro(e){ const c=e&&e.code||""; if(c.includes("unauthorized-domain")) return "Este endereço ainda não foi autorizado no Firebase (Authentication → Configurações → Domínios autorizados)."; if(c.includes("popup-closed")||c.includes("cancelled")) return ""; if(c.includes("network")) return "Sem internet. Tente de novo."; return "Não foi possível entrar ("+c+")."; }
 async function entrar(){
@@ -558,11 +764,12 @@ function exportarPlanilha(){
 }
 /* Apaga tudo da pessoa e recomeça do zero */
 async function apagarTudo(){
+  if(!souDono()) return;
   if(mode==="cloud"){
     setStatus("Apagando…","saving");
     const ids=new Set([...docIds,"config",...Object.keys(state.months).map(k=>"m-"+k)]);
     dirty.clear(); Object.keys(timers).forEach(t=>clearTimeout(timers[t]));
-    try{ await Promise.all([...ids].map(id=>fb.deleteDoc(fb.doc(fb.db,"users",uid,"docs",id)))); docIds.clear(); }
+    try{ await Promise.all([...ids].map(id=>fb.deleteDoc(fb.doc(fb.db,...docsPath(),id)))); docIds.clear(); }
     catch(e){ console.error(e); setStatus("Não foi possível apagar — confira a internet","err"); return; }
   } else { try{ localStorage.removeItem(LSKEY); }catch(e){} }
   resetState(); ui.confirmaApagar=false; ui.tab="mes"; ui.month=todayKey; render(); setStatus("Tudo apagado","ok"); toast("Seus dados foram apagados. Comece informando o salário do mês.");
@@ -571,10 +778,12 @@ async function apagarTudo(){
 
 /* atalhos do ícone do app (manifest): ?acao=nova-despesa | ?acao=lembretes */
 let atalhoPendente=new URLSearchParams(location.search).get("acao");
+{ const cv=new URLSearchParams(location.search).get("convite"); if(cv){ ui.conviteUrl=cv.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8); atalhoPendente="convite"; } }
 function trataAtalho(){
   if(!atalhoPendente||!state.loaded||mode==="login") return;
   const a=atalhoPendente; atalhoPendente=null;
   try{ history.replaceState(null,"",location.pathname); }catch(e){}
+  if(a==="convite"){ ui.tab="perfil"; setTimeout(()=>{ render(); const el=document.getElementById("compartilhado"); if(el) el.scrollIntoView({block:"start"}); if(mode!=="cloud") toast("O controle compartilhado precisa do login com Google."); },50); return; }
   ui.tab="mes"; ui.month=todayKey;
   if(a==="nova-despesa") setTimeout(()=>{ render(); openSheet("gasto"); },50); else setTimeout(render,50);
 }
@@ -599,6 +808,7 @@ function header(){
   <div class="topright">${logado?`<div class="tabs" role="tablist">${t("mes","Mês")}${t("ano","Visão geral")}${t("ajustes","Ajustes")}</div>`:botaoTema()}
   ${logado&&state.loaded?`<button type="button" class="iconbtn" data-busca="1" aria-label="Buscar lançamentos" title="Buscar (tecla /)">${ICON.busca}</button>`:""}
   ${logado&&state.loaded?`<button type="button" class="avatarbtn ${ui.tab==="perfil"?"on":""}" data-tab="perfil" aria-label="Abrir meu perfil" title="Meu perfil">${avatar(36)}</button>`:""}</div></div>
+  ${logado&&mode==="cloud"?seletorEspaco():""}
   ${ui.tab==="mes"&&logado?`<div class="months"><button class="arrow" data-nav="-1" aria-label="Mês anterior" ${i<=0?"disabled":""}>‹</button>
   <div class="chips">${VIS.map(k=>`<button class="chip ${k===ui.month?"on":""} ${k===todayKey?"now":""}" data-month="${k}">${ABR[kM(k)-1]} <small>${String(kY(k)).slice(2)}</small></button>`).join("")}</div>
   <button class="arrow" data-nav="1" aria-label="Próximo mês" ${i>=VIS.length-1?"disabled":""}>›</button></div>`:""}
@@ -647,11 +857,11 @@ function linhaLanc(g,k){
   const nota=noCartao(g)?" · fatura de "+abrMes(faturaMes(k,g.dia,cartaoDe(g))):"";
   if(g.forma==="credito") return `<div class="item fixrow parcrow" style="--dot:${catColor(g.cat)}">
     <button type="button" class="check ${g.pago?"on":""}" data-gpago="${esc(g.id)}" data-mes="${k}" aria-pressed="${!!g.pago}" aria-label="${g.pago?"Marcar como não paga":"Marcar como paga"}">${ICON.check}</button>
-    <button type="button" class="fixinfo" data-edit="gasto" data-id="${esc(g.id)}" data-mes="${k}"><b class="${g.desc?"":"empty"}">${esc(g.desc||"sem descrição")}</b><small>${esc(catName(g.cat))} · Crédito${esc(nota)} · ${g.pago?"paga"+(g.pagoEm?" em "+g.pagoEm.slice(8,10)+"/"+g.pagoEm.slice(5,7):""):"não paga"}</small></button>
+    <button type="button" class="fixinfo" data-edit="gasto" data-id="${esc(g.id)}" data-mes="${k}"><b class="${g.desc?"":"empty"}">${esc(g.desc||"sem descrição")}</b><small>${esc(catName(g.cat))} · Crédito${esc(nota+porTxt(g))} · ${g.pago?"paga"+(g.pagoEm?" em "+g.pagoEm.slice(8,10)+"/"+g.pagoEm.slice(5,7):""):"não paga"}</small></button>
     <span class="v">${brl(g.valor)}</span></div>`;
   return `<button type="button" class="item" data-edit="gasto" data-id="${esc(g.id)}" style="--dot:${catColor(g.cat)}">
     <span class="pill">${esc(catName(g.cat))}</span>
-    <span class="desc"><b class="${g.desc?"":"empty"}">${esc(g.desc||"sem descrição")}</b><small>${esc(formaNome(g.forma)+nota)}</small></span>
+    <span class="desc"><b class="${g.desc?"":"empty"}">${esc(g.desc||"sem descrição")}</b><small>${esc(formaNome(g.forma)+nota+porTxt(g))}</small></span>
     <span class="v">${brl(g.valor)}</span></button>`;
 }
 function linhaMeta(mt,k){
@@ -666,8 +876,8 @@ function viewMes(){
   const k=ui.month, m=getMonth(k), c=calc(k), cats=state.config.categorias, isCur=k===todayKey;
   const prevK=shiftKey(k,-1), prev=MESES.includes(prevK)&&ativo(prevK)&&ativo(k)?calc(prevK):null;
   const acum=acumulado(k), cx=caixinhaAte(k), ini=inicioKey();
-  const aviso=!ini?`<div class="note info">Seu controle ainda não começou. Informe o <b>salário deste mês</b> no card Receitas (ou lance uma receita) e os cálculos passam a contar a partir deste mês.</div>`
-    :k<ini?`<div class="note info">Este mês é anterior ao início do seu controle (${esc(nomeMes(ini).toLowerCase())}). Aqui só conta o que você lançar à mão; salário padrão, rendas e contas fixas não entram.</div>`:"";
+  const aviso=avisoCompart()+(!ini?`<div class="note info">Seu controle ainda não começou. Informe o <b>salário deste mês</b> no card Receitas (ou lance uma receita) e os cálculos passam a contar a partir deste mês.</div>`
+    :k<ini?`<div class="note info">Este mês é anterior ao início do seu controle (${esc(nomeMes(ini).toLowerCase())}). Aqui só conta o que você lançar à mão; salário padrão, rendas e contas fixas não entram.</div>`:"");
   const subRec=[ "salário "+brl(c.salario), c.rendas?"fixas "+brl(c.rendas):"", c.avulsos?"avulsos "+brl(c.avulsos):"" ].filter(Boolean).join(" · ");
   const varDesp=prev?variacao(c.despesas,prev.despesas):"";
   const tiles=`<div class="tiles">
@@ -856,6 +1066,7 @@ function viewPerfil(){
     <p class="muted">${u?esc(u.email||""):"Sem login: os dados ficam só neste aparelho."}</p>
     <p class="small muted">${criado?"Conta criada em "+esc(criado)+" · ":""}${ini?"controle desde "+esc(nomeMes(ini).toLowerCase()):"controle ainda não começou"} · ${nLanc} lançamento${nLanc===1?"":"s"}</p></div>
     ${u?`<button class="btn ghost" type="button" data-logout="1">Sair da conta</button>`:""}</div>
+    ${cardCompartilhado()}
   <div class="grid"><div class="col"><div class="card"><h2>Renda e saldos</h2>
     <label class="f money">Salário / renda fixa padrão (todo mês)<input class="in num" id="cfSal" inputmode="numeric" value="${esc(moneyInput(cf.salarioPadrao))}" placeholder="0,00"></label>
     <p class="hint">Entra automaticamente a partir do mês em que seu controle começa. Se um mês for diferente, ajuste na aba Mês.</p>
@@ -883,17 +1094,18 @@ function viewPerfil(){
     <ul class="novidades">${NOVIDADES.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>
     <p class="hint">O histórico completo fica no arquivo CHANGELOG.md do projeto.</p></div>
     <div class="card"><h2>Privacidade</h2><p class="hint">Só você vê seus lançamentos. Eles ficam guardados na sua conta e protegidos por regras que impedem qualquer outra pessoa de ler ou alterar.</p>
-    ${state.config.termos?`<p class="hint">Você aceitou os termos de privacidade (versão ${esc(state.config.termos.v)})${state.config.termos.em?" em "+esc(dataBR(state.config.termos.em)):""}.</p>`:""}
+    ${meusTermos()?`<p class="hint">Você aceitou os termos de privacidade (versão ${esc(meusTermos().v)})${meusTermos().em?" em "+esc(dataBR(meusTermos().em)):""}.</p>`:""}
     <div class="row2"><button class="btn ghost" type="button" data-termos="ler">Ler os termos</button><button class="btn ghost" type="button" data-termos="revogar">Retirar meu aceite</button></div></div>
-    <div class="card perigo"><h2>Recomeçar do zero</h2><p class="hint">Apaga todos os seus lançamentos, contas fixas, parcelas e configurações. Não dá para desfazer; se quiser, baixe um backup antes.</p>
-    ${ui.confirmaApagar?`<label class="f">Para confirmar, digite APAGAR<input class="in" id="txtApagar" autocomplete="off" placeholder="APAGAR"></label><div class="row2"><button class="btn ghost" type="button" data-apagar="nao">Cancelar</button><button class="btn danger" type="button" data-apagar="sim">Apagar tudo</button></div>`:`<button class="btn danger" type="button" data-apagar="pedir">Apagar todos os meus dados</button>`}</div></div></div>`;
+    ${souDono()?`    <div class="card perigo"><h2>Recomeçar do zero</h2><p class="hint">Apaga todos os seus lançamentos, contas fixas, parcelas e configurações. Não dá para desfazer; se quiser, baixe um backup antes.</p>
+    ${ui.confirmaApagar?`<label class="f">Para confirmar, digite APAGAR<input class="in" id="txtApagar" autocomplete="off" placeholder="APAGAR"></label><div class="row2"><button class="btn ghost" type="button" data-apagar="nao">Cancelar</button><button class="btn danger" type="button" data-apagar="sim">Apagar tudo</button></div>`:`<button class="btn danger" type="button" data-apagar="pedir">Apagar todos os meus dados</button>`}</div>`:""}</div></div>`;
 }
 
 /* =====================================================================
    TERMOS DE PRIVACIDADE (aceite obrigatório para usar o app)
    ===================================================================== */
-const TERMOS_V="1.0", TERMOS_DATA="17/10/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
-const precisaTermos=()=>mode!=="login"&&state.loaded&&!(state.config.termos&&state.config.termos.v===TERMOS_V);
+const TERMOS_V="1.1", TERMOS_DATA="17/10/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
+const meusTermos=()=>mode==="cloud"?eu.termos:state.config.termos;
+const precisaTermos=()=>{ const t=meusTermos(); return mode!=="login"&&state.loaded&&!(t&&t.v===TERMOS_V); };
 const dataBR=iso=>{ const d=new Date(iso); return isNaN(d)?"":d.toLocaleDateString("pt-BR"); };
 function textoTermos(){
   return `<h3>1. O que é o MB Controle</h3>
@@ -904,29 +1116,33 @@ function textoTermos(){
   <li><b>Extratos importados:</b> o arquivo é lido dentro do seu aparelho. Só os lançamentos que você escolher importar são salvos; o arquivo em si não é enviado.</li>
   <li><b>No seu aparelho:</b> preferências como tema, lembretes já avisados e uma cópia para funcionar sem internet.</li></ul>
   <h3>3. Para que os dados são usados</h3>
-  <p>Somente para mostrar o seu controle financeiro a você, em qualquer aparelho em que você entrar. Os dados <b>não são vendidos, não são usados para publicidade e não são compartilhados</b> com ninguém.</p>
+  <p>Somente para mostrar o seu controle financeiro a você, em qualquer aparelho em que você entrar. Os dados <b>não são vendidos, não são usados para publicidade e não são compartilhados</b> com ninguém, a não ser com as pessoas de um controle compartilhado do qual você decidir participar (item 5).</p>
   <h3>4. Onde os dados ficam</h3>
   <p>Na sua conta, nos servidores do Google Firebase (login e banco de dados), protegidos por regras que só deixam a sua própria conta ler e alterar os seus dados. O site é hospedado no GitHub Pages, que pode registrar dados técnicos de acesso (como endereço IP) por segurança. O Google e o GitHub seguem as próprias políticas de privacidade.</p>
-  <h3>5. Seus direitos (LGPD — Lei 13.709/2018)</h3>
+  <h3>5. Controles compartilhados</h3>
+  <ul><li>Só existem se você quiser. Um controle compartilhado é <b>separado do seu controle Pessoal</b>: quem participa não vê nada do Pessoal.</li>
+  <li>Dentro de um controle compartilhado, todas as pessoas aceitas veem e alteram os lançamentos daquele controle e veem o nome, o e-mail e a foto umas das outras. O app mostra quem fez cada lançamento.</li>
+  <li>Quem cria o controle aceita ou recusa os pedidos, pode remover pessoas e excluir o controle. Quem participa pode sair a qualquer momento.</li></ul>
+  <h3>6. Seus direitos (LGPD — Lei 13.709/2018)</h3>
   <ul><li><b>Ver e levar seus dados:</b> Perfil → baixar backup ou planilha para Excel.</li>
   <li><b>Corrigir:</b> edite qualquer lançamento a qualquer momento.</li>
-  <li><b>Apagar:</b> Perfil → Recomeçar do zero apaga todos os seus lançamentos e configurações.</li>
+  <li><b>Apagar:</b> Perfil → Recomeçar do zero apaga todos os seus lançamentos e configurações (num controle compartilhado, só quem o criou).</li>
   <li><b>Retirar o aceite:</b> Perfil → Privacidade → Retirar meu aceite. Sem o aceite, o app não pode ser usado.</li>
   <li><b>Excluir a conta por completo</b> ou tirar dúvidas: fale com o responsável pelo contato abaixo.</li></ul>
-  <h3>6. Notificações</h3>
+  <h3>7. Notificações</h3>
   <p>Os avisos de contas a vencer só são enviados se você permitir no aparelho, e podem ser desligados no Perfil ou nas configurações do celular.</p>
-  <h3>7. Responsabilidade</h3>
+  <h3>8. Responsabilidade</h3>
   <p>O app é oferecido de graça, como está. Os valores e saldos são calculados a partir do que você lança e servem para organização pessoal; não são consultoria financeira. Guarde backups dos dados importantes.</p>
-  <h3>8. Mudanças nestes termos</h3>
+  <h3>9. Mudanças nestes termos</h3>
   <p>Se os termos mudarem, o app mostra a nova versão e pede o seu aceite de novo antes de continuar.</p>
-  <h3>9. Contato</h3>
+  <h3>10. Contato</h3>
   <p><a href="${CONTATO}" target="_blank" rel="noopener">${CONTATO.replace(/^https?:\/\//,"")}</a></p>`;
 }
 function viewTermos(pedir){
   const recusou=ui.recusouTermos&&pedir;
   return `<div class="card termos">
   <h2>Termos de privacidade</h2><p class="hint">Versão ${TERMOS_V} · ${TERMOS_DATA}</p>
-  ${pedir?`<p>${state.config.termos?"Os termos mudaram. ":""}Antes de usar o MB Controle, leia como seus dados são tratados e escolha se aceita.</p>`:""}
+  ${pedir?`<p>${meusTermos()?"Os termos mudaram. ":""}Antes de usar o MB Controle, leia como seus dados são tratados e escolha se aceita.</p>`:""}
   <div class="termostexto">${textoTermos()}</div>
   ${recusou?`<p class="note">Sem aceitar os termos não é possível usar o app neste aparelho. Seus dados não foram alterados.</p>`:""}
   ${pedir?`<label class="checkline"><input type="checkbox" id="t-li"> Li e entendi os termos de privacidade</label>
@@ -936,12 +1152,12 @@ function viewTermos(pedir){
 function acaoTermos(a){
   if(a==="ler"){ ui.lerTermos=true; render(); window.scrollTo({top:0}); return; }
   if(a==="fechar"){ ui.lerTermos=false; render(); window.scrollTo({top:0}); return; }
-  if(a==="aceitar"){ state.config.termos={v:TERMOS_V,em:new Date().toISOString()}; ui.recusouTermos=false; ui.lerTermos=false; save("config"); render(); toast("Termos aceitos. Bom controle!"); return; }
+  if(a==="aceitar"){ const t={v:TERMOS_V,em:new Date().toISOString()}; if(mode==="cloud") salvaEu({termos:t}); else { state.config.termos=t; save("config"); } ui.recusouTermos=false; ui.lerTermos=false; render(); toast("Termos aceitos. Bom controle!"); return; }
   if(a==="recusar"){
     if(mode==="cloud"&&fb){ loginErro="Para usar o MB Controle é preciso aceitar os termos de privacidade. Seus dados não foram alterados."; fb.signOut(fb.auth); return; }
     ui.recusouTermos=true; render(); return;
   }
-  if(a==="revogar"){ if(!confirmaRevogar()) return; state.config.termos=null; ui.lerTermos=false; save("config"); render(); window.scrollTo({top:0}); }
+  if(a==="revogar"){ if(!confirmaRevogar()) return; if(mode==="cloud") salvaEu({termos:null}); else { state.config.termos=null; save("config"); } ui.lerTermos=false; render(); window.scrollTo({top:0}); }
 }
 function confirmaRevogar(){ ui.revogarCont=(ui.revogarCont||0)+1; if(ui.revogarCont<2){ toast("Toque de novo em “Retirar meu aceite” para confirmar."); setTimeout(()=>{ ui.revogarCont=0; },5000); return false; } ui.revogarCont=0; return true; }
 
@@ -1024,7 +1240,7 @@ async function abrirArquivoExtrato(file){
 function importarExtrato(){
   const s=ui.sheet, its=(s.itens||[]).filter(x=>x.incluir&&!x.bloq); if(!its.length) return erroSheet("Marque pelo menos um lançamento para importar.");
   const criados=[], meses=new Set();
-  its.forEach(x=>{ const m=getMonth(x.k), id=uidGen(), base={id,dia:x.dia,valor:x.valor,desc:x.desc}; if(x.fitid) base.imp=x.fitid;
+  its.forEach(x=>{ const m=getMonth(x.k), id=uidGen(), base=marcaPor({id,dia:x.dia,valor:x.valor,desc:x.desc}); if(x.fitid) base.imp=x.fitid;
     if(x.tipo==="gasto"){ Object.assign(base,{cat:x.cat,forma:x.forma}); if(x.forma==="credito"){ if(s.cartaoImp) base.cartaoId=s.cartaoImp; } else if(s.contaImp) base.contaId=s.contaImp; m.gastos.push(base); criados.push([x.k,"gastos",id]); }
     else { if(s.contaImp) base.contaId=s.contaImp; m.avulsos.push(base); criados.push([x.k,"avulsos",id]); }
     meses.add(x.k); });
@@ -1342,13 +1558,13 @@ function salvarSheet(outro){
     if(parc&&parc.checked){
       if(n<2||n>48) return erroSheet("Escolha de 2 a 48 parcelas","s-n");
       const vc=Math.round(Number(val("s-venc"))||dia);
-      const p=poeCC({id:"p"+uidGen(),desc,cat,forma:forma||"credito",total:v,n,compra:k,dia,venc:vc>=1&&vc<=31?vc:dia});
+      const p=marcaPor(poeCC({id:"p"+uidGen(),desc,cat,forma:forma||"credito",total:v,n,compra:k,dia,venc:vc>=1&&vc<=31?vc:dia}));
       state.config.parcelas.push(p); save("config");
       const fim=()=>toast(n+"x de "+brl(v/n)+" lançado.","Desfazer",()=>apagarItem("config","parcelas",p.id,"Compra parcelada desfeita."));
       if(outro){ ui.sheet={tipo:"gasto",id:null,mes:s.mes}; renderSheet(); document.getElementById("s-valor").focus(); render(); fim(); } else { closeSheet(); render(); fim(); }
       return;
     }
-    const novo=poeCC({id:uidGen(),dia,cat,valor:v,desc,forma}); m.gastos.push(novo); save(k);
+    const novo=marcaPor(poeCC({id:uidGen(),dia,cat,valor:v,desc,forma})); m.gastos.push(novo); save(k);
     const al=alertasOrcamento(k).find(a=>a.id===cat);
     const msg=brl(v)+" em "+catName(cat)+" lançado"+(noCartao(novo)?" (fatura de "+abrMes(faturaMes(k,dia,cartaoDe(novo)))+")":"")+(al?" · "+(al.nivel==="passou"?"passou do limite!":Math.round(al.p*100)+"% do limite"):"")+".";
     const fim=()=>toast(msg,"Desfazer",()=>apagarItem(k,"gastos",novo.id,"Lançamento desfeito."));
@@ -1359,14 +1575,14 @@ function salvarSheet(outro){
     const rep=document.getElementById("s-repete");
     const ctA=valSel("s-conta");
     if(rep&&rep.checked){ state.config.rendas.push({id:"r"+uidGen(),nome:desc||"Renda fixa",valor:v,desde:k,ate:null,contaId:ctA}); save("config"); closeSheet(); render(); toast("Renda fixa criada a partir de "+abrMes(k)+"."); return; }
-    let av; if(s.id){ av=itemAtual(); Object.assign(av,{valor:v,dia,desc}); } else { av={id:uidGen(),dia,desc,valor:v}; m.avulsos.push(av); }
+    let av; if(s.id){ av=itemAtual(); Object.assign(av,{valor:v,dia,desc}); } else { av=marcaPor({id:uidGen(),dia,desc,valor:v}); m.avulsos.push(av); }
     if(ctA) av.contaId=ctA; else delete av.contaId;
     save(k); closeSheet(); render(); toast(s.id?"Receita atualizada.":"Receita de "+brl(v)+" lançada."); return;
   }
   if(s.tipo==="caixinha"){
     const tipo=radio("s-cxtipo")||"guardar";
     const metaId=(document.getElementById("s-meta")||{}).value||"";
-    let item; if(s.id){ item=itemAtual(); Object.assign(item,{valor:v,dia,desc,tipo}); } else { item={id:uidGen(),dia,tipo,valor:v,desc}; m.caixinha.push(item); }
+    let item; if(s.id){ item=itemAtual(); Object.assign(item,{valor:v,dia,desc,tipo}); } else { item=marcaPor({id:uidGen(),dia,tipo,valor:v,desc}); m.caixinha.push(item); }
     if(metaId) item.metaId=metaId; else delete item.metaId;
     save(k); closeSheet(); render();
     const mt=state.config.metas.find(x=>x.id===metaId), info=mt?infoMeta(mt,null):null;
@@ -1441,9 +1657,12 @@ function setTab(t){ ui.tab=t; render(); window.scrollTo({top:0}); }
 app.addEventListener("click",e=>{
   const b=e.target.closest("button,tr[data-open]"); if(!b) return;
   const d=b.dataset;
+  if(d.espaco){ const ir=d.irpara; if(ir) ui.tab="perfil"; trocarEspaco(d.espaco).then(()=>{ if(ir) setTimeout(()=>{ const el=document.getElementById(ir); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); },400); }); return; }
+  if(d.irpara){ ui.tab="perfil"; render(); setTimeout(()=>{ const el=document.getElementById(d.irpara); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); },60); return; }
   if(d.tab){ setTab(d.tab); return; }
   if(d.login){ entrar(); return; }
   if(d.termos){ acaoTermos(d.termos); return; }
+  if(d.comp){ acaoComp(d.comp,d.id); return; }
   if(d.logout){ fb.signOut(fb.auth); return; }
   if(d.tema){ trocaTema(); return; }
   if(d.export){ exportar(); return; }

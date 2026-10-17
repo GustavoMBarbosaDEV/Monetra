@@ -1,10 +1,64 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Cada pessoa só lê e escreve os próprios dados: users/{seu id}/docs/...
+
+    // Controle Pessoal: cada pessoa só lê e escreve os próprios dados (users/{seu id}/...)
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Controles compartilhados: grupos/{id} guarda o nome, o dono e quem participa (m)
+    function grupo(g) {
+      return get(/databases/$(database)/documents/grupos/$(g)).data;
+    }
+    function participa(g) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/grupos/$(g)) &&
+        request.auth.uid in grupo(g).m;
+    }
+
+    match /grupos/{g} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.m;
+      // criar: o dono é quem cria e começa sozinho
+      allow create: if request.auth != null &&
+        request.resource.data.dono == request.auth.uid &&
+        request.resource.data.m.keys().hasOnly([request.auth.uid]);
+      // o dono altera (aceitar, remover, código); não pode trocar o dono nem se remover
+      allow update: if request.auth != null && resource.data.dono == request.auth.uid &&
+        request.resource.data.dono == resource.data.dono &&
+        request.auth.uid in request.resource.data.m;
+      // quem participa pode sair (só remove a si mesmo)
+      allow update: if request.auth != null && request.auth.uid != resource.data.dono &&
+        request.auth.uid in resource.data.m &&
+        !(request.auth.uid in request.resource.data.m) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['m']) &&
+        resource.data.m.diff(request.resource.data.m).affectedKeys().hasOnly([request.auth.uid]);
+      allow delete: if request.auth != null && resource.data.dono == request.auth.uid;
+
+      // lançamentos do controle compartilhado
+      match /docs/{doc} {
+        allow read, write: if participa(g);
+      }
+
+      // pedidos para entrar: só com um código de convite válido deste controle
+      match /pedidos/{quem} {
+        allow create, update: if request.auth != null && request.auth.uid == quem &&
+          exists(/databases/$(database)/documents/convites/$(request.resource.data.codigo)) &&
+          get(/databases/$(database)/documents/convites/$(request.resource.data.codigo)).data.grupo == g;
+        allow read, delete: if request.auth != null &&
+          (request.auth.uid == quem || request.auth.uid == grupo(g).dono);
+      }
+    }
+
+    // Códigos de convite: qualquer pessoa logada consulta um código; só o dono do controle cria e apaga
+    match /convites/{codigo} {
+      allow get: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.dono == request.auth.uid &&
+        grupo(request.resource.data.grupo).dono == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.dono == request.auth.uid;
+    }
+
     // Todo o resto fica bloqueado
     match /{document=**} {
       allow read, write: if false;

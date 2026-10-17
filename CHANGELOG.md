@@ -12,6 +12,17 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.0.0 — 17/10/2026
+**Controles compartilhados**
+- Crie um controle compartilhado separado (ex.: Casa, Viagem) para dividir com outra pessoa, cada uma com a própria conta Google. Ele começa do zero.
+- O controle **Pessoal continua só seu**: quem participa de um compartilhado não vê nada dele.
+- Botões no topo da tela para trocar entre o Pessoal e os compartilhados (dá para participar de mais de um).
+- Perfil → Controles compartilhados: criar, enviar convite (link ou código de 8 letras), aceitar ou recusar pedidos, remover pessoas e excluir o controle. Quem participa pode sair quando quiser.
+- Aviso de pedido novo na tela do mês e no botão do controle.
+- Cada lançamento num controle compartilhado mostra quem fez (ex.: "Pix · Maria").
+- Termos de privacidade versão 1.1, com as regras do compartilhamento. O aceite passa a ser de cada pessoa (todos aceitam de novo uma vez).
+- **Novas regras do Firestore** (arquivo `firestore.rules`): precisam ser publicadas no Firebase antes de usar esta versão.
+
 ## 2.8.0 — 17/10/2026
 **Importar extrato e termos de privacidade**
 - Importar extrato do banco em **OFX** ou **CSV** (Ajustes → Importar extrato), inclusive a fatura do cartão de crédito.
