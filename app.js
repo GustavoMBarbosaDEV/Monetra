@@ -10,11 +10,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="2.4.1";
+const VERSAO="2.5.0";
 const NOVIDADES=[
-  "Campos de valor no estilo dos apps de banco: digite só os números e o ponto do milhar e a vírgula dos centavos aparecem sozinhos (ex.: 189320 vira 1.893,20).",
-  "No celular, os campos de valor abrem o teclado numérico.",
-  "Colar um valor (ex.: \"1.200\") mantém o número certo."
+  "Pronto para virar aplicativo Android (APK): nome, ícones, cores e capturas de tela.",
+  "Atalho \"Nova despesa\": segure o ícone do app no celular para lançar direto.",
+  "Atalho \"Lembretes\" que abre a tela do mês."
 ];
 
 /* ---------- utilidades ---------- */
@@ -494,6 +494,16 @@ async function apagarTudo(){
 }
 
 
+/* atalhos do ícone do app (manifest): ?acao=nova-despesa | ?acao=lembretes */
+let atalhoPendente=new URLSearchParams(location.search).get("acao");
+function trataAtalho(){
+  if(!atalhoPendente||!state.loaded||mode==="login") return;
+  const a=atalhoPendente; atalhoPendente=null;
+  try{ history.replaceState(null,"",location.pathname); }catch(e){}
+  ui.tab="mes"; ui.month=todayKey;
+  if(a==="nova-despesa") setTimeout(()=>{ render(); openSheet("gasto"); },50); else setTimeout(render,50);
+}
+
 /* =====================================================================
    TELAS
    ===================================================================== */
@@ -505,7 +515,7 @@ function render(){
   app.innerHTML=header()+corpo+bottomNav();
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus({preventScroll:true}); if(sel&&el.setSelectionRange){ try{el.setSelectionRange(sel[0],sel[1])}catch(e){} } } }
   const on=document.querySelector(".chip.on"); if(on&&on.scrollIntoView&&!fid) on.scrollIntoView({block:"nearest",inline:"center"});
-  if(state.loaded&&mode!=="login") setTimeout(()=>verificaLembretes(false),500);
+  if(state.loaded&&mode!=="login"){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); }
 }
 function header(){
   const t=(id,l)=>`<button role="tab" data-tab="${id}" aria-selected="${ui.tab===id}">${l}</button>`;

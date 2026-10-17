@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 2.5.0 — 17/10/2026
+**Pronto para virar aplicativo Android**
+- Manifest completo (nome, descrição, categorias, ícones, cores) para gerar o APK pelo PWABuilder.
+- Capturas de tela do app (celular e computador) mostradas na instalação.
+- Atalhos no ícone do app: "Nova despesa" e "Lembretes".
+
 ## 2.4.1 — 17/10/2026
 **Correção**
 - Campos de valor no estilo dos apps de banco: digite só os números e o campo se forma sozinho, com ponto do milhar e vírgula dos centavos (ex.: 1, 8, 9, 3, 2, 0 → 1.893,20).

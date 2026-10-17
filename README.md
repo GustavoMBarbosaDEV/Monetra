@@ -101,3 +101,24 @@ Ao publicar uma versão nova:
 4. No GitHub Desktop, aba **History** → botão direito no commit → **Create Tag** → `v2.4.0` (o número da versão) → **Push origin**.
 
 Para mudanças grandes, use um branch `testes` e só junte na `main` (que é a versão no ar) quando estiver tudo certo.
+
+## Aplicativo Android (APK) — grátis
+
+**Jeito mais simples (sem APK):** no celular, abra o site no Chrome → menu ⋮ → **Instalar app**.
+
+**Gerar o APK (PWABuilder, grátis):**
+
+1. Abra **pwabuilder.com**, cole o endereço do app e clique em **Start**.
+2. Clique em **Package for stores** → **Android** → **Generate Package**.
+3. Em *Package ID*, use algo como `io.github.gustavombarbosadev.mbcontrole`. Em *Signing key*, deixe **Create new**.
+4. Baixe o .zip. Dentro dele:
+   - o arquivo **.apk**, para instalar e compartilhar;
+   - o **signing.keystore** e o **signing-key-info.txt**: **guarde em lugar seguro**, porque sem eles não dá para atualizar o app depois;
+   - o **assetlinks.json**, que tira a barra de endereço de dentro do app (veja abaixo).
+5. Mande o .apk para o celular e instale (o Android pede para permitir "instalar apps desconhecidos").
+
+**Tirar a barra de endereço do app (assetlinks):** o arquivo precisa ficar na raiz do domínio, em
+`https://gustavombarbosadev.github.io/.well-known/assetlinks.json`. Para isso, crie um repositório chamado
+`GustavoMBarbosaDEV.github.io`, coloque nele a pasta `.well-known` com o `assetlinks.json` e um arquivo `.nojekyll`, e ative o GitHub Pages.
+
+O APK abre o próprio site, então toda atualização publicada no GitHub aparece no app sem gerar outro APK.
