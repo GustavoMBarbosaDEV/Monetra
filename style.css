@@ -516,3 +516,14 @@ body.travado #app,body.travado #sheet,body.travado #toast{visibility:hidden}
 .btn.bio{display:inline-flex;align-items:center;gap:8px;margin-top:4px}
 .btn.bio svg{width:22px;height:22px}
 .v.neg{color:var(--bad)}
+
+/* ===== v3.6: subcategorias e etiquetas ===== */
+.bar .subs{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px;font-size:12.5px;color:var(--muted)}
+.bar .subs span{white-space:nowrap}
+.bar .subs b{color:var(--fg);font-weight:600;margin-left:2px}
+.subrow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.subrow .in{flex:1}
+.cats.subcats label{font-size:13px}
+.tagsug{display:flex;flex-wrap:wrap;gap:6px;margin-top:-4px}
+.tagsug .tag{cursor:pointer;border:1px dashed var(--accent);background:transparent;color:var(--accent);font:inherit;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px}
+button.bar.tagbar{display:block;width:100%;text-align:left;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}

@@ -12,6 +12,17 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.6.0 — 17/10/2026
+**Subcategorias e etiquetas**
+- **Subcategorias**: na categoria (Ajustes → Categorias), adicione, renomeie ou remova subcategorias (ex.: Alimentação → Mercado, Restaurante, iFood).
+- Ao lançar uma despesa (ou compra parcelada), as subcategorias da categoria escolhida aparecem para selecionar (opcional).
+- O limite e o gráfico continuam pela categoria principal; o card "Para onde foi" mostra quanto foi para cada subcategoria.
+- **Etiquetas** livres nos gastos (ex.: #viagem, #presente, #trabalho), com sugestões das etiquetas já usadas.
+- Subcategoria e etiquetas aparecem nas listas de lançamentos.
+- Card **Etiquetas** na Visão geral com o total gasto em cada uma; tocar abre os lançamentos.
+- Busca encontra por subcategoria e por **#etiqueta**.
+- Correção: marcar ou desmarcar uma conta como paga (e outras ações na tela) não faz mais a página pular para o topo.
+
 ## 3.5.0 — 17/10/2026
 **Dívidas com pessoas e desbloqueio por digital**
 - Ajustes → **Dívidas com pessoas**: "Alguém me deve" e "Eu devo", com pessoa, valor, descrição, data e dia combinado.
