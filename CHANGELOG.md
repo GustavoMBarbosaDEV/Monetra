@@ -12,6 +12,33 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.9.0 — 17/10/2026
+**Modo viagem**
+- Ajustes → **Modo viagem**: cadastre viagens com nome, datas de ida e volta, moeda do destino, cotação, taxas do cartão (IOF + spread, em %) e orçamento em reais.
+- Botão **Buscar cotação de hoje** (cotação comercial da ExchangeRate-API); dá para digitar a cotação à mão.
+- Nos dias da viagem, a nova despesa já abre como **gasto da viagem**: digite o valor na moeda de lá (ou em reais) e o app mostra e salva a conversão para real com a cotação e as taxas da viagem.
+- Cada gasto guarda a cotação do dia em que foi lançado; mudar a cotação depois vale só para os próximos.
+- Card da viagem no topo do mês atual: total gasto (em reais e na moeda), quanto ainda pode gastar no orçamento e a cotação usada.
+- Resumo da viagem: total, média por dia, gastos por categoria e lista de lançamentos.
+- Os gastos da viagem continuam contando normalmente no mês (saldo, categorias, limites).
+- Compras parceladas feitas na viagem entram no total da viagem; a prévia das parcelas já mostra o valor convertido.
+
+**Segunda revisão (correções)**
+- Salvamento: três situações raras em que um lançamento de outro aparelho podia se perder (editar enquanto um envio está em andamento, edição guardada sem internet em um mês ainda vazio, primeiro uso offline em um aparelho novo) foram corrigidas.
+- Editar um gasto da viagem mantém a cotação do dia em que foi lançado; se a viagem for excluída, o valor em reais é mantido.
+- Celular: a categoria da despesa vai para a linha de baixo e a descrição aparece inteira.
+- Avisos com "Desfazer" aparecem por cima da janela aberta.
+- Enter na janela de despesa salva e fecha (antes fazia "Salvar e lançar outra").
+- Números grandes diminuem de tamanho em vez de quebrar no meio (assinaturas, dívidas, viagem).
+- Visão geral no computador: card da retrospectiva e gráfico com tamanho certo.
+- Tab fica dentro da janela aberta (teclado).
+- Caixinha: não dá para retirar da "Geral" mais do que ela tem; texto "retirado da caixinha".
+- Desmarcar uma compra do cartão como paga desmarca a fatura daquele mês.
+- "Passou do limite" aparece em vermelho nos lembretes.
+- "Recomeçar do zero" no modo sem login não pede para aceitar os termos de novo.
+- Ao informar o primeiro salário, o app oferece repetir o valor todo mês.
+- Textos do modo sem login e do PIN corrigidos; plurais na importação de extrato.
+
 ## 3.8.0 — 17/10/2026
 **Revisão geral**
 
