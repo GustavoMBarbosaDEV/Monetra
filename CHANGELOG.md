@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 2.6.0 — 17/10/2026
+**Metas de economia e alertas de orçamento**
+- Metas de economia: caixinhas com nome, valor e prazo. O app mostra o progresso e quanto guardar por mês para chegar lá.
+- Ao guardar ou retirar da caixinha, dá para escolher a meta. O que não tem meta fica na caixinha "Geral".
+- Alertas de orçamento: aviso nos Lembretes e por notificação quando uma categoria chega a 80% e quando passa do limite do mês.
+- O aviso de despesa lançada mostra quando a categoria está perto do limite.
+- Avisos de "Desfazer" mais achatados, no canto de baixo da tela, com o **Desfazer** em vermelho.
+
 ## 2.5.1 — 17/10/2026
 **Correção**
 - O service worker passa a ser registrado direto na página (index.html), para o PWABuilder e o Chrome reconhecerem o app como instalável e com funcionamento offline.
