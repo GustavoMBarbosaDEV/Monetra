@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 2.5.1 — 17/10/2026
+**Correção**
+- O service worker passa a ser registrado direto na página (index.html), para o PWABuilder e o Chrome reconhecerem o app como instalável e com funcionamento offline.
+- A instalação do modo offline não falha mais se um arquivo não carregar.
+
 ## 2.5.0 — 17/10/2026
 **Pronto para virar aplicativo Android**
 - Manifest completo (nome, descrição, categorias, ícones, cores) para gerar o APK pelo PWABuilder.

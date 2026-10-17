@@ -10,11 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="2.5.0";
+const VERSAO="2.5.1";
 const NOVIDADES=[
-  "Pronto para virar aplicativo Android (APK): nome, ícones, cores e capturas de tela.",
-  "Atalho \"Nova despesa\": segure o ícone do app no celular para lançar direto.",
-  "Atalho \"Lembretes\" que abre a tela do mês."
+  "Correção: o app passa a ser reconhecido como instalável e com funcionamento offline pelo gerador de APK.",
+  "Pronto para virar aplicativo Android (APK), com atalhos \"Nova despesa\" e \"Lembretes\" no ícone."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1127,4 +1126,4 @@ render();
 init();
 })();
 
-if("serviceWorker" in navigator&&location.protocol==="https:"){ window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }
+/* o service worker é registrado no index.html */

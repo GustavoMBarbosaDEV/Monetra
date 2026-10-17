@@ -21,6 +21,12 @@
   <div class="top"><div class="brand"><h1>MB <span>Controle</span></h1><span class="status" id="status"><i></i>Carregando…</span></div></div>
   <div class="empty-state">Carregando…</div>
 </div>
+<script>
+  /* Service worker: deixa o app abrir sem internet e permite instalar como aplicativo */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(function () {}); });
+  }
+</script>
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
 </body>

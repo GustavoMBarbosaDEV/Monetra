@@ -1,8 +1,11 @@
 // Service worker: deixa o app abrir mesmo sem internet.
-const CACHE = "mb-controle-2.5.0"; // acompanhe a versão do app (VERSAO em app.js)
+const CACHE = "mb-controle-2.5.1"; // acompanhe a versão do app (VERSAO em app.js)
 const SHELL = ["./", "index.html", "style.css", "app.js", "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
-self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
+self.addEventListener("install", e => {
+  // guarda cada arquivo separadamente: se um falhar, os outros continuam
+  e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => null)))).then(() => self.skipWaiting()));
+});
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
