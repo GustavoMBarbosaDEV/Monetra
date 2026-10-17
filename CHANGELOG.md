@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.4.0 — 17/10/2026
+**Retrospectiva do ano**
+- Card **Retrospectiva** no topo da Visão geral, que abre um resumo em telas (use Anterior/Próximo ou as setas do teclado).
+- Telas: o ano em números, entrou e saiu (e quanto sobrou), para onde foi (5 categorias que mais pesaram), mês mais caro, mais econômico e melhor saldo, curiosidades (maior gasto, dia da semana em que mais gasta, total de contas fixas), caixinha e metas atingidas, e um resumo final.
+- Botão **Compartilhar resumo** (WhatsApp, etc.) só com totais, sem detalhes dos lançamentos.
+- Com mais de um ano de controle, dá para escolher o ano.
+- Em dezembro e janeiro, o sininho avisa que a retrospectiva está pronta.
+
 ## 3.3.0 — 17/10/2026
 **Bloqueio com PIN**
 - Perfil → **Bloqueio com PIN**: crie um PIN de 4 números, pedido sempre que o app abrir neste aparelho (cada aparelho tem o seu).
