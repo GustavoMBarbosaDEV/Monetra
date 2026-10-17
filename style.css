@@ -501,3 +501,18 @@ body.travado #app,body.travado #sheet,body.travado #toast{visibility:hidden}
 .ranos button{border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:999px;padding:5px 14px;font:inherit;font-weight:600;cursor:pointer}
 .ranos button.on{background:#fff;color:var(--accent)}
 .rslide.fim .btn{background:#fff;color:var(--accent);border-color:#fff}
+
+/* ===== v3.5: dívidas e digital ===== */
+.subhead.pessoa{display:flex;justify-content:space-between;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--fg)}
+.subhead.pessoa span:last-child{font-weight:700;font-size:13px}
+.divrow.atras small{color:var(--bad)}
+.divpags{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
+.pagrow{display:flex;align-items:center;gap:10px;padding:4px 0}
+.pagrow span{color:var(--muted);min-width:48px}
+.pagrow b{flex:1}
+.divresta{margin:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.quitadas{margin-top:4px}
+.btn.bio{display:inline-flex;align-items:center;gap:8px;margin-top:4px}
+.btn.bio svg{width:22px;height:22px}
+.v.neg{color:var(--bad)}

@@ -12,6 +12,15 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 3.5.0 — 17/10/2026
+**Dívidas com pessoas e desbloqueio por digital**
+- Ajustes → **Dívidas com pessoas**: "Alguém me deve" e "Eu devo", com pessoa, valor, descrição, data e dia combinado.
+- Totais de quanto te devem, quanto você deve e o saldo; lista agrupada por pessoa.
+- Registre pagamentos aos poucos (ou "Quitar tudo"). Opção de lançar o pagamento no mês como receita ou despesa.
+- Dívidas quitadas ficam guardadas e podem ser vistas depois.
+- O sininho avisa um dia antes, no dia e depois da data combinada.
+- **Desbloqueio por digital (ou rosto)**: com o PIN ligado, ative em Perfil → Bloqueio com PIN. Ao abrir, o app pede a digital; o PIN continua valendo como alternativa.
+
 ## 3.4.0 — 17/10/2026
 **Retrospectiva do ano**
 - Card **Retrospectiva** no topo da Visão geral, que abre um resumo em telas (use Anterior/Próximo ou as setas do teclado).

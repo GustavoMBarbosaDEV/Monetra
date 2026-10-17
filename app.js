@@ -10,12 +10,12 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="3.4.0";
+const VERSAO="3.5.0";
 const NOVIDADES=[
-  "Retrospectiva do ano na Visão geral: quanto entrou e saiu, quanto você guardou, onde mais gastou, mês mais caro e mais econômico, maior gasto e curiosidades.",
-  "Dá para compartilhar o resumo da retrospectiva.",
-  "Em dezembro e janeiro, o sininho avisa que a retrospectiva está pronta.",
-  "Bloqueio com PIN (Perfil → Bloqueio com PIN)."
+  "Dívidas com pessoas (Ajustes): anote quem te deve e para quem você deve, registre pagamentos aos poucos e veja quanto falta.",
+  "O sininho avisa no dia combinado para pagar ou receber uma dívida.",
+  "Desbloqueio por digital (ou rosto) junto com o PIN, em Perfil → Bloqueio com PIN.",
+  "Retrospectiva do ano na Visão geral."
 ];
 
 /* ---------- utilidades ---------- */
@@ -55,6 +55,7 @@ document.addEventListener("input",e=>{ const el=e.target; if(ehCampoDinheiro(el)
 document.addEventListener("paste",e=>{ const el=e.target; if(!ehCampoDinheiro(el)) return; const t=(e.clipboardData||window.clipboardData)?.getData("text")||""; const v=parseMoney(t); if(v>0){ e.preventDefault(); el.value=moneyInput(v); el.dispatchEvent(new Event("input",{bubbles:true})); } },true);
 document.addEventListener("blur",e=>{ const el=e.target; if(!ehCampoDinheiro(el)||!el.value.trim()) return; const v=parseMoney(el.value); if(v>0) el.value=moneyInput(v); },true);
 const ICON={
+  digital:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6.5 6.2A7.5 7.5 0 0 1 19.5 11v1.2"/><path d="M4.6 9.4a7.6 7.6 0 0 0-.1 1.6v2.5"/><path d="M8 18.5a14 14 0 0 0 1-5.5V11a3 3 0 0 1 6 0v1.5"/><path d="M12 11v2a17 17 0 0 1-1.6 7"/><path d="M15 15.5a20 20 0 0 1-1 4.5"/><path d="M18.6 15.2c-.1 1.2-.3 2.4-.6 3.5"/></svg>',
   cadeado:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
   apagar:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 6h10a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 18H9l-5.5-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9.5l5 5M17 9.5l-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   sino:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 1.9H4.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.8 20.6a2.4 2.4 0 0 0 4.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -75,7 +76,7 @@ const ICON={
 };
 
 /* ---------- estado ---------- */
-function defaultConfig(){ return {termos:null,salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
+function defaultConfig(){ return {dividas:[],termos:null,salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
 const state={config:defaultConfig(), months:{}, loaded:false};
 let MESES=[];
 const today=new Date();
@@ -122,8 +123,10 @@ function normConfig(d){
   const contas=Array.isArray(d?.contas)?d.contas.filter(c=>c&&c.id).map(c=>({id:String(c.id),nome:String(c.nome||"Conta"),tipo:String(c.tipo||"corrente"),saldoInicial:Number(c.saldoInicial)||0})):[];
   const contaSalario=d?.contaSalario&&contas.some(c=>c.id===d.contaSalario)?String(d.contaSalario):null;
   const metas=Array.isArray(d?.metas)?d.metas.filter(x=>x&&x.id).map(x=>({id:String(x.id),nome:String(x.nome||"Meta"),alvo:Number(x.alvo)||0,prazo:mk(x.prazo)?x.prazo:null})):[];
+  const iso=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||"")?x:null;
+  const dividas=Array.isArray(d?.dividas)?d.dividas.filter(x=>x&&x.id).map(x=>({id:String(x.id),pessoa:String(x.pessoa||"Alguém"),tipo:x.tipo==="pagar"?"pagar":"receber",valor:Number(x.valor)||0,desc:String(x.desc||""),data:iso(x.data),venc:iso(x.venc),pags:Array.isArray(x.pags)?x.pags.filter(y=>y&&y.id).map(y=>({id:String(y.id),valor:Number(y.valor)||0,data:iso(y.data)})):[]})):[];
   const termos=d?.termos&&typeof d.termos.v==="string"?{v:d.termos.v,em:String(d.termos.em||"")}:null;
-  return {termos, salarioPadrao:Number(d?.salarioPadrao)||0, saldoInicial:Number(d?.saldoInicial)||0, saldoCaixinha:Number(d?.saldoCaixinha)||0, ate, inicio, categorias:cats, fixos, parcelas, rendas, cartoes, contas, contaSalario, metas};
+  return {dividas, termos, salarioPadrao:Number(d?.salarioPadrao)||0, saldoInicial:Number(d?.saldoInicial)||0, saldoCaixinha:Number(d?.saldoCaixinha)||0, ate, inicio, categorias:cats, fixos, parcelas, rendas, cartoes, contas, contaSalario, metas};
 }
 function getMonth(k){ if(!state.months[k]) state.months[k]=normMonth({}); else state.months[k]=Object.assign(normMonth({}),state.months[k]); return state.months[k]; }
 const catIndex=id=>state.config.categorias.findIndex(c=>c.id===id);
@@ -295,7 +298,7 @@ function save(k){
   clearTimeout(timers[id]); timers[id]=setTimeout(()=>flush(id),400);
 }
 /* Junta o que está no servidor com o que está aqui: itens novos de outro aparelho não se perdem */
-const LISTAS_MES=["gastos","avulsos","caixinha","transf"], LISTAS_CFG=["categorias","fixos","parcelas","rendas","metas","cartoes","contas"];
+const LISTAS_MES=["gastos","avulsos","caixinha","transf"], LISTAS_CFG=["categorias","fixos","parcelas","rendas","metas","cartoes","contas","dividas"];
 function mescla(local,servidor,id){
   const del=apagados[id]||new Set(), listas=id==="config"?LISTAS_CFG:LISTAS_MES, extra={};
   listas.forEach(l=>{ const ids=new Set((local[l]||[]).map(x=>x.id)); const add=(servidor[l]||[]).filter(x=>x&&x.id&&!ids.has(x.id)&&!del.has(x.id)); if(add.length){ local[l]=(local[l]||[]).concat(add); extra[l]=add; } });
@@ -676,11 +679,11 @@ function pinCfg(){ try{ const c=JSON.parse(localStorage.getItem(PINKEY)||"null")
 function salvaPinCfg(c){ try{ if(c) localStorage.setItem(PINKEY,JSON.stringify(c)); else localStorage.removeItem(PINKEY); }catch(e){} }
 async function hashPin(pin,salt){ const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("mbc:"+salt+":"+pin)); return Array.from(new Uint8Array(h),b=>b.toString(16).padStart(2,"0")).join(""); }
 async function confere(pin){ const c=pinCfg(); return !!c&&(await hashPin(pin,c.salt))===c.hash; }
-async function definePin(pin,apos){ const salt=novoCodigo(16), c=pinCfg(); salvaPinCfg({salt,hash:await hashPin(pin,salt),apos:apos!=null?apos:(c&&c.apos!=null?c.apos:1)}); }
+async function definePin(pin,apos){ const salt=novoCodigo(16), c=pinCfg(), n={salt,hash:await hashPin(pin,salt),apos:apos!=null?apos:(c&&c.apos!=null?c.apos:1)}; if(c&&c.bio) n.bio=c.bio; salvaPinCfg(n); }
 let travado=false, pinDig="", saiuEm=0, pinMsg="", esqueciPin=false;
 const errosPin=()=>{ try{ return JSON.parse(localStorage.getItem("mb.pin.erros")||'{"n":0,"ate":0}'); }catch(e){ return {n:0,ate:0}; } };
 const salvaErros=x=>{ try{ localStorage.setItem("mb.pin.erros",JSON.stringify(x)); }catch(e){} };
-function travar(){ if(!pinCfg()||travado) return; travado=true; pinDig=""; pinMsg=""; esqueciPin=false; document.body.classList.add("travado"); renderLock(); }
+function travar(){ const c=pinCfg(); if(!c||travado) return; travado=true; pinDig=""; pinMsg=""; esqueciPin=false; document.body.classList.add("travado"); renderLock(); if(c.bio) setTimeout(()=>usarBio(true),350); }
 function destravar(){ travado=false; pinDig=""; document.body.classList.remove("travado"); const el=document.getElementById("lock"); if(el) el.remove(); }
 function renderLock(){
   let el=document.getElementById("lock"); if(!el){ el=document.createElement("div"); el.id="lock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.setAttribute("aria-label","App bloqueado"); document.body.appendChild(el); }
@@ -701,6 +704,7 @@ function renderLock(){
     <p class="${pinMsg?"erro":""}" aria-live="polite">${espera?"Muitas tentativas. Tente de novo em "+espera+"s.":pinMsg?esc(pinMsg):"Digite seu PIN para abrir"}</p>
     <div class="pontos ${pinMsg?"treme":""}">${Array.from({length:PINLEN},(_,i)=>`<i class="${i<pinDig.length?"on":""}"></i>`).join("")}</div>
     <div class="teclado">${[1,2,3,4,5,6,7,8,9].map(tec).join("")}<span></span>${tec(0)}<button type="button" class="tecla del" data-k="del" aria-label="Apagar" ${espera?"disabled":""}>${ICON.apagar}</button></div>
+    ${pinCfg()&&pinCfg().bio?`<button class="btn ghost bio" type="button" data-lk="bio">${ICON.digital}Usar digital</button>`:""}
     <button class="link" type="button" data-lk="esqueci">Esqueci o PIN</button></div>`;
 }
 async function teclaPin(k){
@@ -718,6 +722,7 @@ document.addEventListener("click",e=>{
   const lk=e.target.closest("#lock [data-k],#lock [data-lk]"); if(!lk) return;
   if(lk.dataset.k) return teclaPin(lk.dataset.k);
   const a=lk.dataset.lk;
+  if(a==="bio"){ usarBio(false); return; }
   if(a==="esqueci"){ esqueciPin=true; renderLock(); }
   if(a==="voltar"){ esqueciPin=false; renderLock(); }
   if(a==="sair"){ salvaPinCfg(null); salvaErros({n:0,ate:0}); destravar(); if(fb) fb.signOut(fb.auth); }
@@ -730,11 +735,34 @@ document.addEventListener("visibilitychange",()=>{
   if(saiuEm&&Date.now()-saiuEm>=(Number(c.apos)||0)*60000) travar();
   saiuEm=0;
 });
+/* desbloqueio por digital/rosto (WebAuthn com o leitor do próprio aparelho) */
+const b64u={enc:buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""),dec:t=>Uint8Array.from(atob(t.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((t.length+3)%4)),c=>c.charCodeAt(0))};
+let bioOk=null;
+(async()=>{ try{ bioOk=!!(window.PublicKeyCredential&&PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); }catch(e){ bioOk=false; } if(state.loaded&&ui.tab==="perfil") render(); })();
+async function ligarBio(){
+  const c=pinCfg(); if(!c) return;
+  try{
+    const cred=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"MB Controle"},
+      user:{id:crypto.getRandomValues(new Uint8Array(16)),name:(authUser&&authUser.email)||"mb-controle",displayName:(authUser&&authUser.displayName)||"MB Controle"},
+      pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"},timeout:60000,attestation:"none"}});
+    c.bio=b64u.enc(cred.rawId); salvaPinCfg(c); render(); toast("Pronto: o app abre com a sua digital (ou rosto). O PIN continua valendo.");
+  }catch(e){ console.warn(e); render(); toast(e&&e.name==="NotAllowedError"?"Cancelado.":"Não foi possível ligar a digital neste aparelho."); }
+}
+function desligarBio(){ const c=pinCfg(); if(c){ delete c.bio; salvaPinCfg(c); } render(); toast("Digital desligada. O app vai pedir só o PIN."); }
+let bioRodando=false;
+async function usarBio(auto){
+  const c=pinCfg(); if(!c||!c.bio||!travado||bioRodando) return; bioRodando=true;
+  try{ await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:"public-key",id:b64u.dec(c.bio),transports:["internal"]}],userVerification:"required",timeout:60000}});
+    salvaErros({n:0,ate:0}); destravar(); }
+  catch(e){ if(!auto&&travado){ pinMsg="Não deu para usar a digital. Digite o PIN."; renderLock(); } }
+  finally{ bioRodando=false; }
+}
 function cardPin(){
   const c=pinCfg();
   return `<div class="card" id="bloqueio"><div class="cardhead"><h2>Bloqueio com PIN</h2>${c?'<span class="tag">ligado</span>':""}</div>
   ${c?`<p class="hint">O app pede o PIN de ${PINLEN} números ao abrir neste aparelho. Cada aparelho tem o seu.</p>
     <label class="f">Pedir o PIN de novo quando voltar para o app<select class="in" id="pinApos">${[[0,"Na hora"],[1,"Depois de 1 minuto fora"],[5,"Depois de 5 minutos fora"],[15,"Depois de 15 minutos fora"]].map(([v,t])=>`<option value="${v}" ${Number(c.apos)===v?"selected":""}>${t}</option>`).join("")}</select></label>
+    ${bioOk?`<label class="switch"><input type="checkbox" id="pinBio" ${c.bio?"checked":""}><span></span>Desbloquear com digital (ou rosto)</label>`:bioOk===false?`<p class="hint">Desbloqueio por digital: este aparelho ou navegador não oferece leitor de digital para sites.</p>`:""}
     <div class="row2"><button class="btn ghost" type="button" data-novo="pin" data-pinmodo="trocar">Trocar PIN</button><button class="btn ghost" type="button" data-novo="pin" data-pinmodo="desligar">Desligar</button></div>`
   :`<p class="hint">Proteja o app com um PIN de ${PINLEN} números, pedido sempre que abrir neste aparelho. Bom para quando outras pessoas usam o seu celular.</p>
     <button class="btn" type="button" data-novo="pin" data-pinmodo="criar">${ICON.cadeado}Criar PIN</button>`}</div>`;
@@ -757,6 +785,7 @@ function avisos(){
   Object.keys(pedidosG||{}).forEach(g=>(pedidosG[g]||[]).forEach(p=>itens.push({tipo:"pedido",g,p})));
   pendencias().forEach(x=>itens.push({tipo:"conta",x}));
   alertasOrcamento(todayKey).forEach(a=>itens.push({tipo:"orc",a}));
+  (state.config.dividas||[]).filter(x=>!quitada(x)&&x.venc&&diasAte(x.venc)<=1).forEach(x=>itens.push({tipo:"divida",x}));
   const n=itens.length;
   let rep=[]; try{ rep=assinaturas().repetidos; }catch(e){}
   rep.forEach(r=>itens.push({tipo:"dica",r}));
@@ -776,12 +805,14 @@ function listaAvisos(){
   itens.forEach(it=>{
     if(it.tipo==="pedido"){ const nome=((eu.grupos||{})[it.g]||{}).nome||""; grupos.pedido.push(linha("pedido",ICON.grupo,esc(primeiroNome(it.p.nome))+" quer entrar em “"+esc(nome)+"”",esc(it.p.email||""),`<button class="btn mini" type="button" data-avgrupo="${esc(it.g)}">Ver pedido</button>`)); }
     if(it.tipo==="conta"){ const x=it.x, e=estadoPend(x); grupos.conta.push(linha("pagar "+e.cls,ICON.check,esc(x.nome)+" · "+brl(x.valor),esc(e.txt)+(x.dd>=0?" · "+fmtData(x.data):""),`<button class="btn mini" type="button" data-avpagar="${x.tipo}|${esc(x.id)}|${x.k}">Paguei</button>`)); }
+    if(it.tipo==="divida"){ const x=it.x, dd=diasAte(x.venc), cls=dd<0?"atraso":dd===0?"hoje":"amanha";
+      grupos.conta.push(linha("pagar "+cls,ICON.grupo,x.tipo==="receber"?esc(x.pessoa)+" te deve "+brl(restaDiv(x)):"Você deve "+brl(restaDiv(x))+" a "+esc(x.pessoa),dd<0?"combinado para "+dataCurta(x.venc)+" (passou)":dd===0?"combinado para hoje":"combinado para amanhã",`<button class="btn ghost mini" type="button" data-avdiv="${esc(x.id)}">Ver</button>`)); }
     if(it.tipo==="orc"){ const a=it.a; grupos.orc.push(linha("orc "+(a.nivel==="passou"?"atraso":"amanha"),`<i class="bola" style="background:${catColor(a.id)}"></i>`,esc(textoAlerta(a)),"limite de "+brl(a.o)+" em "+esc(abrMes(todayKey)),`<button class="btn ghost mini" type="button" data-avmes="1">Ver mês</button>`)); }
     if(it.tipo==="retro") grupos.dica.push(linha("pedido",ICON.ano||ICON.mais,"Sua retrospectiva de "+it.ano+" está pronta","quanto entrou, saiu e seus recordes do ano",`<button class="btn mini" type="button" data-avretro="${it.ano}">Ver</button>`));
     if(it.tipo==="dica"){ const r=it.r; grupos.dica.push(linha("dica",ICON.mais,"“"+esc(r.nome)+"” parece uma assinatura",r.meses.size+" dos últimos 4 meses · média "+brl(r.media),`<button class="btn ghost mini" type="button" data-avassin="1">Ver</button>`)); }
   });
   const bloco=(t,arr)=>arr.length?`<div class="subhead">${t}</div>${arr.join("")}`:"";
-  return bloco("Pedidos para entrar",grupos.pedido)+bloco("Contas para pagar",grupos.conta)+bloco("Limites do mês",grupos.orc)+bloco("Dicas",grupos.dica)
+  return bloco("Pedidos para entrar",grupos.pedido)+bloco("Contas e dívidas",grupos.conta)+bloco("Limites do mês",grupos.orc)+bloco("Dicas",grupos.dica)
     +(notifOn?"":`<p class="hint">Quer receber esses avisos mesmo com o app fechado? <button class="link" type="button" data-avperfil="1">Ative as notificações no Perfil</button>.</p>`);
 }
 function pagarPend(spec){ const [t,id,k]=spec.split("|"); let atual=false; const m=getMonth(k);
@@ -1183,6 +1214,43 @@ function virarFixo(i){
   toast("“"+r.nome+"” virou conta fixa a partir de "+abrMes(desde)+".","Desfazer",()=>apagarItem("config","fixos",id,"Conta fixa desfeita."));
 }
 
+/* ---------- dívidas com pessoas ---------- */
+const hojeISO=()=>{ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); };
+const dataCurta=iso=>iso?iso.slice(8,10)+"/"+iso.slice(5,7)+(iso.slice(0,4)!==String(new Date().getFullYear())?"/"+iso.slice(2,4):""):"";
+const pagoDiv=x=>Math.round(x.pags.reduce((a,p)=>a+p.valor,0)*100)/100;
+const restaDiv=x=>Math.max(0,Math.round((x.valor-pagoDiv(x))*100)/100);
+const quitada=x=>restaDiv(x)<0.005;
+function diasAte(iso){ if(!iso) return null; const a=new Date(); a.setHours(0,0,0,0); const [y,m,d]=iso.split("-").map(Number); return Math.round((new Date(y,m-1,d)-a)/86400000); }
+function cardDividas(){
+  const ds=state.config.dividas, abertas=ds.filter(x=>!quitada(x)), q=ds.filter(quitada);
+  const rec=abertas.filter(x=>x.tipo==="receber").reduce((a,x)=>a+restaDiv(x),0), pag=abertas.filter(x=>x.tipo==="pagar").reduce((a,x)=>a+restaDiv(x),0);
+  const pessoas={}; abertas.forEach(x=>{ const k=norm(x.pessoa); (pessoas[k]=pessoas[k]||{nome:x.pessoa,itens:[],saldo:0}).itens.push(x); pessoas[k].saldo+=x.tipo==="receber"?restaDiv(x):-restaDiv(x); });
+  const linha=x=>{ const dd=diasAte(x.venc), atras=dd!=null&&dd<0, r=restaDiv(x);
+    return `<button type="button" class="item divrow ${atras?"atras":""}" data-edit="divida" data-id="${esc(x.id)}" style="--dot:${x.tipo==="receber"?"var(--good)":"var(--bad)"}"><span class="pill">${x.tipo==="receber"?"te deve":"você deve"}</span><span class="desc"><b class="${x.desc?"":"empty"}">${esc(x.desc||"sem descrição")}</b><small>${x.pags.length?"pago "+brl(pagoDiv(x))+" de "+brl(x.valor)+" · ":""}${x.venc?(atras?"venceu "+dataCurta(x.venc):dd===0?"vence hoje":"vence "+dataCurta(x.venc)):x.data?"desde "+dataCurta(x.data):""}</small></span><span class="v ${x.tipo==="receber"?"pos":"neg"}">${brl(r)}</span></button>`; };
+  return `<div class="card" id="dividas"><div class="cardhead"><h2>Dívidas com pessoas</h2>${abertas.length?`<span class="tag">${abertas.length} em aberto</span>`:""}</div>
+  ${ds.length?`<div class="assintot"><div><span class="lab">Te devem</span><b class="pos">${brl(rec)}</b></div><div><span class="lab">Você deve</span><b class="neg">${brl(pag)}</b></div><div><span class="lab">Saldo</span><b class="${rec-pag<0?"neg":""}">${brl(rec-pag)}</b></div></div>`
+    :`<p class="hint">Anote quem te deve e para quem você deve: empréstimos, divisão de conta, vaquinha. Registre os pagamentos aos poucos e o app mostra quanto falta.</p>`}
+  ${Object.values(pessoas).sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo)).map(pp=>`<div class="subhead pessoa"><span>${esc(pp.nome)}</span><span class="${pp.saldo>=0?"pos":"neg"}">${pp.saldo>=0?"te deve "+brl(pp.saldo):"você deve "+brl(-pp.saldo)}</span></div>${pp.itens.map(linha).join("")}`).join("")}
+  ${q.length?`<button class="link" type="button" data-verquit="1">${ui.verQuit?"Esconder":"Ver"} quitadas (${q.length})</button>${ui.verQuit?`<div class="quitadas">${q.map(x=>`<button type="button" class="item" data-edit="divida" data-id="${esc(x.id)}" style="--dot:var(--line)"><span class="pill">quitada</span><span class="desc"><b>${esc(x.pessoa)}${x.desc?" · "+esc(x.desc):""}</b><small>${x.tipo==="receber"?"te devia":"você devia"} ${brl(x.valor)}</small></span><span class="v muted">${brl(x.valor)}</span></button>`).join("")}</div>`:""}`:""}
+  <div class="row2"><button class="btn ghost" type="button" data-novo="divida" data-dtipo="receber">+ Alguém me deve</button><button class="btn ghost" type="button" data-novo="divida" data-dtipo="pagar">+ Eu devo</button></div></div>`;
+}
+const catOutros=()=>(state.config.categorias.find(c=>/outro/.test(norm(c.nome)))||state.config.categorias[state.config.categorias.length-1]||{}).id;
+function registrarPagDiv(tudo){
+  const s=ui.sheet, x=itemAtual(); if(!x) return;
+  const r=restaDiv(x), campo=(document.getElementById("s-pagval")||{}).value||"";
+  const v=tudo?r:(campo.trim()?parseMoney(campo):r);
+  if(!(v>0)) return erroSheet("Informe quanto foi pago.","s-pagval");
+  if(v>r+0.005) return erroSheet("O valor é maior do que falta ("+brl(r)+").","s-pagval");
+  const pid=uidGen(); x.pags.push({id:pid,valor:Math.round(v*100)/100,data:hojeISO()});
+  const lanca=(document.getElementById("s-paglanca")||{}).checked;
+  if(lanca){ const m=getMonth(todayKey), dia=today.getDate();
+    if(x.tipo==="receber") m.avulsos.push(marcaPor({id:"dv"+pid,dia,valor:v,desc:"Recebido de "+x.pessoa}));
+    else m.gastos.push(marcaPor({id:"dv"+pid,dia,cat:catOutros(),valor:v,desc:"Pago a "+x.pessoa,forma:"pix"}));
+    save(todayKey); }
+  save("config"); render(); renderSheet();
+  toast(quitada(x)?"Dívida quitada!":brl(v)+" registrado. Faltam "+brl(restaDiv(x))+"."+(lanca?" Lançado no mês.":""));
+}
+
 /* ---------- retrospectiva do ano ---------- */
 const DIAS_SEM=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
 function anosRetro(){ const ini=inicioKey(); if(!ini) return []; return [...new Set(MESES.filter(k=>k>=ini&&k<=todayKey).map(kY))].sort(); }
@@ -1261,6 +1329,7 @@ function viewAjustes(){
     <div class="card"><div class="cardhead"><h2>Compras parceladas</h2><span class="num muted">${abertas.length?abertas.length+" em andamento":""}</span></div>
     ${abertas.length?`<div>${abertas.map(x=>`<button type="button" class="item" data-edit="parcela" data-id="${esc(x.p.id)}" style="--dot:${catColor(x.p.cat)}"><span class="pill">${x.pagas}/${x.p.n}</span><span class="desc"><b>${esc(x.p.desc||"Compra parcelada")}</b><small>${x.p.n}x de ${brl(x.p.total/x.p.n)} · até ${esc(abrMes(x.ultima))}</small></span><span class="v">${brl(x.p.total)}</span></button>`).join("")}</div>`:`<p class="hint">Para parcelar, ao lançar uma despesa ligue a opção <b>Compra parcelada</b>. As parcelas entram sozinhas nos meses seguintes.</p>`}
     ${quitadas?`<p class="hint">${quitadas} compra(s) já quitada(s).</p>`:""}</div>
+    ${cardDividas()}
     <div class="card"><h2>Importar extrato do banco</h2>
     <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX ou CSV no app do seu banco e traga tudo de uma vez, com a categoria já sugerida.</p>
     <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>
@@ -1501,6 +1570,7 @@ function itemAtual(){
     case "conta": return state.config.contas.find(x=>x.id===s.id);
     case "cartao": return state.config.cartoes.find(x=>x.id===s.id);
     case "transf": return m.transf.find(x=>x.id===s.id);
+    case "divida": return state.config.dividas.find(x=>x.id===s.id);
   }
   return null;
 }
@@ -1523,7 +1593,7 @@ function renderSheet(){
   document.body.classList.add("sheet-open");
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=k===todayKey?today.getDate():1;
   if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",retro:"Retrospectiva",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",retro:"Retrospectiva",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -1655,6 +1725,20 @@ function renderSheet(){
       <label class="f">Prazo (opcional)<input class="in" id="s-prazo" type="month" min="${todayKey}" value="${it&&it.prazo?it.prazo:""}"></label>
       ${i?`<div class="metas">${linhaMeta(it,null).replace('data-edit="meta"','data-x="1"')}</div><button class="btn ghost" type="button" data-sguardarmeta="1">+ Guardar nesta meta</button>`:`<p class="hint">Com prazo, o app mostra quanto guardar por mês para chegar lá.</p>`}`;
     sub=""; botoes=novo?`<button class="btn" type="submit">Criar meta</button>`:`<button class="btn danger" type="button" data-sapagar="1">Excluir meta</button><button class="btn" type="submit">Salvar</button>`;
+  }else if(s.tipo==="divida"){
+    const tp=it?it.tipo:(s.dTipo||"receber"), nomes=[...new Set(state.config.dividas.map(x=>x.pessoa))];
+    corpo=`<div class="seg" role="radiogroup" aria-label="Tipo"><input type="radio" name="s-dtipo" id="s-dtR" value="receber" ${tp==="receber"?"checked":""}><label for="s-dtR">Me devem</label><input type="radio" name="s-dtipo" id="s-dtP" value="pagar" ${tp==="pagar"?"checked":""}><label for="s-dtP">Eu devo</label></div>
+      <label class="f">Pessoa<input class="in" id="s-pessoa" maxlength="40" list="s-pessoas" placeholder="ex.: João" value="${esc(it?it.pessoa:"")}" ${novo?"data-autofocus":""}></label><datalist id="s-pessoas">${nomes.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+      ${valorCampo(it&&it.valor,"Valor total",false)}
+      <label class="f">Do que é (opcional)<input class="in" id="s-desc" maxlength="60" placeholder="ex.: empréstimo, conta do bar" value="${esc(it?it.desc:"")}"></label>
+      <div class="row"><label class="f">Data<input class="in" id="s-ddata" type="date" value="${esc(it&&it.data?it.data:hojeISO())}"></label><label class="f">Combinado para (opcional)<input class="in" id="s-dvenc" type="date" value="${esc(it&&it.venc?it.venc:"")}"></label></div>`
+      +(it?`<div class="divpags"><div class="subhead">Pagamentos</div>
+        ${it.pags.length?it.pags.map(p=>`<div class="pagrow"><span>${dataCurta(p.data)}</span><b>${brl(p.valor)}</b><button type="button" class="link" data-divdelpag="${esc(p.id)}" aria-label="Apagar pagamento">apagar</button></div>`).join(""):`<p class="hint">Nenhum pagamento ainda.</p>`}
+        <p class="divresta">${quitada(it)?`<b class="pos">Quitada</b>`:`Falta <b>${brl(restaDiv(it))}</b> de ${brl(it.valor)}`}</p>
+        ${quitada(it)?"":`<div class="convrow"><label class="f money" style="flex:1"><span class="sr">Valor pago</span><input class="in num" id="s-pagval" inputmode="numeric" placeholder="${moneyInput(restaDiv(it))}"></label><button class="btn" type="button" data-divpag="1">Registrar</button></div>
+        <label class="switch"><input type="checkbox" id="s-paglanca"><span></span>Lançar no mês como ${it.tipo==="receber"?"receita":"despesa"}</label>
+        <button class="link" type="button" data-divquitar="1">Quitar tudo (${brl(restaDiv(it))})</button>`}</div>`:"");
+    sub=""; botoes=novo?`<button class="btn" type="submit">Salvar</button>`:`${apagar}<button class="btn" type="submit">Salvar</button>`;
   }else if(s.tipo==="retro"){
     const d=dadosRetro(s.ano), sl=d?slidesRetro(d):[]; s.slide=Math.max(0,Math.min(s.slide||0,sl.length-1));
     corpo=d?`<div class="rprog">${sl.map((x,i)=>`<i class="${i<=s.slide?"on":""}"></i>`).join("")}</div><div class="rslide ${sl[s.slide].cls}" data-rtoque="1">${sl[s.slide].html}</div>`:`<p class="hint">Ainda não há dados para a retrospectiva.</p>`;
@@ -1706,6 +1790,15 @@ function salvarSheet(outro){
   if(s.tipo==="busca") return;
   if(s.tipo==="pin"){ salvarPin(); return; }
   if(s.tipo==="retro") return;
+  if(s.tipo==="divida"){
+    const pessoa=((document.getElementById("s-pessoa")||{}).value||"").trim(); if(!pessoa) return erroSheet("Quem é a pessoa?","s-pessoa");
+    const vv=(document.getElementById("s-valor")||{}).value||"", valor=parseMoney(vv); if(!(valor>0)) return erroSheet("Informe o valor","s-valor");
+    const tipo=(document.querySelector('#sheet input[name="s-dtipo"]:checked')||{}).value||"receber";
+    const desc=((document.getElementById("s-desc")||{}).value||"").trim(), data=(document.getElementById("s-ddata")||{}).value||hojeISO(), venc=(document.getElementById("s-dvenc")||{}).value||null;
+    if(s.id){ const x=itemAtual(); if(valor+0.005<pagoDiv(x)) return erroSheet("O valor não pode ser menor do que já foi pago ("+brl(pagoDiv(x))+").","s-valor"); Object.assign(x,{pessoa,valor,tipo,desc,data,venc}); }
+    else state.config.dividas.push({id:"d"+uidGen(),pessoa,tipo,valor,desc,data,venc,pags:[]});
+    save("config"); closeSheet(); render(); toast(s.id?"Dívida atualizada.":tipo==="receber"?pessoa+" te deve "+brl(valor)+".":"Você deve "+brl(valor)+" a "+pessoa+"."); return;
+  }
   if(s.tipo==="importar"){ if(s.itens) importarExtrato(); return; }
   if(s.tipo==="conta"){
     const nome=((document.getElementById("s-nome")||{}).value||"").trim(); if(!nome) return erroSheet("Dê um nome para a conta, ex.: Nubank","s-nome");
@@ -1826,12 +1919,16 @@ function salvarSheet(outro){
 }
 function bindSheet(r){
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(e.target===b||b.tagName==="BUTTON") closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
     if(b.dataset.outro){ e.preventDefault(); salvarSheet(true); return; }
     if(b.dataset.impok){ importarExtrato(); return; }
+    if(b.dataset.divpag){ registrarPagDiv(false); return; }
+    if(b.dataset.divquitar){ registrarPagDiv(true); return; }
+    if(b.dataset.divdelpag){ const x=itemAtual(); if(x){ x.pags=x.pags.filter(p=>p.id!==b.dataset.divdelpag); save("config"); render(); renderSheet(); toast("Pagamento apagado."); } return; }
+    if(b.dataset.avdiv){ openSheet("divida",b.dataset.avdiv); return; }
     if(b.dataset.avretro){ openSheet("retro",null,{ano:Number(b.dataset.avretro),slide:0}); return; }
     if(b.dataset.rpasso){ s.slide=(s.slide||0)+Number(b.dataset.rpasso); renderSheet(); return; }
     if(b.dataset.rano){ s.ano=Number(b.dataset.rano); s.slide=0; renderSheet(); return; }
@@ -1861,6 +1958,7 @@ function bindSheet(r){
       else if(s.tipo==="conta"){ if(state.config.contaSalario===id) state.config.contaSalario=null; apagarItem("config","contas",id,"Conta excluída (os lançamentos dela passam para a primeira conta)."); }
       else if(s.tipo==="cartao") apagarItem("config","cartoes",id,"Cartão excluído.");
       else if(s.tipo==="transf") apagarItem(k,"transf",id,"Transferência apagada.");
+      else if(s.tipo==="divida") apagarItem("config","dividas",id,"Dívida excluída.");
       else if(s.tipo==="meta") apagarItem("config","metas",id,"Meta excluída (o dinheiro guardado volta para a caixinha geral).");
       else apagarItem(k,s.tipo==="gasto"?"gastos":s.tipo==="avulso"?"avulsos":"caixinha",id,"Lançamento apagado.");
       return;
@@ -1914,7 +2012,8 @@ app.addEventListener("click",e=>{
   if(d.month){ goMonth(d.month); return; }
   if(d.nav){ passo(Number(d.nav)); return; }
   if(d.open){ ui.tab="mes"; goMonth(d.open); window.scrollTo({top:0}); return; }
-  if(d.novo){ openSheet(d.novo,null,d.cxtipo?{cxTipo:d.cxtipo}:d.pinmodo?{pinModo:d.pinmodo}:null); return; }
+  if(d.verquit){ ui.verQuit=!ui.verQuit; render(); return; }
+  if(d.novo){ openSheet(d.novo,null,d.cxtipo?{cxTipo:d.cxtipo}:d.pinmodo?{pinModo:d.pinmodo}:d.dtipo?{dTipo:d.dtipo}:null); return; }
   if(d.edit){ openSheet(d.edit,d.id,d.mes?{mes:d.mes}:null); return; }
   if(d.busca){ openSheet("busca"); return; }
   if(d.planilha){ exportarPlanilha(); return; }
@@ -1936,6 +2035,7 @@ app.addEventListener("change",e=>{
   const t=e.target, money=()=>t.value.trim()===""?0:parseMoney(t.value);
   if(t.name==="ptema"){ tema=t.value; try{localStorage.setItem("meucaixa.tema",tema)}catch(e){} aplicaTema(); render(); return; }
   if(t.name==="lmodo"){ ui.loginModo=t.value; render(); return; }
+  if(t.id==="pinBio"){ if(t.checked) ligarBio(); else desligarBio(); return; }
   if(t.id==="pinApos"){ const c=pinCfg(); if(c){ c.apos=Number(t.value)||0; salvaPinCfg(c); toast("Pronto."); } return; }
   if(t.id==="t-li"){ const b=document.getElementById("t-aceitar"); if(b) b.disabled=!t.checked; return; }
   if(t.id==="impFile"&&t.files&&t.files[0]){ importar(t.files[0]); return; }
