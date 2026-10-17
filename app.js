@@ -170,15 +170,15 @@ let toastTimer=null;
 function toast(msg){ let el=document.getElementById("toast"); if(!el){ el=document.createElement("div"); el.id="toast"; el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); } el.textContent=msg; el.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{el.hidden=true},4000); }
 
 function exportar(){
-  const blob=new Blob([JSON.stringify({app:"meu-caixa",versao:1,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2)],{type:"application/json"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="meu-caixa-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  const blob=new Blob([JSON.stringify({app:"mb-controle",versao:1,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="mb-controle-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
 function importar(file){
   const r=new FileReader();
   r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.config||!d.months) throw 0;
     state.config=normConfig(d.config); buildMeses(); save("config");
     for(const k in d.months){ state.months[k]=normMonth(d.months[k]); save(k); }
-    ui.importMsg="Backup importado."; render(); }catch(e){ ui.importMsg="Arquivo inválido. Use um backup exportado pelo Meu Caixa."; render(); } };
+    ui.importMsg="Backup importado."; render(); }catch(e){ ui.importMsg="Arquivo inválido. Use um backup exportado pelo MB Controle."; render(); } };
   r.readAsText(file);
 }
 
@@ -194,7 +194,7 @@ function render(){
 function header(){
   const t=(id,l)=>`<button role="tab" data-tab="${id}" aria-selected="${ui.tab===id}">${l}</button>`;
   const i=MESES.findIndex(x=>x.key===ui.month);
-  return `<div class="top"><div class="brand"><h1>Meu <span>Caixa</span></h1><span class="status ${statusCls}" id="status"><i></i>${esc(statusTxt)}</span></div><div class="topright">${botaoTema()}
+  return `<div class="top"><div class="brand"><h1>MB <span>Controle</span></h1><span class="status ${statusCls}" id="status"><i></i>${esc(statusTxt)}</span></div><div class="topright">${botaoTema()}
   ${mode==="login"?"":`<div class="tabs" role="tablist">${t("mes","Mês")}${t("ano","Visão geral")}${t("ajustes","Ajustes")}</div>`}
   ${authUser?`<div class="who">${authUser.photoURL?`<img src="${esc(authUser.photoURL)}" alt="" referrerpolicy="no-referrer">`:""}<span>${esc((authUser.displayName||authUser.email||"").split(" ")[0])}</span><button class="link" data-logout="1" type="button">Sair</button></div>`:""}</div></div>
   ${ui.tab==="mes"&&mode!=="login"?`<div class="months"><button class="arrow" data-nav="-1" aria-label="Mês anterior" ${i<=0?"disabled":""}>‹</button>

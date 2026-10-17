@@ -1,6 +1,6 @@
 {
-  "name": "Meu Caixa — Controle de Gastos",
-  "short_name": "Meu Caixa",
+  "name": "MB Controle — Controle de Gastos",
+  "short_name": "MB Controle",
   "description": "Salário, recebimentos avulsos, despesas diárias, caixinha e visão geral.",
   "lang": "pt-BR",
   "start_url": "./",
