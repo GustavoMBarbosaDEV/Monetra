@@ -10,12 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="4.0.0";
+const VERSAO="4.1.0";
 const NOVIDADES=[
-  "Visual novo: o saldo do mês fica em destaque no topo, com uma barra de quanto do que entrou já foi usado.",
-  "Lembretes viram uma faixa compacta (ex.: \"2 contas atrasadas · R$ 1.599,90\"); toque para ver e marcar como paga.",
-  "Ícones nas categorias (dá para escolher em Ajustes → Categorias) na lista, no gráfico e na nova despesa.",
-  "Status de salvamento discreto ao lado do logo, botões mais limpos e fatura sem compras ocupando só uma linha."
+  "Previsão do fim do mês: no topo, o app mostra com quanto o mês deve terminar se você continuar gastando no ritmo atual.",
+  "Alerta de ritmo: categorias com limite avisam antes de estourar (ex.: \"No ritmo de hoje, Mercado estoura o limite no dia 22\"), na faixa de lembretes, no sininho e no gráfico."
 ];
 
 /* ---------- utilidades ---------- */
@@ -322,12 +320,31 @@ function infoMeta(mt,k){
   return {saldo,falta,pct,meses,porMes:meses?falta/meses:null,atrasada:!!mt.prazo&&mt.prazo<todayKey&&falta>0,feita:mt.alvo>0&&falta<=0};
 }
 const nomeMeta=id=>{ const m=state.config.metas.find(x=>x.id===id); return m?m.nome:"Geral"; };
-/* Alertas de orçamento: categorias com limite que chegaram a 80% ou passaram */
-function alertasOrcamento(k){
-  const c=calc(k);
-  return state.config.categorias.filter(ct=>ct.orcamento>0).map(ct=>{ const v=c.porCat[ct.id]||0, p=v/ct.orcamento; return {id:ct.id,nome:ct.nome,v,o:ct.orcamento,p,nivel:p>=1?"passou":p>=0.8?"80":""}; }).filter(x=>x.nivel).sort((a,b)=>b.p-a.p);
+/* Previsão do fim do mês: projeta o gasto do dia a dia (lançamentos avulsos até hoje) pelos dias que faltam.
+   Contas fixas e parcelas já estão no saldo; só o gasto variável é estimado. Só para o mês atual. */
+function previsaoMes(k,c){
+  if(k!==todayKey||!ativo(k)) return null;
+  c=c||calc(k); const dim=c.dim, dia=today.getDate(), rest=dim-dia;
+  if(dia<3||rest<1) return null;
+  const grande=c.receitas>0?c.receitas*0.2:Infinity; /* compras grandes e isoladas (TV, viagem) já estão no saldo, mas não viram ritmo */
+  const ate=((state.months[k]||{}).gastos||[]).filter(g=>(Number(g.dia)||1)<=dia), gs=ate.filter(g=>(Number(g.valor)||0)<=grande), foraRitmo=ate.length-gs.length;
+  const caixa=gs.filter(g=>!noCartao(g)), cartao=gs.filter(g=>noCartao(g));
+  const rCaixa=soma(caixa)/dia, rCartao=soma(cartao)/dia;
+  const porCat={}; caixa.forEach(g=>{ porCat[g.cat]=(porCat[g.cat]||0)+(Number(g.valor)||0); });
+  const r2=v=>Math.round(v*100)/100;
+  return {dia,rest,dim,ritmo:r2(rCaixa),extra:r2(rCaixa*rest),saldo:r2(c.saldo-rCaixa*rest),cartao:r2(rCartao*rest),foraRitmo,grande,ritmoCat:id=>(porCat[id]||0)/dia};
 }
-function textoAlerta(a){ return a.nivel==="passou"?a.nome+" passou do limite: "+brl(a.v)+" de "+brl(a.o)+".":a.nome+" chegou a "+Math.round(a.p*100)+"% do limite ("+brl(a.v)+" de "+brl(a.o)+")."; }
+/* Alertas de orçamento: categorias com limite que chegaram a 80%, passaram, ou que no ritmo atual vão passar */
+function alertasOrcamento(k){
+  const c=calc(k), pv=previsaoMes(k,c);
+  return state.config.categorias.filter(ct=>ct.orcamento>0).map(ct=>{ const v=c.porCat[ct.id]||0, o=ct.orcamento, p=v/o;
+    let nivel=p>=1?"passou":p>=0.8?"80":"", proj=null, diaEstoura=null;
+    if(pv&&pv.dia>=5&&p<1){ const r=pv.ritmoCat(ct.id); proj=Math.round((v+r*pv.rest)*100)/100;
+      if(r>0&&proj>o){ diaEstoura=Math.min(pv.dim,pv.dia+Math.max(1,Math.ceil((o-v)/r))); if(!nivel) nivel="ritmo"; } }
+    return {id:ct.id,nome:ct.nome,v,o,p,nivel,proj,diaEstoura}; }).filter(x=>x.nivel).sort((a,b)=>(a.nivel==="ritmo")-(b.nivel==="ritmo")||b.p-a.p);
+}
+function textoAlerta(a){ if(a.nivel==="ritmo") return "No ritmo de hoje, "+a.nome+" estoura o limite no dia "+a.diaEstoura+" ("+brl(a.v)+" de "+brl(a.o)+" até agora).";
+  return a.nivel==="passou"?a.nome+" passou do limite: "+brl(a.v)+" de "+brl(a.o)+".":a.nome+" chegou a "+Math.round(a.p*100)+"% do limite ("+brl(a.v)+" de "+brl(a.o)+")"+(a.diaEstoura?"; no ritmo de hoje, estoura no dia "+a.diaEstoura:"")+"."; }
 function acumulado(k){ let s=saldoInicialTotal(); for(const x of MESES){ s+=calc(x).saldo; if(x===k) break; } return s; }
 function variacao(atual,anterior){ if(!(anterior>0)) return ""; const p=(atual-anterior)/anterior; if(Math.abs(p)<0.005) return "igual ao mês anterior"; return (p>0?"▲ ":"▼ ")+Math.round(Math.abs(p)*100)+"% vs "+abrMes(shiftKey(ui.month,-1)); }
 
@@ -777,7 +794,9 @@ function cardLembretes(){
   if(atr.length){ partes.push(`<b>${atr.length} conta${atr.length===1?"":"s"} atrasada${atr.length===1?"":"s"}</b> · ${brl(soma(atr))}`); cls="atraso"; }
   if(hoje.length){ partes.push(`<b>${hoje.length} vence${hoje.length===1?"":"m"} hoje</b> · ${brl(soma(hoje))}`); if(cls!=="atraso") cls="hoje"; }
   if(am.length) partes.push(`${am.length} vence${am.length===1?"":"m"} amanhã`);
-  if(al.length){ partes.push(passou.length?`${passou.length} categoria${passou.length===1?"":"s"} passou do limite`:`${al.length} categoria${al.length===1?"":"s"} perto do limite`); if(cls==="info") cls="hoje"; }
+  const rit=al.filter(a=>a.nivel==="ritmo"), lim=al.filter(a=>a.nivel!=="ritmo");
+  if(lim.length){ partes.push(passou.length?`${passou.length} categoria${passou.length===1?"":"s"} passou do limite`:`${lim.length} categoria${lim.length===1?"":"s"} perto do limite`); if(cls==="info") cls="hoje"; }
+  if(rit.length) partes.push(rit.length===1?`${esc(rit[0].nome)} estoura o limite no dia ${rit[0].diaEstoura}`:`${rit.length} categorias em ritmo de estourar o limite`);
   return `<button type="button" class="faixa ${cls}" data-avisos="1"><span class="fx-ic">${ICON.sino}</span><span class="fx-t">${partes.join("<span class=\"fx-sep\"> · </span>")}</span><span class="fx-ver">Ver</span></button>`;
 }
 /* ---------- bloqueio com PIN (vale só para este aparelho) ---------- */
@@ -1007,7 +1026,7 @@ function verificaLembretes(forcar){
     mostraNotif(titulo,brl(x.valor)+(e==="atraso"?" · venceu em "+fmtData(x.data):"")+" — toque para abrir o MB Controle.",chave);
   });
   alertasOrcamento(todayKey).forEach(a=>{ const chave=["orc",a.id,todayKey,a.nivel].join(":"); if(vistos[chave]) return; vistos[chave]=hoje;
-    mostraNotif(a.nivel==="passou"?"Limite estourado: "+a.nome:"Atenção ao limite: "+a.nome, textoAlerta(a)+" Toque para ver.",chave); });
+    mostraNotif(a.nivel==="passou"?"Limite estourado: "+a.nome:a.nivel==="ritmo"?"Ritmo alto: "+a.nome:"Atenção ao limite: "+a.nome, textoAlerta(a)+" Toque para ver.",chave); });
   for(const k in vistos) if(vistos[k]<shiftKey(hoje.slice(0,7),-2)) delete vistos[k];
   try{ localStorage.setItem("mb.notif.vistos",JSON.stringify(vistos)); }catch(e){}
 }
@@ -1217,6 +1236,9 @@ function viewMes(){
     <div class="hs-top"><span class="lab">Saldo de ${esc(NOMES[kM(k)-1].toLowerCase())}</span><span class="hs-acum">acumulado <b class="${acum<0?"neg":""}">${brl(acum)}</b></span></div>
     <b class="hs-val">${brl(c.saldo)}</b>
     ${usoPct!==null?`<div class="hs-bar ${usoPct>100?"over":usoPct>=85?"warn":""}" role="img" aria-label="Usou ${usoPct}% do que entrou"><i style="width:${Math.min(100,Math.max(0,usoPct))}%"></i></div>`:""}
+    ${(()=>{ const pv=c.receitas>0?previsaoMes(k,c):null; if(!pv) return "";
+      const mes=NOMES[kM(k)-1].toLowerCase();
+      return `<div class="hs-prev ${pv.saldo<0?"neg":""}"><span class="hp-ic" aria-hidden="true">${ICON.ano||""}</span><span>${pv.ritmo>0?`No ritmo atual (≈ ${brl(pv.ritmo)}/dia), ${mes} termina com <b>≈ ${brl(pv.saldo)}</b>`:`Sem gastos do dia a dia até agora: ${mes} termina com <b>${brl(pv.saldo)}</b> se continuar assim`}${pv.cartao>0?`<small>e mais ≈ ${brl(pv.cartao)} no cartão até o fim do mês (fatura de ${esc(abrMes(shiftKey(k,1)))})</small>`:""}${pv.foraRitmo?`<small>${pv.foraRitmo===1?"1 compra grande ficou":pv.foraRitmo+" compras grandes ficaram"} fora do ritmo (acima de ${brl(pv.grande)}), por ser fora do comum.</small>`:""}</span></div>`; })()}
     <small>${usoPct!==null?(usoPct>100?"Saiu mais do que entrou neste mês":"Usou "+usoPct+"% do que entrou"):"Informe a renda do mês para ver o saldo"}${varDesp?" · despesas "+esc(varDesp.replace(/ vs .*/,""))+" vs "+esc(abrMes(prevK)):""}</small>
   </div>
   <div class="tiles minis">
@@ -1306,6 +1328,7 @@ function viewMes(){
     <div class="row2"><button type="button" class="btn ghost" data-novo="caixinha" data-cxtipo="guardar">+ Guardar</button><button type="button" class="btn ghost warnbtn" data-novo="caixinha" data-cxtipo="retirar">− Retirar</button></div>
     <button type="button" class="btn ghost" data-novo="meta">+ Nova meta de economia</button></div>`;
   /* para onde foi */
+  const alR={}; if(k===todayKey) alertasOrcamento(k).forEach(a=>{ if(a.diaEstoura) alR[a.id]=a; });
   const itens=cats.map((ct,i)=>({id:ct.id,nome:ct.nome,v:c.porCat[ct.id]||0,o:ct.orcamento,cor:catColor(ct.id)}));
   const semCat=Object.keys(c.porCat).filter(id=>catIndex(id)<0).reduce((a,id)=>a+c.porCat[id],0);
   if(semCat>0) itens.push({id:"",nome:"Sem categoria",v:semCat,o:0,cor:"var(--c8)"});
@@ -1318,7 +1341,7 @@ function viewMes(){
     <div class="bars">${ordenados.filter(x=>x.v>0||x.o>0).map(x=>{ const pv=prev?(prev.porCat[x.id]||0):0; const p=x.o>0?x.v/x.o:0; const cls=x.o>0&&p>1?"over":x.o>0&&p>=.8?"warn":"";
       const w=x.o>0?Math.min(100,p*100):(c.despesas>0?x.v/c.despesas*100:0);
       const delta=prev&&(pv>0||x.v>0)?(x.v>pv?`<em class="up">▲ ${brl(x.v-pv)}</em>`:x.v<pv?`<em class="down">▼ ${brl(pv-x.v)}</em>`:""):"";
-      return `<div class="bar ${cls}" style="--dot:${x.cor}"><div class="t"><b>${x.id?icoCat(x.id,14):""}${esc(x.nome)}</b><span class="num">${brl(x.v)}${x.o>0?" / "+brl(x.o):c.despesas>0?" · "+Math.round(x.v/c.despesas*100)+"%":""}</span></div><div class="track"><div style="width:${w.toFixed(1)}%"></div></div>${subsLinha(x)}${delta?`<div class="delta">${delta} vs ${abrMes(prevK)}</div>`:""}</div>`; }).join("")||'<p class="hint">Assim que você lançar despesas, aparece aqui quanto foi para cada categoria.</p>'}</div></div>
+      return `<div class="bar ${cls}" style="--dot:${x.cor}"><div class="t"><b>${x.id?icoCat(x.id,14):""}${esc(x.nome)}</b><span class="num">${brl(x.v)}${x.o>0?" / "+brl(x.o):c.despesas>0?" · "+Math.round(x.v/c.despesas*100)+"%":""}</span></div><div class="track"><div style="width:${w.toFixed(1)}%"></div></div>${subsLinha(x)}${alR[x.id]?`<div class="ritmo">No ritmo de hoje, chega a ${brl(alR[x.id].proj)} e estoura no dia ${alR[x.id].diaEstoura}</div>`:""}${delta?`<div class="delta">${delta} vs ${abrMes(prevK)}</div>`:""}</div>`; }).join("")||'<p class="hint">Assim que você lançar despesas, aparece aqui quanto foi para cada categoria.</p>'}</div></div>
     <p class="hint">Limites por categoria ficam em Ajustes: amarelo a partir de 80%, vermelho quando passa.</p></div>`;
   /* forma de pagamento */
   const formas=FORMAS.map(([id,n])=>({id,n,v:c.porForma[id]||0})).concat([{id:"?",n:"Não informado",v:c.porForma["?"]||0}]).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -2245,7 +2268,7 @@ function salvarSheet(outro){
     }
     const novo=poeExtra(marcaPor(poeCC({id:uidGen(),dia:diaD,cat,valor:vv,desc,forma}))); md.gastos.push(novo); save(kd);
     const al=alertasOrcamento(kd).find(a=>a.id===cat);
-    const msg=(orig?fmtMoeda(v,orig.moeda)+" ("+brl(vv)+")":brl(v))+" em "+catName(cat)+" lançado"+emMes+(noCartao(novo)?" (fatura de "+abrMes(faturaMes(kd,diaD,cartaoDe(novo)))+")":"")+(al?" · "+(al.nivel==="passou"?"passou do limite!":Math.round(al.p*100)+"% do limite"):"")+".";
+    const msg=(orig?fmtMoeda(v,orig.moeda)+" ("+brl(vv)+")":brl(v))+" em "+catName(cat)+" lançado"+emMes+(noCartao(novo)?" (fatura de "+abrMes(faturaMes(kd,diaD,cartaoDe(novo)))+")":"")+(al?" · "+(al.nivel==="passou"?"passou do limite!":al.nivel==="ritmo"?"no ritmo atual estoura o limite no dia "+al.diaEstoura:Math.round(al.p*100)+"% do limite"):"")+".";
     const fim=()=>toast(msg,"Desfazer",()=>apagarItem(kd,"gastos",novo.id,"Lançamento desfeito."));
     if(outro){ ui.sheet={tipo:"gasto",id:null,mes:kd}; renderSheet(); document.getElementById("s-valor").focus(); render(); fim(); } else { closeSheet(); render(); fim(); }
     return;

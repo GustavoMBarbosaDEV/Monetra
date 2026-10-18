@@ -650,3 +650,11 @@ button.item.gitem{grid-template-columns:auto minmax(0,1fr) auto;gap:12px}
 .card.fatmini .t small{font-size:12px;color:var(--muted)}
 .card.fatmini .v{font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 @media (max-width:560px){ .brand{flex-direction:row;align-items:center;gap:2px} }
+/* 4.1 · previsão do mês */
+.hs-prev{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.4;padding:9px 11px;border-radius:12px;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid color-mix(in srgb,var(--accent) 15%,transparent)}
+.hs-prev .hp-ic{flex:0 0 auto;color:var(--accent);display:grid;place-items:center;margin-top:1px}
+.hs-prev .hp-ic svg{width:16px;height:16px}
+.hs-prev b{font-variant-numeric:tabular-nums;color:var(--good)}
+.hs-prev.neg b{color:var(--bad)}
+.hs-prev small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.bar .ritmo{margin-top:5px;font-size:12.5px;color:var(--warn);font-weight:500}

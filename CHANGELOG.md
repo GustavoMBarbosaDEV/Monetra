@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.1.0 — 18/10/2026 **Previsão do fim do mês**
+
+- No topo do mês atual, o app mostra com quanto o mês deve terminar se você continuar gastando no mesmo ritmo (média por dia dos gastos do dia a dia). Contas fixas e parcelas já entram no saldo; compras no cartão aparecem à parte, porque vão para a próxima fatura.
+- Alerta de ritmo: categorias com limite avisam **antes** de estourar ("No ritmo de hoje, Mercado estoura o limite no dia 22"). Aparece na faixa de lembretes, no sininho, nas notificações e no gráfico "Para onde foi". Começa a valer a partir do 5º dia do mês.
+
 ## 4.0.0 — 17/10/2026 **Visual novo**
 
 - Saldo do mês em destaque no topo, com barra de quanto do que entrou já foi usado; receitas, despesas, por dia e caixinha viram cartões menores logo abaixo.
