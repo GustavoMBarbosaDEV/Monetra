@@ -12,6 +12,15 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.0.0 — 17/10/2026 **Visual novo**
+
+- Saldo do mês em destaque no topo, com barra de quanto do que entrou já foi usado; receitas, despesas, por dia e caixinha viram cartões menores logo abaixo.
+- Lembretes viram uma faixa compacta (contas atrasadas, que vencem hoje/amanhã e categorias no limite); um toque abre a lista para marcar como paga.
+- Ícones nas categorias: aparecem na lista de despesas, no gráfico "Para onde foi" e na escolha de categoria. Dá para trocar o ícone em Ajustes → Categorias (vem um automático pelo nome).
+- Status de salvamento vira um pontinho colorido ao lado do logo no celular (toque para ver o texto).
+- Botões secundários sem borda tracejada; mais espaço no fim da tela para o botão + não cobrir nada.
+- Fatura de cartão sem compras ocupa só uma linha.
+
 ## 3.9.1 — 17/10/2026
 **Listas do mês mais curtas**
 - A lista "Despesas do mês" mostra só as 5 mais recentes, com o total e a quantidade do mês no topo. O botão **Ver todas as N despesas** abre o resto (e "Mostrar só as 5 mais recentes" fecha). O total de cada dia continua considerando todas as despesas daquele dia.
