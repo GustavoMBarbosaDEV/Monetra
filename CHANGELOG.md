@@ -16,6 +16,7 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 - Tutorial reescrito para as abas novas (Início, Relatórios, Metas, Perfil → Ajustes) e as funções das últimas versões: lançamento rápido por texto, calendário, previsão do mês, sobra acumulada, metas e desafios, resumo da semana e ferramentas.
 - Logo do Monetra no tutorial (antes aparecia "MB"), na tela de entrada e no bloqueio por PIN.
+- Em Ajustes → Categorias de gastos aparecem só as 5 primeiras; o botão "Ver todas as N categorias" mostra o resto (e "Mostrar só as 5 primeiras" recolhe).
 
 ## 5.0.1 — 19/10/2026 **Início como no modelo + botão voltar**
 

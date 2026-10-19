@@ -12,8 +12,8 @@ const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
 const VERSAO="5.0.2";
 const NOVIDADES=[
-  "Tutorial atualizado com as abas novas (Início, Relatórios, Metas, Perfil) e as funções recentes: lançamento rápido, calendário, metas e desafios, ferramentas.",
-  "Logo do Monetra na tela de entrada, no bloqueio por PIN e no tutorial."
+  "Em Ajustes, a lista de categorias mostra só as 5 primeiras, com o botão \"Ver todas\".",
+  "Tutorial atualizado com as abas novas e as funções recentes; logo do Monetra no tutorial, na entrada e no bloqueio por PIN."
 ];
 
 /* ---------- utilidades ---------- */
@@ -2042,7 +2042,8 @@ function viewAjustes(){
     <button class="btn ghost" data-novo="cartao" type="button">+ Novo cartão</button></div></div>
     <div class="col"><div class="card"><div class="cardhead"><h2>Categorias de gastos</h2><span class="num muted">${cf.categorias.length}</span></div>
     <p class="hint">Toque numa categoria para mudar o nome, a cor ou o limite do mês, ou para excluir.</p>
-    <div>${cf.categorias.map(ct=>`<button type="button" class="item catitem" data-edit="categoria" data-id="${esc(ct.id)}" style="--dot:${catColor(ct.id)}">${icoCat(ct.id)}<span class="desc"><b>${esc(ct.nome)}</b><small>${ct.orcamento>0?"limite de "+brl(ct.orcamento)+" por mês"+(ct.sobra?" · sobra acumula"+(sobraCat(ct,todayKey)>0?" (+"+brl(sobraCat(ct,todayKey))+" em "+abrMes(todayKey)+")":""):""):"sem limite"}</small></span><span class="v muted">editar</span></button>`).join("")}</div>
+    <div>${(ui.verCats||cf.categorias.length<=6?cf.categorias:cf.categorias.slice(0,5)).map(ct=>`<button type="button" class="item catitem" data-edit="categoria" data-id="${esc(ct.id)}" style="--dot:${catColor(ct.id)}">${icoCat(ct.id)}<span class="desc"><b>${esc(ct.nome)}</b><small>${ct.orcamento>0?"limite de "+brl(ct.orcamento)+" por mês"+(ct.sobra?" · sobra acumula"+(sobraCat(ct,todayKey)>0?" (+"+brl(sobraCat(ct,todayKey))+" em "+abrMes(todayKey)+")":""):""):"sem limite"}</small></span><span class="v muted">editar</span></button>`).join("")}</div>
+    ${cf.categorias.length>6?`<button type="button" class="btn ghost wide vermais" data-vercats="1">${ui.verCats?"Mostrar só as 5 primeiras":"Ver todas as "+cf.categorias.length+" categorias"}</button>`:""}
     <button class="btn ghost" data-novo="categoria" type="button">+ Nova categoria</button>
     <p class="hint">Excluir uma categoria não apaga os valores já lançados nela (aparecem como "Sem categoria"; ao editar, escolha outra).</p></div></div></div>`;
 }
@@ -2884,6 +2885,7 @@ app.addEventListener("click",e=>{
   if(d.open){ ui.tab="mes"; goMonth(d.open); window.scrollTo({top:0}); return; }
   if(d.vertag){ openSheet("busca",null,{q:"#"+d.vertag}); return; }
   if(d.vertodasrec){ ui.verTodasRec=ui.verTodasRec===d.vertodasrec?null:d.vertodasrec; render(); return; }
+  if(d.vercats){ const abrindo=!ui.verCats; ui.verCats=abrindo; render(); if(!abrindo){ const c=document.querySelector("[data-vercats]"); if(c) c.closest(".card").scrollIntoView({block:"start",behavior:"smooth"}); } return; }
   if(d.vertodas){ const abrindo=ui.verTodas!==d.vertodas; ui.verTodas=abrindo?d.vertodas:null; render(); if(!abrindo){ const c=document.querySelector(".listaresumo"); if(c) c.closest(".card").scrollIntoView({block:"start",behavior:"smooth"}); } return; }
   if(d.verquit){ ui.verQuit=!ui.verQuit; render(); return; }
   if(d.novo&&d.calc){ openSheet("calc",null,{calc:d.calc}); return; }
