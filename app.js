@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 /* =====================================================================
-   MB Controle — controle de gastos
+   Monetra — controle de gastos
    ===================================================================== */
 const NOMES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const ABR=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
@@ -10,10 +10,12 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="4.9.0";
+const VERSAO="5.0.0";
 const NOVIDADES=[
-  "Calculadoras em Ajustes → Ferramentas: 13º salário (1ª e 2ª parcela), férias (com venda de 10 dias) e salário líquido, já com INSS e IR de 2026.",
-  "Quanto guardar por mês para comprar algo à vista numa data, com ou sem rendimento, e botão para virar meta de economia."
+  "O app agora se chama Monetra, com logo nova e visual novo nos temas claro e escuro.",
+  "Navegação nova: Início, Relatórios, Metas e Ajustes, com o botão + sempre no centro. O Perfil fica na sua foto, no topo.",
+  "Nova aba Metas: metas de economia, desafios e conquistas no mesmo lugar.",
+  "Caixas sem borda, cantos mais redondos, títulos fora das caixas e ícones no lugar dos emojis."
 ];
 
 /* ---------- utilidades ---------- */
@@ -80,6 +82,9 @@ const catIc=id=>{ const ct=state.config.categorias.find(c=>c.id===id); const k=c
 const svgCat=(k,px)=>`<svg viewBox="0 0 24 24" width="${px||18}" height="${px||18}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICAT[k]||ICAT.pontos}</svg>`;
 const icoCat=(id,px)=>`<span class="ico" style="--dot:${catColor(id)}">${svgCat(catIc(id),px)}</span>`;
 const ICON={
+  inicio:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10 19v-5h4v5"/></svg>',
+  relat:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 20V11M10 20V5M15 20v-7M20 20V8"/></svg>',
+  metas:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>',
   aviao:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M10.5 20.5 12 16l-6.5-2.7a1 1 0 0 1-.1-1.8L7 10.6l5 1.6 4.2-6.5a2 2 0 0 1 3.4 2.1L17 13.2l1.4 5a1 1 0 0 1-.5 1.2l-1.2.6-3-4.4-1.9 4.9z"/></svg>',
   digital:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6.5 6.2A7.5 7.5 0 0 1 19.5 11v1.2"/><path d="M4.6 9.4a7.6 7.6 0 0 0-.1 1.6v2.5"/><path d="M8 18.5a14 14 0 0 0 1-5.5V11a3 3 0 0 1 6 0v1.5"/><path d="M12 11v2a17 17 0 0 1-1.6 7"/><path d="M15 15.5a20 20 0 0 1-1 4.5"/><path d="M18.6 15.2c-.1 1.2-.3 2.4-.6 3.5"/></svg>',
   cadeado:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
@@ -603,8 +608,8 @@ async function _gerarConvite(){
 }
 async function compartilharConvite(){
   const c=grupoDoc&&grupoDoc.codigo; if(!c) return;
-  const txt="Entre no controle “"+grupoDoc.nome+"” no MB Controle. Código: "+c+"\n"+linkConvite(c);
-  try{ if(navigator.share){ await navigator.share({title:"MB Controle",text:txt}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+  const txt="Entre no controle “"+grupoDoc.nome+"” no Monetra. Código: "+c+"\n"+linkConvite(c);
+  try{ if(navigator.share){ await navigator.share({title:"Monetra",text:txt}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
   try{ await navigator.clipboard.writeText(txt); toast("Convite copiado. Cole no WhatsApp ou onde quiser."); }catch(e){ toast("Código: "+c); }
 }
 async function pedirEntrada(){ if(ui.ocupado) return; ui.ocupado=true; try{ return await _pedirEntrada(); } finally{ ui.ocupado=false; } }
@@ -731,7 +736,8 @@ function aplicaTema(){
   const r=document.documentElement;
   if(tema==="claro") r.setAttribute("data-theme","light"); else if(tema==="escuro") r.setAttribute("data-theme","dark"); else r.removeAttribute("data-theme");
   const escuro=tema==="escuro"||(tema==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);
-  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=escuro?"#0F1613":"#0E6B55";
+  r.classList.toggle("tema-escuro",!!escuro); r.classList.toggle("tema-claro",!escuro);
+  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=escuro?"#060807":"#04261A";
 }
 function trocaTema(){ tema={auto:"escuro",escuro:"claro",claro:"auto"}[tema]||"auto"; try{localStorage.setItem("meucaixa.tema",tema)}catch(e){} aplicaTema(); render(); }
 function botaoTema(){
@@ -838,7 +844,7 @@ function renderLock(){
       <button class="link" type="button" data-lk="voltar">Voltar e tentar de novo</button></div>`
   :`<div class="lockbox">
     <span class="lockic">${ICON.cadeado}</span>
-    <h2>${nome?"Olá, "+esc(nome):"MB Controle"}</h2>
+    <h2>${nome?"Olá, "+esc(nome):"Monetra"}</h2>
     <p class="${pinMsg?"erro":""}" aria-live="polite">${espera?"Muitas tentativas. Tente de novo em "+espera+"s.":pinMsg?esc(pinMsg):"Digite seu PIN para abrir"}</p>
     <div class="pontos ${pinMsg?"treme":""}">${Array.from({length:PINLEN},(_,i)=>`<i class="${i<pinDig.length?"on":""}"></i>`).join("")}</div>
     <div class="teclado">${[1,2,3,4,5,6,7,8,9].map(tec).join("")}<span></span>${tec(0)}<button type="button" class="tecla del" data-k="del" aria-label="Apagar" ${espera?"disabled":""}>${ICON.apagar}</button></div>
@@ -882,8 +888,8 @@ let bioOk=null;
 async function ligarBio(){
   const c=pinCfg(); if(!c) return;
   try{
-    const cred=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"MB Controle"},
-      user:{id:crypto.getRandomValues(new Uint8Array(16)),name:(authUser&&authUser.email)||"mb-controle",displayName:(authUser&&authUser.displayName)||"MB Controle"},
+    const cred=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"Monetra"},
+      user:{id:crypto.getRandomValues(new Uint8Array(16)),name:(authUser&&authUser.email)||"mb-controle",displayName:(authUser&&authUser.displayName)||"Monetra"},
       pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"},timeout:60000,attestation:"none"}});
     c.bio=b64u.enc(cred.rawId); salvaPinCfg(c); render(); toast("Pronto: o app abre com a sua digital (ou rosto). O PIN continua valendo.");
   }catch(e){ console.warn(e); render(); toast(e&&e.name==="NotAllowedError"?"Cancelado.":"Não foi possível ligar a digital neste aparelho."); }
@@ -927,7 +933,7 @@ function passosTutorial(){
   const nuvem=mode==="cloud", tecla=matchMedia("(hover:hover) and (pointer:fine)").matches;
   const L=(...xs)=>`<ul>${xs.map(x=>`<li>${x}</li>`).join("")}</ul>`;
   return [
-    {ic:"logo",t:"Bem-vindo ao MB Controle",d:`Seu controle de gastos, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
+    {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle de gastos, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
     {ic:"mes",t:"1. Comece pelo salário",d:`Na aba <b>Mês</b>, informe o <b>salário deste mês</b> no card Receitas. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Lance como <b>receita avulsa</b>.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> no Perfil (ou em Ajustes → Contas).")},
     {ic:"mais",t:"2. Lance seus gastos",d:`Toque no botão <b>+</b>${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Valor estilo app de banco: digite só os números.","Comprou parcelado? Ligue <b>Compra parcelada</b>.","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.")},
     {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa e aparecem em Contas fixas até a última parcela.","<b>Categorias</b>: crie as suas, com cor, limite por mês e subcategorias.")},
@@ -1040,12 +1046,12 @@ function verificaLembretes(forcar){
     const e=x.dd===1?"amanha":x.dd===0?"hoje":"atraso", chave=[x.tipo,x.id,x.k,e,e==="atraso"?hoje:""].join(":");
     if(vistos[chave]) return; vistos[chave]=hoje;
     const titulo=e==="amanha"?"Vence amanhã: "+x.nome:e==="hoje"?"Vence hoje: "+x.nome:"Conta atrasada: "+x.nome;
-    mostraNotif(titulo,brl(x.valor)+(e==="atraso"?" · venceu em "+fmtData(x.data):"")+" — toque para abrir o MB Controle.",chave);
+    mostraNotif(titulo,brl(x.valor)+(e==="atraso"?" · venceu em "+fmtData(x.data):"")+" — toque para abrir o Monetra.",chave);
   });
   alertasOrcamento(todayKey).forEach(a=>{ const chave=["orc",a.id,todayKey,a.nivel].join(":"); if(vistos[chave]) return; vistos[chave]=hoje;
     mostraNotif(a.nivel==="passou"?"Limite estourado: "+a.nome:a.nivel==="ritmo"?"Ritmo alto: "+a.nome:"Atenção ao limite: "+a.nome, textoAlerta(a)+" Toque para ver.",chave); });
   const rsN=avisoSemana(); if(rsN){ const chave="semana:"+rsN.fim; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Resumo da semana: "+brl(rsN.tot),textoVarSemana(rsN)+(rsN.subiu?". Mais subiu: "+catName(rsN.subiu.id):"")+". Toque para ver.",chave); } }
-  const bkN=lembreteBackup(); if(bkN){ const chave="backup:"+todayKey; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Hora de fazer um backup",(bkN.dias===null?"Você ainda não baixou nenhum backup.":"Último backup há "+bkN.dias+" dias.")+" Toque para abrir o MB Controle.",chave); } }
+  const bkN=lembreteBackup(); if(bkN){ const chave="backup:"+todayKey; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Hora de fazer um backup",(bkN.dias===null?"Você ainda não baixou nenhum backup.":"Último backup há "+bkN.dias+" dias.")+" Toque para abrir o Monetra.",chave); } }
   for(const k in vistos) if(vistos[k]<shiftKey(hoje.slice(0,7),-2)) delete vistos[k];
   try{ localStorage.setItem("mb.notif.vistos",JSON.stringify(vistos)); }catch(e){}
 }
@@ -1055,7 +1061,7 @@ async function ligaNotif(on){
   const p=Notification.permission==="granted"?"granted":await Notification.requestPermission();
   notifOn=p==="granted"; try{localStorage.setItem("mb.notif",notifOn?"1":"0")}catch(e){}
   render();
-  if(notifOn){ toast("Notificações ativadas."); mostraNotif("MB Controle","Pronto! Você vai ser avisado um dia antes, no dia e se uma conta atrasar.","teste"); verificaLembretes(true); }
+  if(notifOn){ toast("Notificações ativadas."); mostraNotif("Monetra","Pronto! Você vai ser avisado um dia antes, no dia e se uma conta atrasar.","teste"); verificaLembretes(true); }
   else toast("O navegador bloqueou as notificações. Libere nas configurações do site.");
 }
 /* Lembretes no calendário (avisam mesmo com o app fechado) */
@@ -1063,12 +1069,12 @@ function exportarCalendario(){
   const esc2=t=>String(t||"").replace(/\\/g,"\\\\").replace(/[,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
   const ymd=d=>d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate());
   const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
-  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//MB Controle//PT-BR","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:MB Controle - contas"];
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Monetra//PT-BR","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:Monetra - contas"];
   let n=0;
   const ev=(uid,data,titulo,desc)=>{ n++; L.push("BEGIN:VEVENT","UID:"+uid+"@mbcontrole","DTSTAMP:"+stamp,"DTSTART:"+ymd(data)+"T090000","DTEND:"+ymd(data)+"T091500","SUMMARY:"+esc2(titulo),"DESCRIPTION:"+esc2(desc),"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+esc2(titulo),"TRIGGER:PT0M","END:VALARM","END:VEVENT"); };
   const tres=(base,data,nome,valor)=>{ const ant=new Date(data); ant.setDate(ant.getDate()-1); const dep=new Date(data); dep.setDate(dep.getDate()+1);
-    ev(base+"-antes",ant,"Amanhã vence: "+nome+" ("+brl(valor)+")","Lembrete do MB Controle.");
-    ev(base+"-dia",data,"Hoje vence: "+nome+" ("+brl(valor)+")","Depois de pagar, marque como paga no MB Controle.");
+    ev(base+"-antes",ant,"Amanhã vence: "+nome+" ("+brl(valor)+")","Lembrete do Monetra.");
+    ev(base+"-dia",data,"Hoje vence: "+nome+" ("+brl(valor)+")","Depois de pagar, marque como paga no Monetra.");
     ev(base+"-atraso",dep,"Atrasou? "+nome+" venceu ontem","Se ainda não pagou, a conta está atrasada. Se já pagou, ignore."); };
   for(let i=0;i<12;i++){ const k=shiftKey(todayKey,i), dim=diasMes(k);
     state.config.fixos.filter(f=>f.desde<=k&&(!f.ate||k<=f.ate)&&(!inicioKey()||k>=inicioKey())).forEach(f=>{ const o=((state.months[k]||{}).fixos||{})[f.id]||{}; if(o.pago||o.pular) return; tres("f"+f.id+k,new Date(kY(k),kM(k)-1,Math.min(f.dia,dim)),f.nome,typeof o.valor==="number"?o.valor:f.valor); });
@@ -1114,7 +1120,7 @@ function importar(file){
   r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.config||!d.months) throw 0;
     const t=state.config.termos; state.config=normConfig(d.config); if(!state.config.termos) state.config.termos=t; buildMeses(); save("config");
     for(const k in d.months){ if(!mesValido(k)) continue; state.months[k]=normMonth(d.months[k]); save(k); }
-    ui.importMsg="Backup restaurado."; render(); }catch(e){ ui.importMsg="Arquivo inválido. Use um backup baixado pelo MB Controle."; render(); } };
+    ui.importMsg="Backup restaurado."; render(); }catch(e){ ui.importMsg="Arquivo inválido. Use um backup baixado pelo Monetra."; render(); } };
   r.readAsText(file);
 }
 /* Planilha (abre no Excel e no Google Planilhas) */
@@ -1170,9 +1176,10 @@ function render(){
   const a=document.activeElement, inApp=a&&document.getElementById("app").contains(a);
   const fid=inApp&&a.id, sel=(fid&&"selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const app=document.getElementById("app");
-  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="perfil"?viewPerfil():viewAjustes();
+  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?viewPerfil():viewAjustes();
   const rolY=window.scrollY;
-  app.innerHTML=header()+corpo+bottomNav();
+  app.innerHTML='<div class="band" aria-hidden="true"></div>'+header()+corpo+bottomNav();
+  posicionaBanda();
   if(state.loaded&&mode!=="login") checaConquistas();
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus({preventScroll:true}); if(sel&&el.setSelectionRange){ try{el.setSelectionRange(sel[0],sel[1])}catch(e){} } } }
   /* centraliza o mês escolhido na barra só na horizontal, sem mexer na rolagem da página */
@@ -1188,8 +1195,8 @@ function encolheValores(raiz){ if(!raiz) return; raiz.querySelectorAll(".tile .v
 function header(){
   const t=(id,l)=>`<button role="tab" data-tab="${id}" aria-selected="${ui.tab===id}">${l}</button>`;
   const VIS=mesesVisiveis(), i=VIS.indexOf(ui.month), logado=mode!=="login"&&!precisaTermos();
-  return `<div class="top"><div class="brand"><h1>MB <span>Controle</span></h1><button type="button" class="status ${statusCls}" id="status" data-status="1" title="${esc(statusTxt)}"><i></i><span class="stt">${esc(statusTxt)}</span></button></div>
-  <div class="topright">${logado?`<div class="tabs" role="tablist">${t("mes","Mês")}${t("ano","Visão geral")}${t("ajustes","Ajustes")}</div>`:botaoTema()}
+  return `<div class="top"><div class="brand"><img class="logo" src="icons/logo-128.png" alt="" width="36" height="36"><h1>Monetra</h1><button type="button" class="status ${statusCls}" id="status" data-status="1" title="${esc(statusTxt)}"><i></i><span class="stt">${esc(statusTxt)}</span></button></div>
+  <div class="topright">${logado?`<div class="tabs" role="tablist">${t("mes","Início")}${t("ano","Relatórios")}${t("metas","Metas")}${t("ajustes","Ajustes")}</div>`:botaoTema()}
   ${logado&&state.loaded?`<button type="button" class="iconbtn" data-busca="1" aria-label="Buscar lançamentos" title="Buscar (tecla /)">${ICON.busca}</button>`:""}
   ${logado&&state.loaded?botaoSino():""}
   ${logado&&state.loaded?`<button type="button" class="avatarbtn ${ui.tab==="perfil"?"on":""}" data-tab="perfil" aria-label="Abrir meu perfil" title="Meu perfil">${avatar(36)}</button>`:""}</div></div>
@@ -1205,12 +1212,18 @@ function avatar(px){
   const ini=nome?nome.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase():"";
   return `<span class="avatar" style="width:${px}px;height:${px}px">${ini?esc(ini):ICON.perfil}</span>`;
 }
+/* faixa do topo: termina um pouco abaixo do saldo (Início) ou do cabeçalho (outras abas) */
+function posicionaBanda(){ const app=document.getElementById("app"), band=app&&app.querySelector(".band"); if(!band) return;
+  const y=el=>el.getBoundingClientRect().bottom+window.scrollY;
+  const hero=app.querySelector(".heroSaldo"), fim=hero?y(hero)+34:Math.max(...[".top",".espacos",".months",".note",".pagetitle"].map(q=>app.querySelector(q)).filter(Boolean).map(y))+(app.querySelector(".pagetitle")?14:4);
+  band.style.height=Math.max(120,Math.round(fim))+"px"; document.body.classList.toggle("combanda",!!hero); }
+window.addEventListener("resize",()=>{ try{ posicionaBanda(); }catch(e){} });
 function bottomNav(){
   if(mode==="login"||!state.loaded||precisaTermos()) return "";
   const np=pendencias().length;
-  const b=(id,l)=>`<button type="button" data-tab="${id}" class="${ui.tab===id?"on":""}" aria-current="${ui.tab===id?"page":"false"}">${ICON[id]}${id==="mes"&&np?`<i class="badge">${np}</i>`:""}<span>${l}</span></button>`;
-  return `<nav class="bottomnav" aria-label="Navegação">${b("mes","Mês")}${b("ano","Visão geral")}${b("ajustes","Ajustes")}${b("perfil","Perfil")}</nav>
-  ${ui.tab==="mes"?`<button class="fab" type="button" data-novo="gasto" aria-label="Novo lançamento">${ICON.mais}</button>`:""}`;
+  const ICN={mes:ICON.inicio,ano:ICON.relat,metas:ICON.metas,ajustes:ICON.ajustes};
+  const b=(id,l)=>`<button type="button" data-tab="${id}" class="${ui.tab===id?"on":""}" aria-current="${ui.tab===id?"page":"false"}">${ICN[id]}${id==="mes"&&np?`<i class="badge">${np}</i>`:""}<span>${l}</span></button>`;
+  return `<nav class="bottomnav" aria-label="Navegação">${b("mes","Início")}${b("ano","Relatórios")}<span class="navfab"><button class="fab" type="button" data-novo="gasto" aria-label="Novo lançamento">${ICON.mais}</button></span>${b("metas","Metas")}${b("ajustes","Ajustes")}</nav>`;
 }
 function viewLogin(){
   const novo=ui.loginModo==="criar";
@@ -1267,19 +1280,21 @@ function sequencias(gs){
   let azulMelhor=0, r=0; fechados.forEach((k,i)=>{ r=calc(k).saldo>=0?(i&&entre(fechados[i-1],k)===1?r+1:1):0; if(r>azulMelhor) azulMelhor=r; });
   return {atual,melhor,azulAtual,azulMelhor,fechados};
 }
+const ICQ={broto:'<path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>',chama:'<path d="M12 21c-4 0-6.5-2.6-6.5-6 0-4 4-6 4.5-10 2.5 1.5 4 4 4 6 1-1 1.5-2 1.5-3 2 1.5 3 4 3 7 0 3.4-2.5 6-6.5 6z"/>',medalha:'<circle cx="12" cy="14" r="5"/><path d="M9 9.5 7 3h4l1 3 1-3h4l-2 6.5"/>',coracao:'<path d="M12 20s-7-4.4-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4c0 5.2-7 9.6-7 9.6z"/>',nuvem:'<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.5A3.5 3.5 0 0 1 17 18z"/>',sol:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',trofeu:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6"/>',alvo:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/>',cofre:'<path d="M5 11a7 6 0 0 1 12.5-3.5L20 7v4l-1.5 1A7 6 0 0 1 15 17v2h-3v-1.5h-2V19H7v-2.3A6 6 0 0 1 5 11z"/>',bandeira:'<path d="M6 21V4M6 4h11l-2 4 2 4H6"/>',raio:'<path d="M13 3 5.5 13.5H12L11 21l7.5-10.5H12z"/>',estrela:'<path d="m12 4 2.4 5 5.4.7-4 3.7 1 5.4L12 16.3 7.2 18.8l1-5.4-4-3.7 5.4-.7z"/>'};
+const icq=(k,px)=>`<svg viewBox="0 0 24 24" width="${px||22}" height="${px||22}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICQ[k]||ICQ.estrela}</svg>`;
 const CONQ=[
-  {id:"primeiro",ic:"🌱",nome:"Primeiro passo",como:"Lance sua primeira despesa."},
-  {id:"semana",ic:"🔥",nome:"Semana firme",como:"Lance gastos 7 dias seguidos."},
-  {id:"mesint",ic:"🏅",nome:"Mês inteiro",como:"Lance gastos 30 dias seguidos."},
-  {id:"azul1",ic:"💙",nome:"No azul",como:"Feche um mês com saldo positivo."},
-  {id:"azul3",ic:"🌤️",nome:"Trimestre no azul",como:"Feche 3 meses seguidos no azul."},
-  {id:"azul6",ic:"☀️",nome:"Semestre no azul",como:"Feche 6 meses seguidos no azul."},
-  {id:"azul12",ic:"🏆",nome:"Ano no azul",como:"Feche 12 meses seguidos no azul."},
-  {id:"limite",ic:"🎯",nome:"Dentro do limite",como:"Feche um mês com limites sem estourar nenhum."},
-  {id:"poupa",ic:"🐷",nome:"Poupador",como:"Guarde na caixinha 3 meses seguidos."},
-  {id:"meta",ic:"🎉",nome:"Meta batida",como:"Complete uma meta de economia."},
-  {id:"desafio",ic:"⚡",nome:"Desafiante",como:"Conclua um desafio."},
-  {id:"cem",ic:"💯",nome:"Centena",como:"Chegue a 100 despesas lançadas."}
+  {id:"primeiro",ic:"broto",nome:"Primeiro passo",como:"Lance sua primeira despesa."},
+  {id:"semana",ic:"chama",nome:"Semana firme",como:"Lance gastos 7 dias seguidos."},
+  {id:"mesint",ic:"medalha",nome:"Mês inteiro",como:"Lance gastos 30 dias seguidos."},
+  {id:"azul1",ic:"coracao",nome:"No azul",como:"Feche um mês com saldo positivo."},
+  {id:"azul3",ic:"nuvem",nome:"Trimestre no azul",como:"Feche 3 meses seguidos no azul."},
+  {id:"azul6",ic:"sol",nome:"Semestre no azul",como:"Feche 6 meses seguidos no azul."},
+  {id:"azul12",ic:"trofeu",nome:"Ano no azul",como:"Feche 12 meses seguidos no azul."},
+  {id:"limite",ic:"alvo",nome:"Dentro do limite",como:"Feche um mês com limites sem estourar nenhum."},
+  {id:"poupa",ic:"cofre",nome:"Poupador",como:"Guarde na caixinha 3 meses seguidos."},
+  {id:"meta",ic:"bandeira",nome:"Meta batida",como:"Complete uma meta de economia."},
+  {id:"desafio",ic:"raio",nome:"Desafiante",como:"Conclua um desafio."},
+  {id:"cem",ic:"estrela",nome:"Centena",como:"Chegue a 100 despesas lançadas."}
 ];
 function conquistas(){
   const gs=todosGastos(), sq=sequencias(gs), got={};
@@ -1292,6 +1307,15 @@ function conquistas(){
   return {sq,got,gs};
 }
 const MODELOS_DES={delivery:{nome:"30 dias sem delivery",tipo:"sem",palavras:"ifood, delivery, rappi, aiqfome",dias:30},impulso:{nome:"Semana sem compras",tipo:"sem",icCat:"sacola",dias:7},mercado:{nome:"Mercado no limite",tipo:"max",icCat:"carrinho",dias:30,valor:600},lazer:{nome:"15 dias com lazer contado",tipo:"max",icCat:"taca",dias:15,valor:200}};
+function viewMetas(){
+  const cf=state.config, cx=caixinhaAte(todayKey);
+  return `<div class="pagetitle"><h2>Metas e desafios</h2><p>Guardado na caixinha: <b>${brl(cx)}</b>${cf.metas.length?" · "+cf.metas.length+" meta"+(cf.metas.length===1?"":"s"):""}</p></div>
+  <div class="grid"><div class="col">
+    <div class="card"><div class="cardhead"><h2>Metas de economia</h2><span class="num muted">${state.config.metas.length||""}</span></div>
+    ${state.config.metas.length?`<div class="metas">${state.config.metas.map(mt=>linhaMeta(mt,null)).join("")}</div>`:`<p class="hint">Crie metas como "Viagem", "Reserva de emergência" ou "Celular novo", com valor e prazo. O app calcula quanto guardar por mês.</p>`}
+    <button class="btn ghost" data-novo="meta" type="button">+ Nova meta</button></div>
+  </div><div class="col">${cardConquistas()}</div></div>`;
+}
 function cardConquistas(){
   if(mode==="login"||!state.loaded) return "";
   const {sq,got,gs}=conquistas(), ds=(state.config.desafios||[]).map(d=>({d,e:estadoDesafio(d,gs)}));
@@ -1299,13 +1323,13 @@ function cardConquistas(){
   const nGot=CONQ.filter(c=>got[c.id]).length;
   const linhaD=({d,e})=>`<button type="button" class="desafio ${e.st}" data-edit="desafio" data-id="${esc(d.id)}"><div class="t"><b>${esc(d.nome)}</b><span>${e.st==="ok"?"✓":e.st==="quebrou"?"✕":Math.round(e.pct*100)+"%"}</span></div><div class="track ${e.st==="quebrou"?"over":d.tipo==="max"&&e.pct>=0.85?"warn":""}"><div style="width:${Math.min(100,Math.round(e.pct*100))}%"></div></div><small>${esc(textoDesafio(d,e))}</small></button>`;
   return `<div class="card conq"><div class="cardhead"><h2>Conquistas e desafios</h2><span class="num muted">${nGot} de ${CONQ.length}</span></div>
-    <div class="streaks"><div><span class="lab">Sequência lançando</span><b>🔥 ${sq.atual} dia${sq.atual===1?"":"s"}</b><small>recorde: ${sq.melhor}</small></div><div><span class="lab">Meses no azul seguidos</span><b>💙 ${sq.azulAtual}</b><small>recorde: ${sq.azulMelhor}</small></div></div>
+    <div class="streaks"><div><span class="lab">Sequência lançando</span><b><span class="sti">${icq("chama",18)}</span>${sq.atual} dia${sq.atual===1?"":"s"}</b><small>recorde: ${sq.melhor}</small></div><div><span class="lab">Meses no azul seguidos</span><b><span class="sti">${icq("coracao",18)}</span>${sq.azulAtual}</b><small>recorde: ${sq.azulMelhor}</small></div></div>
     <h3>Desafios</h3>
     ${ativos.length?ativos.map(linhaD).join(""):`<p class="hint">Desafie você mesmo: "30 dias sem delivery", "semana sem compras" ou um limite para o mercado. O app acompanha sozinho pelos seus lançamentos.</p>`}
     ${antigos.length?`<details class="desant"><summary>Anteriores (${antigos.length})</summary>${antigos.map(linhaD).join("")}</details>`:""}
     <button type="button" class="btn ghost" data-novo="desafio">+ Novo desafio</button>
     <h3>Conquistas</h3>
-    <div class="conqs">${CONQ.map(c=>`<div class="conqb ${got[c.id]?"on":""}" title="${esc(c.como)}"><span class="bi" aria-hidden="true">${c.ic}</span><b>${esc(c.nome)}</b><small>${got[c.id]?"conquistada":esc(c.como)}</small></div>`).join("")}</div></div>`;
+    <div class="conqs">${CONQ.map(c=>`<div class="conqb ${got[c.id]?"on":""}" title="${esc(c.como)}"><span class="bi" aria-hidden="true">${icq(c.ic)}</span><b>${esc(c.nome)}</b><small>${got[c.id]?"conquistada":esc(c.como)}</small></div>`).join("")}</div></div>`;
 }
 /* avisa conquistas novas e desafios que terminaram (uma vez por aparelho) */
 let _conqTimer=null;
@@ -1317,8 +1341,8 @@ function checaConquistas(){
       const agora={c:CONQ.filter(c=>got[c.id]).map(c=>c.id),d:Object.fromEntries(ds.map(([d,st])=>[d.id,st]))};
       if(visto){ const novas=CONQ.filter(c=>got[c.id]&&!(visto.c||[]).includes(c.id));
         const fins=ds.filter(([d,st])=>(st==="ok"||st==="quebrou")&&(visto.d||{})[d.id]!==st);
-        if(novas.length) toast(novas[0].ic+" Conquista desbloqueada: "+novas[0].nome+(novas.length>1?" (+"+(novas.length-1)+")":""));
-        else if(fins.length){ const [d,st]=fins[0]; toast(st==="ok"?"⚡ Desafio concluído: "+d.nome:"Desafio “"+d.nome+"” não deu desta vez. Bora de novo?"); } }
+        if(novas.length) toast("Conquista desbloqueada: "+novas[0].nome+(novas.length>1?" (+"+(novas.length-1)+")":""));
+        else if(fins.length){ const [d,st]=fins[0]; toast(st==="ok"?"Desafio concluído: "+d.nome:"Desafio “"+d.nome+"” não deu desta vez. Bora de novo?"); } }
       localStorage.setItem(chave,JSON.stringify(agora)); }catch(e){} },900);
 }
 /* ---------- resumo da semana (segunda a domingo) ---------- */
@@ -1413,7 +1437,7 @@ function calcRes(tipo){
     const fer=c2(sal/30*dias), terco=c2(fer/3), bruto=c2(fer+terco), i=inssDe(bruto), r=irDe(bruto,i,deps), abono=vende?c2(sal/30*10*4/3):0, liq=c2(bruto-i-r.imp+abono);
     return `<div class="calcbox">${L(dias+" dias de férias",brl(fer))}${L("1/3 constitucional",brl(terco))}${L("INSS","− "+brl(i))}${L("Imposto de Renda","− "+brl(r.imp))}${vende?L("Venda de 10 dias + 1/3 (sem desconto)",brl(abono)):""}${L("Você recebe",brl(liq),"tot")}</div><p class="hint">Pago até 2 dias antes de começar as férias. No mês seguinte o salário vem menor, porque os dias de férias já foram pagos.</p>${nota}`; }
   if(tipo==="guardar"){ const alvo=v("s-calvo"), tem=v("s-ctem"), meses=Math.max(1,Math.round(n("s-cprazo"))), taxa=n("s-crend")/100; if(!(alvo>0)||!(n("s-cprazo")>0)) return `<p class="hint">Informe quanto custa e em quantos meses quer comprar.</p>`;
-    const fv=alvo-tem*Math.pow(1+taxa,meses); if(fv<=0) return `<div class="calcbox">${L("Você já tem o suficiente","🎉","tot")}</div><p class="hint">Com o que já guardou${taxa?" e o rendimento":""}, chega lá sem guardar mais nada.</p>`;
+    const fv=alvo-tem*Math.pow(1+taxa,meses); if(fv<=0) return `<div class="calcbox">${L("Você já tem o suficiente","✓","tot")}</div><p class="hint">Com o que já guardou${taxa?" e o rendimento":""}, chega lá sem guardar mais nada.</p>`;
     const pmt=c2(taxa>0?fv*taxa/(Math.pow(1+taxa,meses)-1):fv/meses), aportes=c2(pmt*meses), rend=c2(alvo-tem-aportes);
     return `<div class="calcbox">${L("Guarde por mês",brl(pmt),"tot")}${L("Você vai depositar",brl(aportes))}${taxa>0?L("O rendimento completa",brl(Math.max(0,rend))):""}${L("Pronto em",esc(nomeMes(shiftKey(todayKey,meses)).toLowerCase()))}</div>
       <button class="btn ghost" type="button" data-calcmeta="1">Criar meta de economia com esses valores</button><p class="hint">Rendimento opcional: use o da sua aplicação (ex.: poupança ou CDB). Sem rendimento, a conta é só dividir.</p>`; }
@@ -1704,7 +1728,7 @@ function viewAno(){
   const ini=inicioKey();
   if(!ini) return `<div class="empty-state">A visão geral aparece assim que você registrar sua primeira renda.<br>Vá na aba <b>Mês</b> e informe o salário do mês (ou uma receita avulsa).</div>`;
   const ks=MESES.filter(k=>k>=ini&&k<=todayKey);
-  if(!ks.length) return cardConquistas()+`<div class="empty-state">Seu controle começa em ${esc(nomeMes(ini).toLowerCase())}. A visão geral mostra os meses a partir daí, até o mês atual.</div>`;
+  if(!ks.length) return `<div class="empty-state">Seu controle começa em ${esc(nomeMes(ini).toLowerCase())}. A visão geral mostra os meses a partir daí, até o mês atual.</div>`;
   const rows=ks.map(k=>({k,c:calc(k),ac:acumulado(k),cx:caixinhaAte(k)}));
   const T=rows.reduce((a,r)=>({rec:a.rec+r.c.receitas,des:a.des+r.c.despesas,sal:a.sal+r.c.saldo}),{rec:0,des:0,sal:0});
   const ult=rows[rows.length-1], periodo=abrMes(ks[0])+" a "+abrMes(ult.k)+" · "+ks.length+(ks.length===1?" mês":" meses");
@@ -1727,7 +1751,7 @@ function viewAno(){
   const cats=state.config.categorias;
   const catTot=cats.map((ct,i)=>({ct,i,v:rows.reduce((a,r)=>a+(r.c.porCat[ct.id]||0),0)})).filter(z=>z.v>0).sort((a,b)=>b.v-a.v);
   const fTot=FORMAS.map(([id,n])=>({id,n,v:rows.reduce((a,r)=>a+(r.c.porForma[id]||0),0)})).filter(z=>z.v>0).sort((a,b)=>b.v-a.v);
-  return `${cardRetro()}${cardConquistas()}<div class="tiles">
+  return `${cardRetro()}<div class="tiles">
     <div class="tile"><span class="lab">Receitas</span><span class="val">${brl(T.rec)}</span><span class="sub">${esc(periodo)}</span></div>
     <div class="tile"><span class="lab">Despesas</span><span class="val">${brl(T.des)}</span><span class="sub">${T.rec>0?Math.round(T.des/T.rec*100)+"% das receitas":"—"}</span></div>
     <div class="tile hero"><span class="lab">Saldo acumulado</span><span class="val ${ult.ac<0?"neg":"pos"}">${brl(ult.ac)}</span><span class="sub">até ${esc(abrMes(ult.k))}, com saldo inicial</span></div>
@@ -1925,7 +1949,7 @@ function dadosRetro(ano){
 function slidesRetro(d){
   const per=abrMes(d.ks[0])+" a "+abrMes(d.ks[d.ks.length-1]);
   const sl=[];
-  sl.push({cls:"capa",html:`<span class="rlab">Retrospectiva</span><b class="rbig">${d.ano}</b><p>O seu ${d.parcial?"ano até agora":"ano"} no MB Controle: <b>${d.ks.length} ${d.ks.length===1?"mês":"meses"}</b> (${esc(per)}) e <b>${d.nLanc} lançamentos</b>.</p>
+  sl.push({cls:"capa",html:`<span class="rlab">Retrospectiva</span><b class="rbig">${d.ano}</b><p>O seu ${d.parcial?"ano até agora":"ano"} no Monetra: <b>${d.ks.length} ${d.ks.length===1?"mês":"meses"}</b> (${esc(per)}) e <b>${d.nLanc} lançamentos</b>.</p>
     ${anosRetro().length>1?`<div class="ranos">${anosRetro().map(a=>`<button type="button" class="${a===d.ano?"on":""}" data-rano="${a}">${a}</button>`).join("")}</div>`:""}`});
   sl.push({cls:"",html:`<span class="rlab">Entrou e saiu</span>
     <div class="rpar"><div><small>Entrou</small><b class="pos">${brl(d.t.rec)}</b></div><div><small>Saiu</small><b>${brl(d.t.des)}</b></div></div>
@@ -1950,7 +1974,7 @@ function slidesRetro(d){
     <button class="btn wide" type="button" data-rshare="1">Compartilhar resumo</button>`});
   return sl;
 }
-function textoRetro(d){ return "Meu "+d.ano+" no MB Controle\n"+"Entrou: "+brl(d.t.rec)+"\nSaiu: "+brl(d.t.des)+"\n"+(d.t.sal>=0?"Sobrou: "+brl(d.t.sal)+" ("+Math.round(d.taxa*100)+"%)":"Faltou: "+brl(-d.t.sal))+(d.cats[0]?"\nO que mais pesou: "+d.cats[0].nome:"")+"\n"+location.origin+location.pathname; }
+function textoRetro(d){ return "Meu "+d.ano+" no Monetra\n"+"Entrou: "+brl(d.t.rec)+"\nSaiu: "+brl(d.t.des)+"\n"+(d.t.sal>=0?"Sobrou: "+brl(d.t.sal)+" ("+Math.round(d.taxa*100)+"%)":"Faltou: "+brl(-d.t.sal))+(d.cats[0]?"\nO que mais pesou: "+d.cats[0].nome:"")+"\n"+location.origin+location.pathname; }
 async function compartilharRetro(){
   const d=dadosRetro(ui.sheet.ano); if(!d) return; const txt=textoRetro(d);
   try{ if(navigator.share){ await navigator.share({title:"Minha retrospectiva "+d.ano,text:txt}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
@@ -1973,20 +1997,18 @@ function viewAjustes(){
     ${ativos.length?`<div>${ativos.slice().sort((a,b)=>a.dia-b.dia).map(f=>`<button type="button" class="item" data-edit="fixo" data-id="${esc(f.id)}" style="--dot:${catColor(f.cat)}"><span class="pill">dia ${pad2(f.dia)}</span><span class="desc"><b>${esc(f.nome)}</b><small>${esc(catName(f.cat))} · ${esc(formaNome(f.forma))}${f.desde>todayKey?" · começa em "+abrMes(f.desde):""}</small></span><span class="v">${brl(f.valor)}</span></button>`).join("")}</div>`:`<p class="hint">Nenhuma conta fixa ainda. Exemplos: aluguel, internet, plano de celular, academia, streaming.</p>`}
     ${encerrados.length?`<p class="hint">${encerrados.length} conta(s) encerrada(s) continuam aparecendo nos meses em que valiam.</p>`:""}
     <button class="btn ghost" data-novo="fixo" type="button">+ Nova conta fixa</button></div>
-    <div class="card"><div class="cardhead"><h2>Metas de economia</h2><span class="num muted">${cf.metas.length||""}</span></div>
-    ${cf.metas.length?`<div class="metas">${cf.metas.map(mt=>linhaMeta(mt,null)).join("")}</div>`:`<p class="hint">Crie metas como "Viagem", "Reserva de emergência" ou "Celular novo", com valor e prazo. O app calcula quanto guardar por mês.</p>`}
-    <button class="btn ghost" data-novo="meta" type="button">+ Nova meta</button></div>
+
     <div class="card"><div class="cardhead"><h2>Compras parceladas</h2><span class="num muted">${abertas.length?abertas.length+" em andamento":""}</span></div>
     ${abertas.length?`<div>${abertas.map(x=>`<button type="button" class="item" data-edit="parcela" data-id="${esc(x.p.id)}" style="--dot:${catColor(x.p.cat)}"><span class="pill">${x.pagas}/${x.p.n}</span><span class="desc"><b>${esc(x.p.desc||"Compra parcelada")}</b><small>${x.p.n}x de ${brl(x.p.total/x.p.n)} · até ${esc(abrMes(x.ultima))}</small></span><span class="v">${brl(x.p.total)}</span></button>`).join("")}</div>`:`<p class="hint">Para parcelar, ao lançar uma despesa ligue a opção <b>Compra parcelada</b>. As parcelas entram sozinhas nos meses seguintes.</p>`}
     ${quitadas?`<p class="hint">${quitadas} compra(s) já quitada(s).</p>`:""}</div>
     ${cardViagens()}
     ${cardDividas()}
     <div class="card" id="ferramentas"><h2>Ferramentas</h2>
-    <button type="button" class="ferr" data-novo="simulador"><span class="fi" aria-hidden="true">📉</span><span><b>Simulador de quitação</b><small>Em quanto tempo quita uma dívida ou financiamento e quanto economiza pagando a mais.</small></span></button>
-    <button type="button" class="ferr" data-novo="calc" data-calc="decimo"><span class="fi" aria-hidden="true">🎁</span><span><b>13º salário</b><small>Quanto cai na 1ª e na 2ª parcela, já com INSS e Imposto de Renda.</small></span></button>
-    <button type="button" class="ferr" data-novo="calc" data-calc="ferias"><span class="fi" aria-hidden="true">🏖️</span><span><b>Férias</b><small>Férias + 1/3, com opção de vender 10 dias.</small></span></button>
-    <button type="button" class="ferr" data-novo="calc" data-calc="liquido"><span class="fi" aria-hidden="true">💼</span><span><b>Salário líquido</b><small>Do bruto ao que cai na conta, com a tabela de ${TAB.ano}.</small></span></button>
-    <button type="button" class="ferr" data-novo="calc" data-calc="guardar"><span class="fi" aria-hidden="true">🎯</span><span><b>Quanto guardar por mês</b><small>Para comprar algo à vista numa data, com ou sem rendimento.</small></span></button></div>
+    <button type="button" class="ferr" data-novo="simulador"><span class="fi" style="--dot:#10B981">${ICON.relat}</span><span><b>Simulador de quitação</b><small>Em quanto tempo quita uma dívida ou financiamento e quanto economiza pagando a mais.</small></span></button>
+    <button type="button" class="ferr" data-novo="calc" data-calc="decimo"><span class="fi" style="--dot:#E11D48">${svgCat('presente',20)}</span><span><b>13º salário</b><small>Quanto cai na 1ª e na 2ª parcela, já com INSS e Imposto de Renda.</small></span></button>
+    <button type="button" class="ferr" data-novo="calc" data-calc="ferias"><span class="fi" style="--dot:#0EA5E9">${svgCat('aviao',20)}</span><span><b>Férias</b><small>Férias + 1/3, com opção de vender 10 dias.</small></span></button>
+    <button type="button" class="ferr" data-novo="calc" data-calc="liquido"><span class="fi" style="--dot:#8B5CF6">${svgCat('dinheiro',20)}</span><span><b>Salário líquido</b><small>Do bruto ao que cai na conta, com a tabela de ${TAB.ano}.</small></span></button>
+    <button type="button" class="ferr" data-novo="calc" data-calc="guardar"><span class="fi" style="--dot:#F59E0B">${icq('alvo',20)}</span><span><b>Quanto guardar por mês</b><small>Para comprar algo à vista numa data, com ou sem rendimento.</small></span></button></div>
     <div class="card"><h2>Importar extrato do banco</h2>
     <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX ou CSV no app do seu banco e traga tudo de uma vez, com a categoria já sugerida.</p>
     <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>
@@ -2059,8 +2081,8 @@ const meusTermos=()=>mode==="cloud"?eu.termos:state.config.termos;
 const precisaTermos=()=>{ const t=meusTermos(); return mode!=="login"&&state.loaded&&!(t&&t.v===TERMOS_V); };
 const dataBR=iso=>{ const d=new Date(iso); return isNaN(d)?"":d.toLocaleDateString("pt-BR"); };
 function textoTermos(){
-  return `<h3>1. O que é o MB Controle</h3>
-  <p>O MB Controle é um aplicativo gratuito de controle de gastos pessoais, criado por Gustavo M. Barbosa. Ele serve para você anotar e acompanhar o seu próprio dinheiro. Não é banco, não movimenta dinheiro e não pede senha de banco.</p>
+  return `<h3>1. O que é o Monetra</h3>
+  <p>O Monetra é um aplicativo gratuito de controle de gastos pessoais, criado por Gustavo M. Barbosa. Ele serve para você anotar e acompanhar o seu próprio dinheiro. Não é banco, não movimenta dinheiro e não pede senha de banco.</p>
   <h3>2. Quais dados o app guarda</h3>
   <ul><li><b>Da sua conta Google:</b> nome, e-mail, foto e um código de identificação, usados só para fazer o login e mostrar seu perfil.</li>
   <li><b>O que você digita:</b> salário, receitas, despesas, categorias, contas, cartões (só nome, datas e limite, nunca o número do cartão), parcelas, metas e lembretes.</li>
@@ -2093,7 +2115,7 @@ function viewTermos(pedir){
   const recusou=ui.recusouTermos&&pedir;
   return `<div class="card termos">
   <h2>Termos de privacidade</h2><p class="hint">Versão ${TERMOS_V} · ${TERMOS_DATA}</p>
-  ${pedir?`<p>${meusTermos()?"Os termos mudaram. ":""}Antes de usar o MB Controle, leia como seus dados são tratados e escolha se aceita.</p>`:""}
+  ${pedir?`<p>${meusTermos()?"Os termos mudaram. ":""}Antes de usar o Monetra, leia como seus dados são tratados e escolha se aceita.</p>`:""}
   <div class="termostexto">${textoTermos()}</div>
   ${recusou?`<p class="note">Sem aceitar os termos não é possível usar o app neste aparelho. Seus dados não foram alterados.</p>`:""}
   ${pedir?`<label class="checkline"><input type="checkbox" id="t-li"> Li e entendi os termos de privacidade</label>
@@ -2105,7 +2127,7 @@ function acaoTermos(a){
   if(a==="fechar"){ ui.lerTermos=false; render(); window.scrollTo({top:0}); return; }
   if(a==="aceitar"){ const t={v:TERMOS_V,em:new Date().toISOString()}; if(mode==="cloud") salvaEu({termos:t}); else { state.config.termos=t; save("config"); } ui.recusouTermos=false; ui.lerTermos=false; render(); toast("Termos aceitos. Bom controle!"); return; }
   if(a==="recusar"){
-    if(mode==="cloud"&&fb){ loginErro="Para usar o MB Controle é preciso aceitar os termos de privacidade. Seus dados não foram alterados."; fb.signOut(fb.auth); return; }
+    if(mode==="cloud"&&fb){ loginErro="Para usar o Monetra é preciso aceitar os termos de privacidade. Seus dados não foram alterados."; fb.signOut(fb.auth); return; }
     ui.recusouTermos=true; render(); return;
   }
   if(a==="revogar"){ if(!confirmaRevogar()) return; if(mode==="cloud") salvaEu({termos:null}); else { state.config.termos=null; save("config"); } ui.lerTermos=false; render(); window.scrollTo({top:0}); }
@@ -2275,7 +2297,7 @@ function renderSheet(){
   if(s.tipo==="gasto"){
     const cat=it?it.cat:(ui.gCat&&catIndex(ui.gCat)>=0?ui.gCat:state.config.categorias[0]?.id);
     const forma=it?(it.forma||""):ui.gForma;
-    corpo=`${novo?`<div class="rapido"><label class="rp-in"><span class="rp-ic" aria-hidden="true">⚡</span><span class="sr">Lançamento rápido</span><input class="in" id="s-rapido" autocomplete="off" enterkeyhint="send" maxlength="100" placeholder="Rápido: 45 ifood pix · 120 mercado ontem"></label><div class="rp-prev" id="s-rapprev" aria-live="polite">${previaRapido(null)}</div></div>`:""}
+    corpo=`${novo?`<div class="rapido"><label class="rp-in"><span class="rp-ic" aria-hidden="true">${icq("raio",17)}</span><span class="sr">Lançamento rápido</span><input class="in" id="s-rapido" autocomplete="off" enterkeyhint="send" maxlength="100" placeholder="Rápido: 45 ifood pix · 120 mercado ontem"></label><div class="rp-prev" id="s-rapprev" aria-live="polite">${previaRapido(null)}</div></div>`:""}
       ${valorCampo(it?(it.orig&&it.orig.moeda!=="BRL"&&(state.config.viagens||[]).some(v=>v.id===it.viagemId)?it.orig.valor:it.valor):null)}
       ${blocoViagemGasto(it,k)}
       ${novo?`<label class="switch"><input type="checkbox" id="s-parc"><span></span>Compra parcelada</label>
@@ -2895,7 +2917,7 @@ app.addEventListener("touchstart",e=>{ if(ui.tab!=="mes"||ui.sheet||e.touches.le
 app.addEventListener("touchend",e=>{ if(tx===null) return; const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty; tx=null;
   if(Math.abs(dx)>70&&Math.abs(dy)<45){ if(passo(dx<0?1:-1)){ app.classList.remove("slide-l","slide-r"); void app.offsetWidth; app.classList.add(dx<0?"slide-l":"slide-r"); } } },{passive:true});
 
-setTimeout(()=>{ try{ const v=localStorage.getItem("mb.versao"); if(v&&v!==VERSAO&&mode!=="login") toast("MB Controle atualizado para a versão "+VERSAO+". Veja as novidades no Perfil."); localStorage.setItem("mb.versao",VERSAO); }catch(e){} },2500);
+setTimeout(()=>{ try{ const v=localStorage.getItem("mb.versao"); if(v&&v!==VERSAO&&mode!=="login") toast("Monetra atualizado para a versão "+VERSAO+". Veja as novidades no Perfil."); localStorage.setItem("mb.versao",VERSAO); }catch(e){} },2500);
 setInterval(()=>verificaLembretes(true),30*60000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ verificaLembretes(true); if(ui.tab==="mes"&&!ui.sheet) render(); } });
 /* quando o mês do calendário virar com o app aberto, atualiza sozinho */

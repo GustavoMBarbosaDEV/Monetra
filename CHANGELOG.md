@@ -12,6 +12,16 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.0 — 19/10/2026 **Monetra**
+
+- O app passa a se chamar **Monetra**, com logo e ícones novos (tela inicial do celular, aba do navegador e APK).
+- Visual novo: tema claro com o topo em verde da marca e o saldo em "vidro"; tema escuro preto com verde neon. Fonte Inter.
+- Caixas sem borda, cantos mais redondos, sombra suave (claro) ou relevo sutil (escuro) e o título de cada seção fora da caixa.
+- Navegação nova: Início, Relatórios, botão + no centro (em todas as abas), Metas e Ajustes. O Perfil abre pela foto no topo.
+- Nova aba **Metas**: metas de economia, desafios e conquistas juntos (saíram de Ajustes e da Visão geral).
+- Ícones de traço no lugar de todos os emojis (ferramentas, conquistas, sequências).
+- Os dados, o endereço do site e as chaves salvas no aparelho continuam os mesmos: nada precisa ser refeito.
+
 ## 4.9.0 — 19/10/2026 **Calculadoras brasileiras**
 
 - Em Ajustes → Ferramentas: 13º salário (1ª parcela sem descontos e 2ª com INSS e IR), férias (férias + 1/3, com opção de vender 10 dias) e salário líquido.

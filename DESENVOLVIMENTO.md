@@ -1,4 +1,4 @@
-# MB Controle — guia de desenvolvimento
+# Monetra — guia de desenvolvimento
 
 Anotações técnicas de como o app foi montado e como publicar novas versões.
 Para a apresentação do app, veja o [README](README.md).

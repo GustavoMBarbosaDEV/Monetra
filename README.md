@@ -1,4 +1,4 @@
-# MB Controle
+# Monetra
 
 **Controle de gastos pessoal, grátis e sem anúncios.**
 Funciona no celular e no computador, com login Google e seus dados salvos na nuvem.
