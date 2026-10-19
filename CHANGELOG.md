@@ -12,6 +12,19 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.6 — 19/10/2026 **Início mais enxuto**
+
+- Início (celular): a página caiu de ~5.400px para ~2.500px de altura.
+  - Ficam à mostra: saldo, atalhos, lembretes, previsão, orçamento do mês e últimos lançamentos.
+  - Em "Mais de <mês>": calendário, para onde foi, contas, faturas, contas fixas, receitas, caixinha e forma de pagamento, cada um numa linha com resumo (ex.: total) que abre ao tocar.
+  - "Ver tudo" do orçamento e os avisos abrem a seção certa sozinhos.
+  - No primeiro uso, Receitas já vem aberta para informar o salário.
+- Ajustes (celular): contas fixas, parcelas, viagem, dívidas, ferramentas, importar extrato, contas, cartões e categorias viram linhas com resumo que abrem ao tocar.
+- O app lembra, neste aparelho, quais seções você deixou abertas.
+- Computador: sem mudança, tudo continua aberto em duas colunas.
+- Tutorial atualizado para explicar o "Mais do mês".
+- Corrigido o cálculo da faixa verde do topo, que podia crescer demais em telas curtas.
+
 ## 5.0.5 — 19/10/2026 **Lançamento rápido preenche o formulário**
 
 - Nova despesa: o campo rápido agora preenche o formulário enquanto você digita (com uma pequena espera), em vez de só mostrar uma prévia. Antes a prévia dizia "R$ 45,00 · Lazer" e o formulário continuava "0,00 · Mercado", e tocar em Salvar podia gravar o valor errado.

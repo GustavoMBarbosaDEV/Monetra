@@ -10,9 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.5";
+const VERSAO="5.0.6";
 const NOVIDADES=[
-  "Ao escrever no lançamento rápido (ex.: 45 ifood pix), o formulário abaixo já se preenche sozinho: valor, categoria, forma de pagamento, data e descrição. Os campos preenchidos piscam rapidinho para você conferir."
+  "Início mais enxuto no celular: saldo, atalhos, avisos, orçamento e últimos lançamentos ficam em cima; calendário, para onde foi, faturas, contas fixas, receitas, caixinha e forma de pagamento ficam em \"Mais do mês\", é só tocar para abrir.",
+  "Ajustes organizados: cada item abre ao tocar, e o app lembra o que você deixou aberto. No computador continua tudo à mostra, em duas colunas."
 ];
 
 /* ---------- utilidades ---------- */
@@ -119,7 +120,7 @@ function mesesVisiveis(){
   return MESES.filter(k=>k>=de);
 }
 
-const ui={tab:"mes",month:null,sheet:null,importMsg:"",loginModo:"entrar",gCat:null,gForma:"pix",filtro:""};
+const ui={abre:(()=>{ try{ const x=JSON.parse(localStorage.getItem("mb.abre")||"{}"); return x&&typeof x==="object"&&!Array.isArray(x)?x:{}; }catch(e){ return {}; } })(),tab:"mes",month:null,sheet:null,importMsg:"",loginModo:"entrar",gCat:null,gForma:"pix",filtro:""};
 let mode="loading", uid=null, statusTxt="Carregando…", statusCls="";
 buildMeses();
 ui.month=todayKey;
@@ -932,11 +933,11 @@ function passosTutorial(){
   const L=(...xs)=>`<ul>${xs.map(x=>`<li>${x}</li>`).join("")}</ul>`;
   return [
     {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle financeiro, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
-    {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, role até o card <b>Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> em Perfil → Ajustes → Contas.")},
+    {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, abra <b>Mais do mês → Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> em Perfil → Ajustes → Contas.")},
     {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.")},
-    {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
+    {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões (toque no item para abrir).`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
-    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("<b>Calendário</b>: gastos e vencimentos de cada dia, e o resumo da semana.","<b>Relatórios</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
+    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("Logo abaixo, em <b>Mais do mês</b>, abra o <b>calendário</b>, <b>para onde foi</b>, faturas, contas fixas e caixinha (no computador, aparecem direto).","<b>Relatórios</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
     {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
     {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
@@ -1186,7 +1187,7 @@ function render(){
   if(state.loaded&&mode!=="login"&&!precisaTermos()){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); talvezTutorial(); }
   /* valores muito grandes diminuem de tamanho até caber, sem cortar o número */
   encolheValores(document.getElementById("app"));
-  if(ui.rolarPara&&state.loaded){ const el=document.getElementById(ui.rolarPara); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
+  if(ui.rolarPara&&state.loaded){ const _id=ui.rolarPara, _e=document.getElementById(_id), _s=_e&&_e.closest(".mais:not(.aberta)"); if(_s){ ui.abre[_s.id.slice(4)]=true; ui.rolarPara=null; render(); ui.rolarPara=null; setTimeout(()=>{ const e2=document.getElementById(_id); e2&&e2.scrollIntoView({block:"center",behavior:"smooth"}); },60); } const el=document.getElementById(ui.rolarPara||"__nada"); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 /* valores muito grandes diminuem de tamanho até caber, sem cortar o número */
 function encolheValores(raiz){ if(!raiz) return; raiz.querySelectorAll(".tile .val, .hs-val, .assintot b, .rpar b, .vgnums b").forEach(el=>{ el.style.fontSize=""; let f=parseFloat(getComputedStyle(el).fontSize), n=0; while(el.scrollWidth>el.clientWidth+1&&f>12&&n<20){ f-=1; n++; el.style.fontSize=f+"px"; } }); }
@@ -1214,7 +1215,7 @@ function avatar(px){
 /* faixa do topo: termina um pouco abaixo do saldo (Início) ou do cabeçalho (outras abas) */
 function posicionaBanda(){ const app=document.getElementById("app"), band=app&&app.querySelector(".band"); if(!band) return;
   const y=el=>el.getBoundingClientRect().bottom+window.scrollY;
-  const hero=app.querySelector(".heroSaldo"), fim=hero?y(hero)+42:Math.max(...[".top",".espacos",".months",".note",".pagetitle"].map(q=>app.querySelector(q)).filter(Boolean).map(y))+(app.querySelector(".pagetitle")?14:4);
+  const hero=app.querySelector(".heroSaldo"), fim=hero?y(hero)+42:Math.max(...[".top",".espacos",".months",".note",".pagetitle"].map(q=>app.querySelector(":scope > "+q)).filter(el=>el&&el.offsetHeight>0).map(y),0)+(app.querySelector(".pagetitle")?14:4);
   band.style.height=Math.max(120,Math.round(fim))+"px"; document.body.classList.toggle("combanda",!!hero); }
 window.addEventListener("resize",()=>{ try{ posicionaBanda(); }catch(e){} });
 function bottomNav(){
@@ -1612,6 +1613,18 @@ function graficoSaldo(sr){
   const P=sr.map((v,i)=>[i/(sr.length-1)*W,H-4-(v-mn)/rg*(H-8)]), d="M"+P.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" L"), u=P[P.length-1];
   return `<svg class="hs-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="${d} L${W},${H} L0,${H}Z" fill="url(#hsg)"/><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><circle cx="${u[0].toFixed(1)}" cy="${u[1].toFixed(1)}" r="3.5" fill="currentColor"/></svg>`;
 }
+/* seção recolhível do Início (celular) */
+function secaoMes(id,titulo,resumo,icone,html){
+  if(!html||!String(html).trim()) return "";
+  const ab=!!(ui.abre&&ui.abre[id]);
+  return `<section class="mais ${ab?"aberta":""}" id="sec-${id}"><button type="button" class="maishead" data-abre="${id}" aria-expanded="${ab}" aria-controls="secb-${id}"><span class="mi" aria-hidden="true">${icone||""}</span><span class="mt"><b>${esc(titulo)}</b>${resumo?`<small>${resumo}</small>`:""}</span><span class="mc" aria-hidden="true">${icq("chev",18)}</span></button><div class="maisbody" id="secb-${id}">${html}</div></section>`;
+}
+/* abre a seção recolhida que contém o elemento (para "Ver tudo", avisos etc.) */
+function garanteVisivel(id){
+  let el=document.getElementById(id); const sec=el&&el.closest(".mais:not(.aberta)");
+  if(sec){ ui.abre=ui.abre||{}; ui.abre[sec.id.slice(4)]=true; render(); el=document.getElementById(id); }
+  return el;
+}
 function viewMes(){
   const k=ui.month, m=getMonth(k), c=calc(k), cats=state.config.categorias, isCur=k===todayKey;
   const prevK=shiftKey(k,-1), prev=MESES.includes(prevK)&&ativo(prevK)&&ativo(k)?calc(prevK):null;
@@ -1746,7 +1759,19 @@ function viewMes(){
   const pag=`<div class="card"><div class="cardhead"><h2>Forma de pagamento</h2></div>
     ${formas.length?`<div class="bars">${formas.map(x=>`<div class="bar" style="--dot:var(--fm-${x.id==="?"?"na":x.id})"><div class="t"><b>${esc(x.n)}</b><span class="num">${brl(x.v)} · ${Math.round(x.v/c.despesas*100)}%</span></div><div class="track"><div style="width:${(x.v/formas[0].v*100).toFixed(1)}%"></div></div></div>`).join("")}</div>`:'<p class="hint">Mostra quanto saiu no Pix, débito, crédito, dinheiro e boleto.</p>'}
     ${!cartaoAtivo()&&c.porForma.credito>0?`<p class="hint">Dica: em Ajustes → Cartões de crédito, cadastre seu cartão com o dia de fechamento para as compras no crédito contarem no mês da fatura.</p>`:""}</div>`;
-  return aviso+(k===todayKey?cardViagemMes():"")+tiles.replace('<!--LEMB-->',cardLembretes())+`<div class="grid"><div class="col">${lista}${cardCalendario(k)}${onde}</div><div class="col">${contasCard}${fatura}${fixas}${receitas}${caixa}${pag}</div></div>`;
+  /* 5.0.6: no celular, o que não é do dia a dia fica recolhido em "Mais de <mês>" (no computador tudo aparece) */
+  if(!ini&&ui.abre.receitas===undefined) ui.abre.receitas=true; /* primeiro uso: Receitas já aberta para informar o salário */
+  const nCart=cartoesOk().length, totFat=cartoesOk().reduce((a,cc)=>a+soma(faturaDoMes(k,cc.id)),0);
+  const fatHtml=Array.isArray(fatura)?fatura.join(""):fatura;
+  const secs1=secaoMes("cal","Calendário","gastos por dia e vencimentos",ICON.mes,cardCalendario(k))
+    +secaoMes("onde","Para onde foi",c.despesas>0?brl(c.despesas)+" em despesas":"",svgCat("pontos",18),onde);
+  const secs2=secaoMes("contas","Contas",contasCard?"saldo por conta":"",ICON.banco,contasCard)
+    +secaoMes("faturas",nCart>1?"Faturas dos cartões":"Fatura do cartão",nCart?brl(totFat):"",ICON.cartao,fatHtml)
+    +secaoMes("fixas","Contas fixas",(fx.length||cc.length)?brl(totalFix):"",ICON.repete,fixas)
+    +secaoMes("receitas","Receitas",brl(c.receitas),icq("seta-cima",18),receitas)
+    +secaoMes("caixa","Caixinha",brl(cx),icq("cofre",18),caixa)
+    +secaoMes("pag","Forma de pagamento","como você pagou",svgCat("dinheiro",18),pag);
+  return aviso+(k===todayKey?cardViagemMes():"")+tiles.replace('<!--LEMB-->',cardLembretes())+`<div class="grid"><div class="col">${lista}<h2 class="maistit">Mais de ${esc(mesN)}</h2>${secs1}</div><div class="col">${secs2}</div></div>`;
 }
 
 /* ---------- aba Visão geral (só meses que já passaram + o atual) ---------- */
@@ -2019,37 +2044,37 @@ function viewAjustes(){
   const parc=cf.parcelas.map(p=>{ const cc=p.forma==="credito"?cartaoDe(p):null; const prim=cartaoOk(cc)?faturaMes(p.compra,p.dia,cc):p.compra; const pagas=Math.max(0,Math.min(p.n,entre(prim,todayKey)+1)); return {p,prim,pagas,ultima:shiftKey(prim,p.n-1)}; });
   const abertas=parc.filter(x=>x.ultima>=todayKey), quitadas=parc.length-abertas.length;
   return `<div class="grid"><div class="col">
-    <div class="card"><div class="cardhead"><h2>Contas fixas</h2><span class="num muted">${ativos.length?brl(soma(ativos))+"/mês":""}</span></div>
+    ${secaoMes("aj-fixas","Contas fixas",ativos.length?brl(soma(ativos))+"/mês · "+ativos.length+(ativos.length===1?" conta":" contas"):"nenhuma ainda",ICON.repete,`<div class="card"><div class="cardhead"><h2>Contas fixas</h2><span class="num muted">${ativos.length?brl(soma(ativos))+"/mês":""}</span></div>
     ${ativos.length?`<div>${ativos.slice().sort((a,b)=>a.dia-b.dia).map(f=>`<button type="button" class="item" data-edit="fixo" data-id="${esc(f.id)}" style="--dot:${catColor(f.cat)}"><span class="pill">dia ${pad2(f.dia)}</span><span class="desc"><b>${esc(f.nome)}</b><small>${esc(catName(f.cat))} · ${esc(formaNome(f.forma))}${f.desde>todayKey?" · começa em "+abrMes(f.desde):""}</small></span><span class="v">${brl(f.valor)}</span></button>`).join("")}</div>`:`<p class="hint">Nenhuma conta fixa ainda. Exemplos: aluguel, internet, plano de celular, academia, streaming.</p>`}
     ${encerrados.length?`<p class="hint">${encerrados.length} conta(s) encerrada(s) continuam aparecendo nos meses em que valiam.</p>`:""}
-    <button class="btn ghost" data-novo="fixo" type="button">+ Nova conta fixa</button></div>
+    <button class="btn ghost" data-novo="fixo" type="button">+ Nova conta fixa</button></div>`)}
 
-    <div class="card"><div class="cardhead"><h2>Compras parceladas</h2><span class="num muted">${abertas.length?abertas.length+" em andamento":""}</span></div>
+    ${secaoMes("aj-parc","Compras parceladas",abertas.length?abertas.length+" em andamento":"nenhuma em andamento",ICON.cartao,`<div class="card"><div class="cardhead"><h2>Compras parceladas</h2><span class="num muted">${abertas.length?abertas.length+" em andamento":""}</span></div>
     ${abertas.length?`<div>${abertas.map(x=>`<button type="button" class="item" data-edit="parcela" data-id="${esc(x.p.id)}" style="--dot:${catColor(x.p.cat)}"><span class="pill">${x.pagas}/${x.p.n}</span><span class="desc"><b>${esc(x.p.desc||"Compra parcelada")}</b><small>${x.p.n}x de ${brl(x.p.total/x.p.n)} · até ${esc(abrMes(x.ultima))}</small></span><span class="v">${brl(x.p.total)}</span></button>`).join("")}</div>`:`<p class="hint">Para parcelar, ao lançar uma despesa ligue a opção <b>Compra parcelada</b>. As parcelas entram sozinhas nos meses seguintes.</p>`}
-    ${quitadas?`<p class="hint">${quitadas} compra(s) já quitada(s).</p>`:""}</div>
-    ${cardViagens()}
-    ${cardDividas()}
-    <div class="card" id="ferramentas"><h2>Ferramentas</h2>
+    ${quitadas?`<p class="hint">${quitadas} compra(s) já quitada(s).</p>`:""}</div>`)}
+    ${secaoMes("aj-viagem","Modo viagem","gastos em outra moeda",svgCat("aviao",18),cardViagens())}
+    ${secaoMes("aj-div","Dívidas com pessoas",(()=>{ const n=state.config.dividas.filter(x=>!quitada(x)).length; return n?n+" em aberto":"quem te deve e quem você deve"; })(),ICON.grupo,cardDividas())}
+    ${secaoMes("aj-ferr","Ferramentas","simulador de dívidas, 13º, férias, salário líquido",icq("engrenagem",18),`<div class="card" id="ferramentas"><h2>Ferramentas</h2>
     <button type="button" class="ferr" data-novo="simulador"><span class="fi" style="--dot:#10B981">${ICON.relat}</span><span><b>Simulador de quitação</b><small>Em quanto tempo quita uma dívida ou financiamento e quanto economiza pagando a mais.</small></span></button>
     <button type="button" class="ferr" data-novo="calc" data-calc="decimo"><span class="fi" style="--dot:#E11D48">${svgCat('presente',20)}</span><span><b>13º salário</b><small>Quanto cai na 1ª e na 2ª parcela, já com INSS e Imposto de Renda.</small></span></button>
     <button type="button" class="ferr" data-novo="calc" data-calc="ferias"><span class="fi" style="--dot:#0EA5E9">${svgCat('aviao',20)}</span><span><b>Férias</b><small>Férias + 1/3, com opção de vender 10 dias.</small></span></button>
     <button type="button" class="ferr" data-novo="calc" data-calc="liquido"><span class="fi" style="--dot:#8B5CF6">${svgCat('dinheiro',20)}</span><span><b>Salário líquido</b><small>Do bruto ao que cai na conta, com a tabela de ${TAB.ano}.</small></span></button>
     <button type="button" class="ferr" data-novo="calc" data-calc="guardar"><span class="fi" style="--dot:#F59E0B">${icq('alvo',20)}</span><span><b>Quanto guardar por mês</b><small>Para comprar algo à vista numa data, com ou sem rendimento.</small></span></button></div>
-    <div class="card"><h2>Importar extrato do banco</h2>
+    `)}${secaoMes("aj-imp","Importar extrato do banco","OFX ou CSV do seu banco",icq("seta-baixo",18),`<div class="card"><h2>Importar extrato do banco</h2>
     <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX ou CSV no app do seu banco e traga tudo de uma vez, com a categoria já sugerida.</p>
-    <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>
-    <div class="card"><div class="cardhead"><h2>Contas</h2><span class="num muted">${cf.contas.length?brl(saldoInicialTotal())+" inicial":""}</span></div>
+    <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>`)}
+    ${secaoMes("aj-contas","Contas",cf.contas.length?cf.contas.length+(cf.contas.length===1?" conta":" contas"):"separe por banco ou carteira",ICON.banco,`<div class="card"><div class="cardhead"><h2>Contas</h2><span class="num muted">${cf.contas.length?brl(saldoInicialTotal())+" inicial":""}</span></div>
     ${cf.contas.length?`<div class="contas">${cf.contas.map(ct=>`<button type="button" class="conta" data-edit="conta" data-id="${esc(ct.id)}"><span class="ic">${ICON[ct.tipo==="dinheiro"?"dinheiro":ct.tipo==="poupanca"?"poupanca":"banco"]}</span><span class="desc"><b>${esc(ct.nome)}</b><small>saldo inicial ${brl(ct.saldoInicial)}${(cf.contaSalario||(cf.contas[0]||{}).id)===ct.id?" · recebe o salário":""}</small></span><span class="v muted">editar</span></button>`).join("")}</div>`:`<p class="hint">Separe seu dinheiro por conta (ex.: Nubank, Caixa, Dinheiro). Cada lançamento pode sair de uma conta, e o app mostra o saldo de cada uma. Sem contas cadastradas, tudo fica num saldo só.</p>`}
-    <button class="btn ghost" data-novo="conta" type="button">+ Nova conta</button></div>
-    <div class="card"><div class="cardhead"><h2>Cartões de crédito</h2><span class="num muted">${cf.cartoes.length||""}</span></div>
+    <button class="btn ghost" data-novo="conta" type="button">+ Nova conta</button></div>`)}
+    ${secaoMes("aj-cart","Cartões de crédito",cf.cartoes.length?cf.cartoes.map(x=>x.nome).join(", "):"nenhum ainda",ICON.cartao,`<div class="card"><div class="cardhead"><h2>Cartões de crédito</h2><span class="num muted">${cf.cartoes.length||""}</span></div>
     ${cf.cartoes.length?`<div class="contas">${cf.cartoes.map(cc=>{ const u=usoCartao(cc); return `<button type="button" class="conta" data-edit="cartao" data-id="${esc(cc.id)}"><span class="ic">${ICON.cartao}</span><span class="desc"><b>${esc(cc.nome)}</b><small>${cartaoOk(cc)?"fecha dia "+pad2(cc.fecha)+" · vence dia "+pad2(cc.vence):"sem dias de fatura"}${cc.limite?" · livre "+brl(u.livre):""}</small></span><span class="v muted">editar</span></button>`; }).join("")}</div>`:`<p class="hint">Cadastre seus cartões com o dia de fechamento e vencimento: as compras no crédito passam a contar no mês da fatura, e o app mostra o limite disponível.</p>`}
-    <button class="btn ghost" data-novo="cartao" type="button">+ Novo cartão</button></div></div>
-    <div class="col"><div class="card"><div class="cardhead"><h2>Categorias de gastos</h2><span class="num muted">${cf.categorias.length}</span></div>
+    <button class="btn ghost" data-novo="cartao" type="button">+ Novo cartão</button></div>`)}</div>
+    <div class="col">${secaoMes("aj-cats","Categorias de gastos",cf.categorias.length+" categorias e limites do mês",svgCat("pontos",18),`<div class="card"><div class="cardhead"><h2>Categorias de gastos</h2><span class="num muted">${cf.categorias.length}</span></div>
     <p class="hint">Toque numa categoria para mudar o nome, a cor ou o limite do mês, ou para excluir.</p>
     <div>${(ui.verCats||cf.categorias.length<=6?cf.categorias:cf.categorias.slice(0,5)).map(ct=>`<button type="button" class="item catitem" data-edit="categoria" data-id="${esc(ct.id)}" style="--dot:${catColor(ct.id)}">${icoCat(ct.id)}<span class="desc"><b>${esc(ct.nome)}</b><small>${ct.orcamento>0?"limite de "+brl(ct.orcamento)+" por mês"+(ct.sobra?" · sobra acumula"+(sobraCat(ct,todayKey)>0?" (+"+brl(sobraCat(ct,todayKey))+" em "+abrMes(todayKey)+")":""):""):"sem limite"}</small></span><span class="v muted">editar</span></button>`).join("")}</div>
     ${cf.categorias.length>6?`<button type="button" class="btn ghost wide vermais" data-vercats="1">${ui.verCats?"Mostrar só as 5 primeiras":"Ver todas as "+cf.categorias.length+" categorias"}</button>`:""}
     <button class="btn ghost" data-novo="categoria" type="button">+ Nova categoria</button>
-    <p class="hint">Excluir uma categoria não apaga os valores já lançados nela (aparecem como "Sem categoria"; ao editar, escolha outra).</p></div></div></div>`;
+    <p class="hint">Excluir uma categoria não apaga os valores já lançados nela (aparecem como "Sem categoria"; ao editar, escolha outra).</p></div>`)}</div></div>`;
 }
 
 /* ---------- aba Perfil ---------- */
@@ -2875,7 +2900,8 @@ app.addEventListener("click",e=>{
   if(d.espaco){ if(d.irpara){ ui.tab="perfil"; ui.rolarPara=d.irpara; } if(d.espaco===aberto) render(); else trocarEspaco(d.espaco); return; }
   if(d.irpara){ ui.tab="perfil"; render(); setTimeout(()=>{ const el=document.getElementById(d.irpara); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); },60); return; }
   if(d.tab){ setTab(d.tab); return; }
-  if(d.rolar){ const el=document.getElementById(d.rolar); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); return; }
+  if(d.abre){ ui.abre[d.abre]=!ui.abre[d.abre]; try{ localStorage.setItem("mb.abre",JSON.stringify(ui.abre)); }catch(e){} render(); if(ui.abre[d.abre]){ const sc=document.getElementById("sec-"+d.abre); if(sc) setTimeout(()=>sc.scrollIntoView({block:"nearest",behavior:"smooth"}),40); } return; }
+  if(d.rolar){ const el=garanteVisivel(d.rolar); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); return; }
   if(d.irajustes){ setTab("ajustes"); return; }
   if(d.login){ entrar(); return; }
   if(d.termos){ acaoTermos(d.termos); return; }
