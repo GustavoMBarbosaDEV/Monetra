@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="4.1.0";
+const VERSAO="4.2.0";
 const NOVIDADES=[
-  "Previsão do fim do mês: no topo, o app mostra com quanto o mês deve terminar se você continuar gastando no ritmo atual.",
-  "Alerta de ritmo: categorias com limite avisam antes de estourar (ex.: \"No ritmo de hoje, Mercado estoura o limite no dia 22\"), na faixa de lembretes, no sininho e no gráfico."
+  "Orçamento com sobra: em Ajustes → Categorias, ligue \"Sobra passa para o mês seguinte\". Limite de R$ 800 e gastou R$ 700? No mês seguinte o limite fica R$ 900.",
+  "A sobra aparece no gráfico \"Para onde foi\" e entra nos avisos de limite e de ritmo."
 ];
 
 /* ---------- utilidades ---------- */
@@ -150,7 +150,7 @@ function normMonth(d){
 }
 function normConfig(d){
   const ate=(typeof d?.ate==="string"&&/^\d{4}-\d{2}$/.test(d.ate)&&d.ate>=INICIO&&d.ate<=LIMITE_ATE)?d.ate:PADRAO_ATE;
-  const cats=Array.isArray(d?.categorias)&&d.categorias.length?d.categorias.map(c=>({id:String(c.id),nome:String(c.nome||""),orcamento:Number(c.orcamento)||0,cor:(typeof c.cor==="number"&&c.cor>=0&&c.cor<12)?c.cor:null,ic:typeof c.ic==="string"&&/^[a-z]{2,12}$/.test(c.ic)?c.ic:null,subs:Array.isArray(c.subs)?c.subs.filter(x=>x&&x.id&&x.nome).map(x=>({id:String(x.id),nome:String(x.nome)})):[]})):defaultConfig().categorias;
+  const cats=Array.isArray(d?.categorias)&&d.categorias.length?d.categorias.map(c=>({id:String(c.id),nome:String(c.nome||""),orcamento:Number(c.orcamento)||0,cor:(typeof c.cor==="number"&&c.cor>=0&&c.cor<12)?c.cor:null,ic:typeof c.ic==="string"&&/^[a-z]{2,12}$/.test(c.ic)?c.ic:null,sobra:c.sobra===true,sobraDesde:typeof c.sobraDesde==="string"&&/^\d{4}-(0[1-9]|1[0-2])$/.test(c.sobraDesde)?c.sobraDesde:null,subs:Array.isArray(c.subs)?c.subs.filter(x=>x&&x.id&&x.nome).map(x=>({id:String(x.id),nome:String(x.nome)})):[]})):defaultConfig().categorias;
   const fixos=Array.isArray(d?.fixos)?d.fixos.map(f=>({id:String(f.id),nome:String(f.nome||"Conta fixa"),cat:String(f.cat||""),valor:Number(f.valor)||0,dia:Math.min(31,Math.max(1,Number(f.dia)||1)),forma:String(f.forma||"boleto"),desde:/^\d{4}-\d{2}$/.test(f.desde||"")?f.desde:INICIO,ate:/^\d{4}-\d{2}$/.test(f.ate||"")?f.ate:null,contaId:f.contaId?String(f.contaId):null})):[];
   const inicio=(typeof d?.inicio==="string"&&/^\d{4}-\d{2}$/.test(d.inicio))?d.inicio:null;
   const mk=x=>/^\d{4}-\d{2}$/.test(x||"");
@@ -334,10 +334,20 @@ function previsaoMes(k,c){
   const r2=v=>Math.round(v*100)/100;
   return {dia,rest,dim,ritmo:r2(rCaixa),extra:r2(rCaixa*rest),saldo:r2(c.saldo-rCaixa*rest),cartao:r2(rCartao*rest),foraRitmo,grande,ritmoCat:id=>(porCat[id]||0)/dia};
 }
+/* Orçamento com sobra acumulada (opcional por categoria): o que não foi gasto do limite passa para o mês seguinte.
+   Estourou? A sobra zera e o mês seguinte recomeça com o limite normal. Conta a partir do mês em que a opção foi ligada. */
+function sobraCat(ct,k){
+  if(!ct||!ct.sobra||!(ct.orcamento>0)) return 0;
+  const desde=ct.sobraDesde||k; if(desde>=k) return 0;
+  let carry=0;
+  for(let mk=desde, n=0; mk<k&&n<120; mk=shiftKey(mk,1), n++){ if(!ativo(mk)) continue; const lim=ct.orcamento+carry, g=calc(mk).porCat[ct.id]||0; carry=Math.max(0,Math.round((lim-g)*100)/100); }
+  return carry;
+}
+const limiteCat=(ct,k)=>ct&&ct.orcamento>0?Math.round((ct.orcamento+sobraCat(ct,k))*100)/100:0;
 /* Alertas de orçamento: categorias com limite que chegaram a 80%, passaram, ou que no ritmo atual vão passar */
 function alertasOrcamento(k){
   const c=calc(k), pv=previsaoMes(k,c);
-  return state.config.categorias.filter(ct=>ct.orcamento>0).map(ct=>{ const v=c.porCat[ct.id]||0, o=ct.orcamento, p=v/o;
+  return state.config.categorias.filter(ct=>ct.orcamento>0).map(ct=>{ const v=c.porCat[ct.id]||0, o=limiteCat(ct,k), p=v/o;
     let nivel=p>=1?"passou":p>=0.8?"80":"", proj=null, diaEstoura=null;
     if(pv&&pv.dia>=5&&p<1){ const r=pv.ritmoCat(ct.id); proj=Math.round((v+r*pv.rest)*100)/100;
       if(r>0&&proj>o){ diaEstoura=Math.min(pv.dim,pv.dia+Math.max(1,Math.ceil((o-v)/r))); if(!nivel) nivel="ritmo"; } }
@@ -1329,7 +1339,7 @@ function viewMes(){
     <button type="button" class="btn ghost" data-novo="meta">+ Nova meta de economia</button></div>`;
   /* para onde foi */
   const alR={}; if(k===todayKey) alertasOrcamento(k).forEach(a=>{ if(a.diaEstoura) alR[a.id]=a; });
-  const itens=cats.map((ct,i)=>({id:ct.id,nome:ct.nome,v:c.porCat[ct.id]||0,o:ct.orcamento,cor:catColor(ct.id)}));
+  const itens=cats.map((ct,i)=>({id:ct.id,nome:ct.nome,v:c.porCat[ct.id]||0,o:limiteCat(ct,k),sb:sobraCat(ct,k),cor:catColor(ct.id)}));
   const semCat=Object.keys(c.porCat).filter(id=>catIndex(id)<0).reduce((a,id)=>a+c.porCat[id],0);
   if(semCat>0) itens.push({id:"",nome:"Sem categoria",v:semCat,o:0,cor:"var(--c8)"});
   const ordenados=itens.slice().sort((a,b)=>b.v-a.v);
@@ -1341,7 +1351,7 @@ function viewMes(){
     <div class="bars">${ordenados.filter(x=>x.v>0||x.o>0).map(x=>{ const pv=prev?(prev.porCat[x.id]||0):0; const p=x.o>0?x.v/x.o:0; const cls=x.o>0&&p>1?"over":x.o>0&&p>=.8?"warn":"";
       const w=x.o>0?Math.min(100,p*100):(c.despesas>0?x.v/c.despesas*100:0);
       const delta=prev&&(pv>0||x.v>0)?(x.v>pv?`<em class="up">▲ ${brl(x.v-pv)}</em>`:x.v<pv?`<em class="down">▼ ${brl(pv-x.v)}</em>`:""):"";
-      return `<div class="bar ${cls}" style="--dot:${x.cor}"><div class="t"><b>${x.id?icoCat(x.id,14):""}${esc(x.nome)}</b><span class="num">${brl(x.v)}${x.o>0?" / "+brl(x.o):c.despesas>0?" · "+Math.round(x.v/c.despesas*100)+"%":""}</span></div><div class="track"><div style="width:${w.toFixed(1)}%"></div></div>${subsLinha(x)}${alR[x.id]?`<div class="ritmo">No ritmo de hoje, chega a ${brl(alR[x.id].proj)} e estoura no dia ${alR[x.id].diaEstoura}</div>`:""}${delta?`<div class="delta">${delta} vs ${abrMes(prevK)}</div>`:""}</div>`; }).join("")||'<p class="hint">Assim que você lançar despesas, aparece aqui quanto foi para cada categoria.</p>'}</div></div>
+      return `<div class="bar ${cls}" style="--dot:${x.cor}"><div class="t"><b>${x.id?icoCat(x.id,14):""}${esc(x.nome)}</b><span class="num">${brl(x.v)}${x.o>0?" / "+brl(x.o):c.despesas>0?" · "+Math.round(x.v/c.despesas*100)+"%":""}</span></div><div class="track"><div style="width:${w.toFixed(1)}%"></div></div>${subsLinha(x)}${x.sb>0?`<div class="sobraln">inclui ${brl(x.sb)} que sobraram dos meses anteriores</div>`:""}${alR[x.id]?`<div class="ritmo">No ritmo de hoje, chega a ${brl(alR[x.id].proj)} e estoura no dia ${alR[x.id].diaEstoura}</div>`:""}${delta?`<div class="delta">${delta} vs ${abrMes(prevK)}</div>`:""}</div>`; }).join("")||'<p class="hint">Assim que você lançar despesas, aparece aqui quanto foi para cada categoria.</p>'}</div></div>
     <p class="hint">Limites por categoria ficam em Ajustes: amarelo a partir de 80%, vermelho quando passa.</p></div>`;
   /* forma de pagamento */
   const formas=FORMAS.map(([id,n])=>({id,n,v:c.porForma[id]||0})).concat([{id:"?",n:"Não informado",v:c.porForma["?"]||0}]).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -1643,7 +1653,7 @@ function viewAjustes(){
     <button class="btn ghost" data-novo="cartao" type="button">+ Novo cartão</button></div></div>
     <div class="col"><div class="card"><div class="cardhead"><h2>Categorias de gastos</h2><span class="num muted">${cf.categorias.length}</span></div>
     <p class="hint">Toque numa categoria para mudar o nome, a cor ou o limite do mês, ou para excluir.</p>
-    <div>${cf.categorias.map(ct=>`<button type="button" class="item catitem" data-edit="categoria" data-id="${esc(ct.id)}" style="--dot:${catColor(ct.id)}">${icoCat(ct.id)}<span class="desc"><b>${esc(ct.nome)}</b><small>${ct.orcamento>0?"limite de "+brl(ct.orcamento)+" por mês":"sem limite"}</small></span><span class="v muted">editar</span></button>`).join("")}</div>
+    <div>${cf.categorias.map(ct=>`<button type="button" class="item catitem" data-edit="categoria" data-id="${esc(ct.id)}" style="--dot:${catColor(ct.id)}">${icoCat(ct.id)}<span class="desc"><b>${esc(ct.nome)}</b><small>${ct.orcamento>0?"limite de "+brl(ct.orcamento)+" por mês"+(ct.sobra?" · sobra acumula"+(sobraCat(ct,todayKey)>0?" (+"+brl(sobraCat(ct,todayKey))+" em "+abrMes(todayKey)+")":""):""):"sem limite"}</small></span><span class="v muted">editar</span></button>`).join("")}</div>
     <button class="btn ghost" data-novo="categoria" type="button">+ Nova categoria</button>
     <p class="hint">Excluir uma categoria não apaga os valores já lançados nela (aparecem como "Sem categoria"; ao editar, escolha outra).</p></div></div></div>`;
 }
@@ -1993,6 +2003,8 @@ function renderSheet(){
       <div class="f"><span>Ícone</span><div class="icones" role="radiogroup" aria-label="Ícone">${Object.keys(ICAT).map(kk=>{ const sel=it?(it.ic||icAuto(it.nome)):"pontos"; return `<input type="radio" name="s-ic" id="s-ic-${kk}" value="${kk}" ${kk===sel?"checked":""}><label for="s-ic-${kk}" title="${ICAT_NOMES[kk]}">${svgCat(kk,20)}<span class="sr">${ICAT_NOMES[kk]}</span></label>`; }).join("")}</div></div>
       <div class="f"><span>Cor</span><div class="cores" role="radiogroup" aria-label="Cor">${[...Array(NCORES).keys()].map(i=>`<input type="radio" name="s-cor" id="s-cor-${i}" value="${i}" ${i===corSel?"checked":""}><label for="s-cor-${i}" style="--dot:var(--c${i})" title="Cor ${i+1}"><span class="sr">Cor ${i+1}</span></label>`).join("")}</div></div>
       <label class="f money">Limite por mês (opcional)<input class="in num" id="s-valor" inputmode="numeric" placeholder="sem limite" value="${esc(it&&it.orcamento?moneyInput(it.orcamento):"")}"></label>
+      <div class="f sobrabox"><label class="switch"><input type="checkbox" id="s-sobra" ${it&&it.sobra?"checked":""}><span></span>Sobra passa para o mês seguinte</label>
+        <p class="hint">Ex.: limite de R$ 800 e gastou R$ 700: os R$ 100 que sobraram entram no limite do mês seguinte (R$ 900). Se passar do limite, a sobra zera. ${it&&it.sobra&&sobraCat(it,todayKey)>0?`<b>Em ${esc(abrMes(todayKey))}: ${brl(limiteCat(it,todayKey))} (${brl(it.orcamento)} + ${brl(sobraCat(it,todayKey))} de sobra).</b>`:"Só vale para categorias com limite e começa a contar a partir deste mês."}</p></div>
       <div class="f"><span>Subcategorias (opcional)</span><div id="s-sublista">${((it&&it.subs)||[]).map(linhaSub).join("")}</div>
         <div class="convrow"><input class="in" id="s-subnova" maxlength="30" placeholder="ex.: Mercado, Restaurante, iFood"><button class="btn ghost" type="button" data-addsub="1">Adicionar</button></div>
         <p class="hint">O limite e o gráfico continuam pela categoria; as subcategorias mostram o detalhe.</p></div>
@@ -2204,7 +2216,9 @@ function salvarSheet(outro){
     const subs=[...document.querySelectorAll("#s-sublista .subnome")].map(i=>({id:i.dataset.subid||("s"+uidGen()),nome:i.value.trim()})).filter(x=>x.nome);
     if(nova) subs.push({id:"s"+uidGen(),nome:nova});
     const icSel=(document.querySelector('#sheet input[name="s-ic"]:checked')||{}).value||null, ic=icSel&&ICAT[icSel]?icSel:null;
-    if(s.id) Object.assign(itemAtual(),{nome,orcamento:lim,cor,subs,ic}); else state.config.categorias.push({id:"c"+uidGen(),nome,orcamento:lim,cor,subs,ic});
+    const sobraOn=!!(document.getElementById("s-sobra")||{}).checked&&lim>0, antes=s.id?itemAtual():null;
+    const sobraDesde=sobraOn?(antes&&antes.sobra&&antes.sobraDesde?antes.sobraDesde:todayKey):null;
+    if(s.id) Object.assign(itemAtual(),{nome,orcamento:lim,cor,subs,ic,sobra:sobraOn,sobraDesde}); else state.config.categorias.push({id:"c"+uidGen(),nome,orcamento:lim,cor,subs,ic,sobra:sobraOn,sobraDesde});
     save("config"); closeSheet(); render(); toast(s.id?"Categoria atualizada.":"Categoria "+nome+" criada."); return;
   }
   const v=parseMoney((document.getElementById("s-valor")||{}).value);

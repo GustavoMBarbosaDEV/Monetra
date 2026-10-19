@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.2.0 — 18/10/2026 **Orçamento com sobra acumulada**
+
+- Opção por categoria (Ajustes → Categorias → "Sobra passa para o mês seguinte"): o que não foi gasto do limite entra no limite do mês seguinte. Ex.: limite de R$ 800, gastou R$ 700 → no mês seguinte o limite é R$ 900.
+- Se passar do limite, a sobra zera e o mês seguinte volta ao limite normal. Conta a partir do mês em que a opção foi ligada.
+- O gráfico "Para onde foi", os avisos de 80%/limite estourado e o alerta de ritmo usam o limite com a sobra.
+
 ## 4.1.0 — 18/10/2026 **Previsão do fim do mês**
 
 - No topo do mês atual, o app mostra com quanto o mês deve terminar se você continuar gastando no mesmo ritmo (média por dia dos gastos do dia a dia). Contas fixas e parcelas já entram no saldo; compras no cartão aparecem à parte, porque vão para a próxima fatura.
