@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.7";
+const VERSAO="5.0.8";
 const NOVIDADES=[
-  "Cores mais calmas: o vermelho agora aparece só para conta atrasada e limite estourado. O calendário mostra a intensidade dos gastos em tom neutro e as despesas do topo não ficam mais em vermelho.",
-  "Na faixa de avisos, cada aviso aparece numa linha, e conta atrasada usa um ícone de alerta."
+  "Barra de meses mais limpa: mostra 4 meses (o anterior, o atual e os próximos com fatura ou parcela para pagar) e um botão de calendário.",
+  "No calendário você escolhe qualquer mês e ano, passados ou futuros, como no extrato do banco. Os meses com conta a pagar têm um pontinho."
 ];
 
 /* ---------- utilidades ---------- */
@@ -113,7 +113,27 @@ let MESES=[];
 const today=new Date();
 const todayKey=keyOf(today.getFullYear(),today.getMonth()+1);
 /* Meses existentes: de setembro/2026 até 2 meses depois do mês atual (avança sozinho com o calendário) */
-function buildMeses(){ MESES=[]; const fim=shiftKey(todayKey,2); let k=INICIO; while(k<=fim){ MESES.push(k); k=shiftKey(k,1); } }
+function buildMeses(){ MESES=[]; const fim=state.loaded?fimMeses():shiftKey(todayKey,2); let k=INICIO; while(k<=fim){ MESES.push(k); k=shiftKey(k,1); } }
+/* até onde vão os meses: 2 meses à frente ou até a última parcela a pagar (cartão ou não) */
+function fimMeses(){ let fim=shiftKey(todayKey,2);
+  try{ for(const p of state.config.parcelas||[]){ if(!p||!p.compra) continue; const cc=p.forma==="credito"?cartaoDe(p):null; const prim=cartaoOk(cc)?faturaMes(p.compra,p.dia,cc):p.compra; const u=shiftKey(prim,Math.max(1,Number(p.n)||1)-1); if(u>fim) fim=u; } }catch(e){}
+  return fim>LIMITE_ATE?LIMITE_ATE:fim; }
+/* mês futuro com fatura do cartão ou parcela para pagar */
+function temContaNoMes(k){ try{ return parcelasDoMes(k).length>0||soma(faturaDoMes(k))>0; }catch(e){ return false; } }
+/* os 4 meses da barra: anterior, atual e os próximos com conta a pagar (completa com os seguintes) */
+function chipsMes(){
+  const V=mesesVisiveis(), prev=shiftKey(todayKey,-1), max=4;
+  let out=[prev,todayKey].filter(k=>V.includes(k));
+  V.filter(k=>k>todayKey&&temContaNoMes(k)).forEach(k=>{ if(out.length<max) out.push(k); });
+  V.filter(k=>k>todayKey).forEach(k=>{ if(out.length<max&&!out.includes(k)) out.push(k); });
+  V.filter(k=>k<prev).reverse().forEach(k=>{ if(out.length<max) out.unshift(k); });
+  out=[...new Set(out)].sort();
+  if(ui.month&&V.includes(ui.month)&&!out.includes(ui.month)){
+    out.push(ui.month); out.sort();
+    while(out.length>max){ let far=-1, dist=-1; out.forEach((k,i)=>{ if(k===ui.month||k===todayKey) return; const d=Math.abs(entre(k,ui.month)); if(d>dist){ dist=d; far=i; } }); if(far<0) break; out.splice(far,1); }
+  }
+  return out;
+}
 /* Meses que aparecem na barra: do início do controle (ou do mês atual) até 2 meses à frente */
 function mesesVisiveis(){
   const comDados=Object.keys(state.months).filter(k=>{ const m=state.months[k]; return m&&((m.gastos&&m.gastos.length)||(m.avulsos&&m.avulsos.length)||(m.caixinha&&m.caixinha.length)||typeof m.salario==="number"); });
@@ -938,7 +958,7 @@ function passosTutorial(){
     {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.")},
     {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões (toque no item para abrir).`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
-    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("Logo abaixo, em <b>Mais do mês</b>, abra o <b>calendário</b>, <b>para onde foi</b>, faturas, contas fixas e caixinha (no computador, aparecem direto).","<b>Relatórios</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
+    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("Para ir a outro mês, toque no <b>calendário</b> ao lado dos meses: ali aparecem todos, passados e futuros.","Logo abaixo, em <b>Mais do mês</b>, abra o <b>calendário</b>, <b>para onde foi</b>, faturas, contas fixas e caixinha (no computador, aparecem direto).","<b>Relatórios</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
     {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
     {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
@@ -1173,6 +1193,7 @@ function trataAtalho(){
    TELAS
    ===================================================================== */
 function render(){
+  if(state.loaded) buildMeses();
   const a=document.activeElement, inApp=a&&document.getElementById("app").contains(a);
   const fid=inApp&&a.id, sel=(fid&&"selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const app=document.getElementById("app");
@@ -1194,7 +1215,7 @@ function render(){
 function encolheValores(raiz){ if(!raiz) return; raiz.querySelectorAll(".tile .val, .hs-val, .assintot b, .rpar b, .vgnums b").forEach(el=>{ el.style.fontSize=""; let f=parseFloat(getComputedStyle(el).fontSize), n=0; while(el.scrollWidth>el.clientWidth+1&&f>12&&n<20){ f-=1; n++; el.style.fontSize=f+"px"; } }); }
 function header(){
   const t=(id,l)=>`<button role="tab" data-tab="${id}" aria-selected="${ui.tab===id}">${l}</button>`;
-  const VIS=mesesVisiveis(), i=VIS.indexOf(ui.month), logado=mode!=="login"&&!precisaTermos();
+  const logado=mode!=="login"&&!precisaTermos();
   return `<div class="top"><div class="brand"><img class="logo" src="icons/marca.png" alt="" width="34" height="27"><h1>Monetra</h1><button type="button" class="status ${statusCls}" id="status" data-status="1" title="${esc(statusTxt)}"><i></i><span class="stt">${esc(statusTxt)}</span></button></div>
   <div class="topright">${logado?`<div class="tabs" role="tablist">${t("mes","Início")}${t("ano","Relatórios")}${t("metas","Metas")}${t("ajustes","Ajustes")}</div>`:botaoTema()}
   ${logado&&state.loaded?`<button type="button" class="iconbtn" data-busca="1" aria-label="Buscar lançamentos" title="Buscar (tecla /)">${ICON.busca}</button>`:""}
@@ -1202,9 +1223,9 @@ function header(){
   ${logado&&state.loaded?`<button type="button" class="avatarbtn ${ui.tab==="perfil"?"on":""}" data-tab="perfil" aria-label="Abrir meu perfil" title="Meu perfil">${avatar(36)}</button>`:""}</div></div>
   ${logado&&mode==="cloud"?seletorEspaco():""}
   ${ui.tab==="mes"&&logado&&state.loaded?`<div class="saud"><small>${(()=>{ const h=new Date().getHours(); return h<12?"Bom dia,":h<18?"Boa tarde,":"Boa noite,"; })()}</small><h2>${esc(authUser?primeiroNome(meuNome()):"bem-vindo")}</h2></div>`:""}
-  ${ui.tab==="mes"&&logado?`<div class="months"><button class="arrow" data-nav="-1" aria-label="Mês anterior" ${i<=0?"disabled":""}>‹</button>
-  <div class="chips">${VIS.map(k=>`<button class="chip ${k===ui.month?"on":""} ${k===todayKey?"now":""}" data-month="${k}">${ABR[kM(k)-1]} <small>${String(kY(k)).slice(2)}</small></button>`).join("")}</div>
-  <button class="arrow" data-nav="1" aria-label="Próximo mês" ${i>=VIS.length-1?"disabled":""}>›</button></div>`:""}
+  ${ui.tab==="mes"&&logado?`<div class="months">
+  <div class="chips">${chipsMes().map(k=>`<button class="chip ${k===ui.month?"on":""} ${k===todayKey?"now":""}" data-month="${k}" aria-label="${esc(nomeMes(k))}${k===ui.month?" (aberto)":""}">${ABR[kM(k)-1]} <small>${String(kY(k)).slice(2)}</small></button>`).join("")}</div>
+  <button type="button" class="mescal" data-mescal="1" aria-label="Escolher outro mês" title="Todos os meses">${ICON.mes}</button></div>`:""}
   ${mode==="local"&&state.loaded?`<div class="note">Modo local: sem conexão com o login, os dados ficam só neste aparelho.</div>`:""}`;
 }
 function avatar(px){
@@ -2352,8 +2373,8 @@ function renderSheet(){
   if(!s){ r.innerHTML=""; document.body.classList.remove("sheet-open"); return; }
   document.body.classList.add("sheet-open");
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
-  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="semana"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
+  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -2562,6 +2583,13 @@ function renderSheet(){
       <div class="row"><label class="f money">Paga por mês hoje<input class="in num" id="s-simpag" inputmode="numeric" placeholder="0,00"></label><label class="f money">E se pagar a mais?<input class="in num" id="s-simextra" inputmode="numeric" placeholder="0,00"></label></div>
       <div id="s-simres">${resultadoSim()}</div>`;
     sub=""; botoes="";
+  }else if(s.tipo==="meses"){
+    const V=mesesVisiveis(), a0=kY(V[0]), a1=kY(V[V.length-1]), ano=Math.min(a1,Math.max(a0,Number(s.ano)||kY(ui.month))), sel=s.sel||ui.month;
+    corpo=`<div class="mesano"><div class="mesnav"><button type="button" class="iconbtn" data-mesano="-1" aria-label="Ano anterior" ${ano<=a0?"disabled":""}>‹</button><b>${ano}</b><button type="button" class="iconbtn" data-mesano="1" aria-label="Próximo ano" ${ano>=a1?"disabled":""}>›</button></div>
+      <div class="mesgrid">${ABR.map((ab,i)=>{ const k=keyOf(ano,i+1), ok=V.includes(k), conta=ok&&k>todayKey&&temContaNoMes(k);
+        return `<button type="button" class="mg ${k===sel?"on":""} ${k===todayKey?"now":""}" data-messel="${k}" ${ok?"":"disabled"} aria-pressed="${k===sel}" aria-label="${esc(nomeMes(k))}${conta?", com conta a pagar":""}">${esc(ab.toUpperCase())}${conta?'<i class="mgdot" aria-hidden="true"></i>':""}</button>`; }).join("")}</div>
+      <p class="hint mgleg"><i class="mgdot" aria-hidden="true"></i> mês com fatura ou parcela para pagar</p></div>`;
+    sub=""; botoes=`<button class="btn" type="button" data-mesok="1">Ver ${esc(nomeMes(sel).toLowerCase())}</button>`;
   }else if(s.tipo==="semana"){
     corpo=`<div class="semana">${corpoSemana(s.fim||ultimoDomingo())}</div>`; sub=""; botoes="";
   }else if(s.tipo==="dia"){
@@ -2792,7 +2820,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -2814,6 +2842,9 @@ function bindSheet(r){
     if(b.dataset.simtaxa){ const t=document.getElementById("s-simtaxa"); if(t){ t.value=b.dataset.simtaxa; atualizaSim(); } return; }
     if(b.dataset.simdiv){ const x=(state.config.dividas||[]).find(d=>d.id===b.dataset.simdiv), el=document.getElementById("s-simsaldo"); if(x&&el){ el.value=moneyInput(restaDiv(x)); atualizaSim(); } return; }
     if(b.dataset.avsemana){ openSheet("semana",null,{fim:b.dataset.avsemana}); return; }
+    if(b.dataset.mesano){ ui.sheet.ano=(Number(ui.sheet.ano)||kY(ui.month))+Number(b.dataset.mesano); renderSheet(); return; }
+    if(b.dataset.messel){ ui.sheet.sel=b.dataset.messel; ui.sheet.ano=kY(b.dataset.messel); renderSheet(); return; }
+    if(b.dataset.mesok){ const k=ui.sheet.sel||ui.month; closeSheet(); goMonth(k); window.scrollTo({top:0}); return; }
     if(b.dataset.semnav){ const nf=somaDias(ui.sheet.fim||ultimoDomingo(),Number(b.dataset.semnav)); if(nf<=ultimoDomingo()){ ui.sheet.fim=nf; renderSheet(); } return; }
     if(b.dataset.avretro){ openSheet("retro",null,{ano:Number(b.dataset.avretro),slide:0}); return; }
     if(b.dataset.vgcot){ buscarCotacao(); return; }
@@ -2912,6 +2943,7 @@ app.addEventListener("click",e=>{
   if(d.tema){ trocaTema(); return; }
   if(d.export){ exportar(); return; }
   if(d.month){ goMonth(d.month); return; }
+  if(d.mescal){ openSheet("meses",null,{ano:kY(ui.month),sel:ui.month}); return; }
   if(d.nav){ passo(Number(d.nav)); return; }
   if(d.open){ ui.tab="mes"; goMonth(d.open); window.scrollTo({top:0}); return; }
   if(d.vertag){ openSheet("busca",null,{q:"#"+d.vertag}); return; }

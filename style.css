@@ -1058,3 +1058,28 @@ button.item .pill{white-space:nowrap}
 .nowrap{white-space:nowrap}
 /* conta atrasada: ícone de alerta em vez de ✓ */
 .aviso.pagar.atraso .ic,.aviso.pagar.atraso > span:first-child{color:var(--bad)}
+
+/* ===== 5.0.8 — barra de meses com 4 meses + calendário (como o extrato do BB) ===== */
+.months{display:flex;align-items:center;gap:8px}
+.months .chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;flex:1;min-width:0;overflow:visible;padding-block:2px}
+.months .chip{min-width:0;justify-content:center;text-align:center;white-space:nowrap;min-height:40px}
+.mescal{flex:0 0 auto;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:0}
+.mescal svg{width:20px;height:20px}
+.tema-claro .mescal{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.16);color:#fff}
+.mescal:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* seletor de mês e ano */
+.mesano{display:flex;flex-direction:column;gap:14px}
+.mesnav{display:flex;align-items:center;justify-content:space-between}
+.mesnav b{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.mesnav .iconbtn{width:44px;height:44px}
+.mesnav .iconbtn:disabled{opacity:.35;cursor:default}
+.mesgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mg{position:relative;min-height:52px;border-radius:14px;border:1px solid transparent;background:var(--sunk);color:var(--fg);font:inherit;font-weight:600;font-size:14px;letter-spacing:.02em;cursor:pointer}
+.mg.now{border-color:var(--accent)}
+.mg.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mg:disabled{background:none;color:var(--muted);opacity:.5;cursor:default}
+.mgdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn);vertical-align:middle}
+.mg .mgdot{position:absolute;left:50%;bottom:7px;transform:translateX(-50%)}
+.mg.on .mgdot{background:var(--accent-ink)}
+.mgleg{display:flex;align-items:center;gap:6px;margin:0}
+@media (min-width:861px){ .months .chips{flex:0 1 480px} }

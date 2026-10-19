@@ -12,6 +12,17 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.8 — 19/10/2026 **Barra de meses nova**
+
+- Barra de meses do Início:
+  - mostra só 4 meses, que cabem na tela: mês anterior, mês atual e os próximos que têm fatura do cartão ou parcela para pagar (completa com os meses seguintes quando não há contas);
+  - se você abre um mês fora desses 4, ele entra na barra no lugar do mais distante;
+  - as setas ‹ › saíram; no lugar, um botão de calendário.
+- Novo seletor "Selecione o mês e o ano": grade com os 12 meses, troca de ano por setas, meses sem dados desativados, pontinho nos meses com conta a pagar e botão "Ver <mês>".
+- Os meses futuros agora vão até a última parcela a pagar (antes paravam 2 meses à frente).
+- Setas do teclado continuam trocando de mês.
+- Tutorial atualizado.
+
 ## 5.0.7 — 19/10/2026 **Tom mais calmo**
 
 - Vermelho reservado para o que pede ação (conta atrasada, limite estourado):
