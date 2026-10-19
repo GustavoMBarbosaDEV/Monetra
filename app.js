@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="4.8.0";
+const VERSAO="4.9.0";
 const NOVIDADES=[
-  "Simulador de quitação (Ajustes → Ferramentas): informe quanto deve, os juros e quanto paga por mês e veja em quanto tempo quita.",
-  "Teste um valor a mais por mês: o app mostra quantos meses antes você quita e quanto economiza de juros, com gráfico. Serve para cartão, empréstimo e financiamento."
+  "Calculadoras em Ajustes → Ferramentas: 13º salário (1ª e 2ª parcela), férias (com venda de 10 dias) e salário líquido, já com INSS e IR de 2026.",
+  "Quanto guardar por mês para comprar algo à vista numa data, com ou sem rendimento, e botão para virar meta de economia."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1385,6 +1385,54 @@ function resultadoSim(){
     <p class="hint">Conta simples com juros compostos sobre o saldo, mês a mês (sem IOF, multas ou seguros). Use a taxa que aparece na fatura ou no contrato.</p>`;
 }
 function atualizaSim(){ const el=document.getElementById("s-simres"); if(el) el.innerHTML=resultadoSim(); }
+/* ---------- calculadoras brasileiras (13º, férias, salário líquido, quanto guardar) ----------
+   Tabelas de 2026 — ATUALIZE todo ano (INSS: Portaria do MPS; IR: Receita Federal / Lei 15.270/2025). */
+const TAB={ano:2026,
+  inss:[[1621.00,0.075],[2902.84,0.09],[4354.27,0.12],[8475.55,0.14]],
+  ir:[[2428.80,0,0],[2826.65,0.075,182.16],[3751.05,0.15,394.16],[4664.68,0.225,675.49],[Infinity,0.275,908.73]],
+  dep:189.59, simplificado:607.20, isento:5000, redLim:7350, redA:978.62, redB:0.133145 };
+const c2=v=>Math.round(v*100)/100;
+function inssDe(v){ let ant=0, t=0; for(const [teto,al] of TAB.inss){ if(v<=ant) break; t+=(Math.min(v,teto)-ant)*al; ant=teto; } return c2(t); }
+function irDe(bruto,inss,deps){
+  const base=Math.max(0,bruto-Math.max(inss+deps*TAB.dep,TAB.simplificado)), f=TAB.ir.find(x=>base<=x[0]);
+  let imp=Math.max(0,base*f[1]-f[2]);
+  if(bruto<=TAB.isento) imp=0; else if(bruto<=TAB.redLim) imp=Math.max(0,imp-(TAB.redA-TAB.redB*bruto));
+  return {imp:c2(imp),base:c2(base),simpl:TAB.simplificado>inss+deps*TAB.dep};
+}
+function calcRes(tipo){
+  const v=id=>parseMoney((document.getElementById(id)||{}).value||"")||0, n=id=>Number(String((document.getElementById(id)||{}).value||"").replace(",","."))||0;
+  const L=(r,x,cls)=>`<div class="cl ${cls||""}"><span>${r}</span><b>${x}</b></div>`;
+  const nota=`<p class="hint">Estimativa com as tabelas de ${TAB.ano} do INSS e do Imposto de Renda (com a isenção até R$ 5.000 e a redução até R$ 7.350). Pensão, plano de saúde e outros descontos da empresa não entram. Confira no holerite.</p>`;
+  if(tipo==="liquido"){ const sal=v("s-csal"), deps=Math.max(0,Math.round(n("s-cdep"))), out=v("s-cout"); if(!(sal>0)) return `<p class="hint">Informe o salário bruto.</p>`;
+    const i=inssDe(sal), r=irDe(sal,i,deps), liq=c2(sal-i-r.imp-out);
+    return `<div class="calcbox">${L("Salário bruto",brl(sal))}${L("INSS","− "+brl(i))}${L("Imposto de Renda"+(r.simpl&&r.imp>0?" (desconto simplificado)":r.imp===0&&sal>TAB.ir[0][0]?" (isento até R$ 5.000)":""),"− "+brl(r.imp))}${out?L("Outros descontos","− "+brl(out)):""}${L("Salário líquido",brl(liq),"tot")}</div>${nota}`; }
+  if(tipo==="decimo"){ const sal=v("s-csal"), meses=Math.min(12,Math.max(1,Math.round(n("s-cmeses")||12))), deps=Math.max(0,Math.round(n("s-cdep"))); if(!(sal>0)) return `<p class="hint">Informe o salário bruto.</p>`;
+    const tot=c2(sal*meses/12), p1=c2(tot/2), i=inssDe(tot), r=irDe(tot,i,deps), p2=c2(tot-p1-i-r.imp);
+    return `<div class="calcbox">${L("13º bruto ("+meses+"/12)",brl(tot))}${L("1ª parcela (até 30/11, sem descontos)",brl(p1),"dest")}${L("INSS sobre o 13º","− "+brl(i))}${L("Imposto de Renda sobre o 13º","− "+brl(r.imp))}${L("2ª parcela (até 20/12)",brl(p2),"dest")}${L("13º líquido total",brl(c2(p1+p2)),"tot")}</div>${nota}`; }
+  if(tipo==="ferias"){ const sal=v("s-csal"), deps=Math.max(0,Math.round(n("s-cdep"))), vende=!!(document.getElementById("s-cvende")||{}).checked; let dias=Math.round(n("s-cdias")||30); dias=Math.min(vende?20:30,Math.max(5,dias)); if(!(sal>0)) return `<p class="hint">Informe o salário bruto.</p>`;
+    const fer=c2(sal/30*dias), terco=c2(fer/3), bruto=c2(fer+terco), i=inssDe(bruto), r=irDe(bruto,i,deps), abono=vende?c2(sal/30*10*4/3):0, liq=c2(bruto-i-r.imp+abono);
+    return `<div class="calcbox">${L(dias+" dias de férias",brl(fer))}${L("1/3 constitucional",brl(terco))}${L("INSS","− "+brl(i))}${L("Imposto de Renda","− "+brl(r.imp))}${vende?L("Venda de 10 dias + 1/3 (sem desconto)",brl(abono)):""}${L("Você recebe",brl(liq),"tot")}</div><p class="hint">Pago até 2 dias antes de começar as férias. No mês seguinte o salário vem menor, porque os dias de férias já foram pagos.</p>${nota}`; }
+  if(tipo==="guardar"){ const alvo=v("s-calvo"), tem=v("s-ctem"), meses=Math.max(1,Math.round(n("s-cprazo"))), taxa=n("s-crend")/100; if(!(alvo>0)||!(n("s-cprazo")>0)) return `<p class="hint">Informe quanto custa e em quantos meses quer comprar.</p>`;
+    const fv=alvo-tem*Math.pow(1+taxa,meses); if(fv<=0) return `<div class="calcbox">${L("Você já tem o suficiente","🎉","tot")}</div><p class="hint">Com o que já guardou${taxa?" e o rendimento":""}, chega lá sem guardar mais nada.</p>`;
+    const pmt=c2(taxa>0?fv*taxa/(Math.pow(1+taxa,meses)-1):fv/meses), aportes=c2(pmt*meses), rend=c2(alvo-tem-aportes);
+    return `<div class="calcbox">${L("Guarde por mês",brl(pmt),"tot")}${L("Você vai depositar",brl(aportes))}${taxa>0?L("O rendimento completa",brl(Math.max(0,rend))):""}${L("Pronto em",esc(nomeMes(shiftKey(todayKey,meses)).toLowerCase()))}</div>
+      <button class="btn ghost" type="button" data-calcmeta="1">Criar meta de economia com esses valores</button><p class="hint">Rendimento opcional: use o da sua aplicação (ex.: poupança ou CDB). Sem rendimento, a conta é só dividir.</p>`; }
+  return "";
+}
+function corpoCalc(tipo){
+  const sal=state.config.salarioPadrao>0?moneyInput(state.config.salarioPadrao):"";
+  const campoSal=`<label class="f money">Salário bruto (CLT)<input class="in num" id="s-csal" inputmode="numeric" placeholder="0,00" value="${sal}"></label>`;
+  const campoDep=`<label class="f">Dependentes no IR<input class="in num" id="s-cdep" type="number" min="0" max="20" value="0" inputmode="numeric"></label>`;
+  const abas=`<div class="seg calcabas" role="tablist">${[["decimo","13º"],["ferias","Férias"],["liquido","Salário líquido"],["guardar","Quanto guardar"]].map(([k,l])=>`<button type="button" role="tab" aria-selected="${k===tipo}" data-calctipo="${k}">${l}</button>`).join("")}</div>`;
+  let f="";
+  if(tipo==="decimo") f=`${campoSal}<div class="row"><label class="f">Meses trabalhados no ano<input class="in num" id="s-cmeses" type="number" min="1" max="12" value="12" inputmode="numeric"></label>${campoDep}</div><p class="hint">Conta 1 mês para cada mês com 15 dias ou mais de trabalho.</p>`;
+  if(tipo==="ferias") f=`${campoSal}<div class="row"><label class="f">Dias de férias<input class="in num" id="s-cdias" type="number" min="5" max="30" value="30" inputmode="numeric"></label>${campoDep}</div><label class="switch"><input type="checkbox" id="s-cvende"><span></span>Vender 10 dias (abono)</label>`;
+  if(tipo==="liquido") f=`${campoSal}<div class="row">${campoDep}<label class="f money">Outros descontos (opcional)<input class="in num" id="s-cout" inputmode="numeric" placeholder="0,00"></label></div>`;
+  if(tipo==="guardar") f=`<label class="f">O que quer comprar<input class="in" id="s-cnome" maxlength="40" placeholder="ex.: celular novo, viagem"></label><div class="row"><label class="f money">Quanto custa<input class="in num" id="s-calvo" inputmode="numeric" placeholder="0,00"></label><label class="f money">Já tenho guardado<input class="in num" id="s-ctem" inputmode="numeric" placeholder="0,00"></label></div><div class="row"><label class="f">Em quantos meses<input class="in num" id="s-cprazo" type="number" min="1" max="360" inputmode="numeric" placeholder="ex.: 10"></label><label class="f">Rendimento ao mês (%)<input class="in num" id="s-crend" inputmode="decimal" placeholder="opcional, ex.: 0,8" maxlength="5"></label></div>`;
+  setTimeout(atualizaCalc,0);
+  return abas+f+`<div id="s-calcres"></div>`;
+}
+function atualizaCalc(){ const el=document.getElementById("s-calcres"); if(el&&ui.sheet) el.innerHTML=calcRes(ui.sheet.calc||"decimo"); }
 /* ---------- lançamento rápido por texto ("45 ifood pix", "120 mercado ontem", "300 tv 3x crédito") ---------- */
 const semAcento=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 const RAP_KW={carrinho:/^(mercado|supermercado|feira|padaria|acougue|hortifruti|atacad|assai|carrefour|sacolao)/,cafe:/^(cafe|lanche|salgado|cafeteria)/,taca:/^(ifood|restaurante|pizza|hamburguer|burger|bar|cerveja|cinema|show|rappi|lanchonete|almoco|jantar|delivery|netflix|spotify|streaming)/,
@@ -1934,7 +1982,11 @@ function viewAjustes(){
     ${cardViagens()}
     ${cardDividas()}
     <div class="card" id="ferramentas"><h2>Ferramentas</h2>
-    <button type="button" class="ferr" data-novo="simulador"><span class="fi" aria-hidden="true">📉</span><span><b>Simulador de quitação</b><small>Em quanto tempo quita uma dívida ou financiamento e quanto economiza pagando a mais.</small></span></button></div>
+    <button type="button" class="ferr" data-novo="simulador"><span class="fi" aria-hidden="true">📉</span><span><b>Simulador de quitação</b><small>Em quanto tempo quita uma dívida ou financiamento e quanto economiza pagando a mais.</small></span></button>
+    <button type="button" class="ferr" data-novo="calc" data-calc="decimo"><span class="fi" aria-hidden="true">🎁</span><span><b>13º salário</b><small>Quanto cai na 1ª e na 2ª parcela, já com INSS e Imposto de Renda.</small></span></button>
+    <button type="button" class="ferr" data-novo="calc" data-calc="ferias"><span class="fi" aria-hidden="true">🏖️</span><span><b>Férias</b><small>Férias + 1/3, com opção de vender 10 dias.</small></span></button>
+    <button type="button" class="ferr" data-novo="calc" data-calc="liquido"><span class="fi" aria-hidden="true">💼</span><span><b>Salário líquido</b><small>Do bruto ao que cai na conta, com a tabela de ${TAB.ano}.</small></span></button>
+    <button type="button" class="ferr" data-novo="calc" data-calc="guardar"><span class="fi" aria-hidden="true">🎯</span><span><b>Quanto guardar por mês</b><small>Para comprar algo à vista numa data, com ou sem rendimento.</small></span></button></div>
     <div class="card"><h2>Importar extrato do banco</h2>
     <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX ou CSV no app do seu banco e traga tudo de uma vez, com a categoria já sugerida.</p>
     <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>
@@ -2214,8 +2266,8 @@ function renderSheet(){
   if(!s){ r.innerHTML=""; document.body.classList.remove("sheet-open"); return; }
   document.body.classList.add("sheet-open");
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
-  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="semana"&&s.tipo!=="simulador"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",simulador:"Simulador de quitação",semana:"Resumo da semana",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="semana"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
+  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -2411,6 +2463,8 @@ function renderSheet(){
     sub=""; botoes=`<button class="btn ${s.pinModo==="desligar"?"danger":""}" type="submit">${s.pinModo==="desligar"?"Desligar PIN":s.pinModo==="trocar"?"Trocar PIN":"Criar PIN"}</button>`;
   }else if(s.tipo==="avisos"){
     corpo=`<div class="avisos">${listaAvisos()}</div>`; sub=""; botoes="";
+  }else if(s.tipo==="calc"){
+    corpo=corpoCalc(s.calc||"decimo"); sub=""; botoes="";
   }else if(s.tipo==="simulador"){
     const devo=(state.config.dividas||[]).filter(x=>x.tipo==="pagar"&&!quitada(x));
     corpo=`<p class="hint">Descubra em quanto tempo quita uma dívida (cartão, cheque especial, empréstimo ou financiamento) e quanto economiza pagando um pouco a mais.</p>
@@ -2652,7 +2706,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -2668,6 +2722,9 @@ function bindSheet(r){
     if(b.dataset.desmodelo){ ui.sheet=Object.assign({},ui.sheet,{mod:b.dataset.desmodelo}); renderSheet(); return; }
     if(b.dataset.caledit){ openSheet("gasto",b.dataset.caledit); return; }
     if(b.dataset.callancar){ openSheet("gasto",null,{dia:Number(b.dataset.callancar)}); return; }
+    if(b.dataset.calctipo){ const sal=(document.getElementById("s-csal")||{}).value; ui.sheet.calc=b.dataset.calctipo; renderSheet(); const n=document.getElementById("s-csal"); if(n&&sal) { n.value=sal; atualizaCalc(); } return; }
+    if(b.dataset.calcmeta){ const alvo=parseMoney((document.getElementById("s-calvo")||{}).value||""), meses=Math.round(Number((document.getElementById("s-cprazo")||{}).value)||0), nome=((document.getElementById("s-cnome")||{}).value||"").trim()||"Compra planejada";
+      if(alvo>0&&meses>0){ state.config.metas.push({id:"m"+uidGen(),nome:nome.slice(0,40),alvo,prazo:shiftKey(todayKey,meses)}); save("config"); closeSheet(); render(); toast("Meta “"+nome+"” criada. Acompanhe em Ajustes → Metas."); } return; }
     if(b.dataset.simtaxa){ const t=document.getElementById("s-simtaxa"); if(t){ t.value=b.dataset.simtaxa; atualizaSim(); } return; }
     if(b.dataset.simdiv){ const x=(state.config.dividas||[]).find(d=>d.id===b.dataset.simdiv), el=document.getElementById("s-simsaldo"); if(x&&el){ el.value=moneyInput(restaDiv(x)); atualizaSim(); } return; }
     if(b.dataset.avsemana){ openSheet("semana",null,{fim:b.dataset.avsemana}); return; }
@@ -2724,12 +2781,13 @@ function bindSheet(r){
     if(b.dataset.sabrir){ openSheet(b.dataset.sabrir,s.id); return; }
   });
   r.addEventListener("keydown",e=>{ if(e.target.id==="s-rapido"&&e.key==="Enter"){ e.preventDefault(); if(!salvando) aplicaRapido(true); } });
-  r.addEventListener("input",e=>{ if(/^s-sim/.test(e.target.id)){ setTimeout(atualizaSim,0); return; } if(e.target.id==="s-rapido"){ const pv=document.getElementById("s-rapprev"); if(pv) pv.innerHTML=previaRapido(e.target.value.trim()?interpretaRapido(e.target.value):null); return; } if(e.target.id==="s-busca") atualizaBusca(); if(["s-valor","s-n"].includes(e.target.id)) atualizaParc(); });
+  r.addEventListener("input",e=>{ if(/^s-sim/.test(e.target.id)){ setTimeout(atualizaSim,0); return; } if(/^s-c/.test(e.target.id)&&ui.sheet&&ui.sheet.tipo==="calc"){ setTimeout(atualizaCalc,0); return; } if(e.target.id==="s-rapido"){ const pv=document.getElementById("s-rapprev"); if(pv) pv.innerHTML=previaRapido(e.target.value.trim()?interpretaRapido(e.target.value):null); return; } if(e.target.id==="s-busca") atualizaBusca(); if(["s-valor","s-n"].includes(e.target.id)) atualizaParc(); });
   r.addEventListener("change",e=>{
     if(e.target.name==="s-tipo"){ const v=(document.getElementById("s-valor")||{}).value||""; ui.sheet={tipo:e.target.value,id:null,valorRasc:v,mes:ui.sheet.mes}; renderSheet(); const f=document.querySelector("#sheet [data-autofocus]"); if(f) f.focus(); return; }
     if(e.target.id==="s-parc"||e.target.name==="s-forma"||e.target.id==="s-dia"||e.target.id==="s-cartao") atualizaParc();
     if(e.target.name==="s-forma") atualizaFormaBox();
     if(e.target.name==="s-cat") atualizaSubBox();
+    if(e.target.id==="s-cvende"){ const d=document.getElementById("s-cdias"); if(d&&e.target.checked&&Number(d.value)>20) d.value=20; atualizaCalc(); }
     if(e.target.name==="s-dtipo"){ const bx=document.getElementById("s-dvalbox"); if(bx) bx.hidden=e.target.value!=="max"; }
     if(e.target.id==="s-vgon"||e.target.id==="s-vgid"||e.target.name==="s-vgmoeda") atualizaVg();
     if(e.target.id==="s-vmoeda"){ const c=document.getElementById("s-vcot"), l=document.getElementById("s-vcotlab"); if(l) l.textContent="Cotação (1 "+e.target.value+" em R$)"; if(c){ c.value=e.target.value==="BRL"?"1":""; } buscarCotacao(); }
@@ -2771,6 +2829,7 @@ app.addEventListener("click",e=>{
   if(d.vertodasrec){ ui.verTodasRec=ui.verTodasRec===d.vertodasrec?null:d.vertodasrec; render(); return; }
   if(d.vertodas){ const abrindo=ui.verTodas!==d.vertodas; ui.verTodas=abrindo?d.vertodas:null; render(); if(!abrindo){ const c=document.querySelector(".listaresumo"); if(c) c.closest(".card").scrollIntoView({block:"start",behavior:"smooth"}); } return; }
   if(d.verquit){ ui.verQuit=!ui.verQuit; render(); return; }
+  if(d.novo&&d.calc){ openSheet("calc",null,{calc:d.calc}); return; }
   if(d.novo){ openSheet(d.novo,null,d.cxtipo?{cxTipo:d.cxtipo}:d.pinmodo?{pinModo:d.pinmodo}:d.dtipo?{dTipo:d.dtipo}:null); return; }
   if(d.edit){ openSheet(d.edit,d.id,d.mes?{mes:d.mes}:null); return; }
   if(d.busca){ openSheet("busca"); return; }

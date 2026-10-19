@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.9.0 — 19/10/2026 **Calculadoras brasileiras**
+
+- Em Ajustes → Ferramentas: 13º salário (1ª parcela sem descontos e 2ª com INSS e IR), férias (férias + 1/3, com opção de vender 10 dias) e salário líquido.
+- Usam as tabelas de 2026: INSS progressivo (até R$ 8.475,55) e Imposto de Renda com a isenção até R$ 5.000 e a redução até R$ 7.350 (Lei 15.270/2025), dependentes e desconto simplificado. Atualizar a constante `TAB` em app.js a cada ano.
+- "Quanto guardar por mês": valor da compra, quanto já tem, prazo e rendimento opcional; mostra o depósito mensal e cria uma meta de economia com um toque.
+
 ## 4.8.0 — 18/10/2026 **Simulador de quitação**
 
 - Nova seção Ferramentas em Ajustes, com o Simulador de quitação (também pelo link no card Dívidas).
