@@ -1571,7 +1571,7 @@ function viewAno(){
   const ini=inicioKey();
   if(!ini) return `<div class="empty-state">A visão geral aparece assim que você registrar sua primeira renda.<br>Vá na aba <b>Mês</b> e informe o salário do mês (ou uma receita avulsa).</div>`;
   const ks=MESES.filter(k=>k>=ini&&k<=todayKey);
-  if(!ks.length) return `<div class="empty-state">Seu controle começa em ${esc(nomeMes(ini).toLowerCase())}. A visão geral mostra os meses a partir daí, até o mês atual.</div>`;
+  if(!ks.length) return cardConquistas()+`<div class="empty-state">Seu controle começa em ${esc(nomeMes(ini).toLowerCase())}. A visão geral mostra os meses a partir daí, até o mês atual.</div>`;
   const rows=ks.map(k=>({k,c:calc(k),ac:acumulado(k),cx:caixinhaAte(k)}));
   const T=rows.reduce((a,r)=>({rec:a.rec+r.c.receitas,des:a.des+r.c.despesas,sal:a.sal+r.c.saldo}),{rec:0,des:0,sal:0});
   const ult=rows[rows.length-1], periodo=abrMes(ks[0])+" a "+abrMes(ult.k)+" · "+ks.length+(ks.length===1?" mês":" meses");
