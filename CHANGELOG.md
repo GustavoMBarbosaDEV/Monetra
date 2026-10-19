@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.2 — 19/10/2026 **Tutorial atualizado**
+
+- Tutorial reescrito para as abas novas (Início, Relatórios, Metas, Perfil → Ajustes) e as funções das últimas versões: lançamento rápido por texto, calendário, previsão do mês, sobra acumulada, metas e desafios, resumo da semana e ferramentas.
+- Logo do Monetra no tutorial (antes aparecia "MB"), na tela de entrada e no bloqueio por PIN.
+
 ## 5.0.1 — 19/10/2026 **Início como no modelo + botão voltar**
 
 - Início no formato aprovado: saudação ("Boa tarde, Gustavo"), saldo com variação vs mês anterior, gráfico do saldo dia a dia, receitas e despesas dentro do cartão, atalhos rápidos, previsão do mês e o card "Orçamento do mês" (ou "Onde mais gastou", sem limites).

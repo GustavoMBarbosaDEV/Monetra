@@ -952,3 +952,9 @@ h1,h2,h3{letter-spacing:-.02em}
 .ajlink .chev{margin-left:auto;color:var(--muted);display:grid}
 @media (min-width:761px){ .qa{max-width:640px} }
 .months .chips{scrollbar-width:none} .months .chips::-webkit-scrollbar{display:none}
+/* 5.0.2 · logo no tutorial, login e bloqueio */
+img.tutlogo{width:64px;height:64px;border-radius:18px;box-shadow:0 0 0 1px rgba(59,227,143,.3)}
+.lklogo{width:64px;height:64px;border-radius:18px;margin:0 auto 6px;display:block}
+.loginmarca{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.loginmarca img{width:56px;height:56px;border-radius:16px}
+.loginmarca b{display:block;font-size:22px;letter-spacing:-.02em} .loginmarca small{color:var(--muted);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}

@@ -10,11 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.1";
+const VERSAO="5.0.2";
 const NOVIDADES=[
-  "Início igual ao modelo: saudação, saldo com gráfico do mês, receitas e despesas no topo, atalhos (Despesa, Receita, Conta fixa/Transferir, Caixinha), previsão e orçamento do mês.",
-  "Logo em alta resolução e barra de baixo com Início, Relatórios, +, Metas e Perfil (Ajustes fica no Perfil).",
-  "O botão voltar do celular agora fecha a janela aberta (ou volta para o Início) em vez de fechar o app."
+  "Tutorial atualizado com as abas novas (Início, Relatórios, Metas, Perfil) e as funções recentes: lançamento rápido, calendário, metas e desafios, ferramentas.",
+  "Logo do Monetra na tela de entrada, no bloqueio por PIN e no tutorial."
 ];
 
 /* ---------- utilidades ---------- */
@@ -842,7 +841,7 @@ function renderLock(){
         <button class="btn danger wide" type="button" data-lk="apagar">Apagar os dados deste aparelho</button>`}
       <button class="link" type="button" data-lk="voltar">Voltar e tentar de novo</button></div>`
   :`<div class="lockbox">
-    <span class="lockic">${ICON.cadeado}</span>
+    <img class="lklogo" src="icons/logo-128.png" alt="" width="64" height="64">
     <h2>${nome?"Olá, "+esc(nome):"Monetra"}</h2>
     <p class="${pinMsg?"erro":""}" aria-live="polite">${espera?"Muitas tentativas. Tente de novo em "+espera+"s.":pinMsg?esc(pinMsg):"Digite seu PIN para abrir"}</p>
     <div class="pontos ${pinMsg?"treme":""}">${Array.from({length:PINLEN},(_,i)=>`<i class="${i<pinDig.length?"on":""}"></i>`).join("")}</div>
@@ -932,15 +931,15 @@ function passosTutorial(){
   const nuvem=mode==="cloud", tecla=matchMedia("(hover:hover) and (pointer:fine)").matches;
   const L=(...xs)=>`<ul>${xs.map(x=>`<li>${x}</li>`).join("")}</ul>`;
   return [
-    {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle de gastos, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
-    {ic:"mes",t:"1. Comece pelo salário",d:`Na aba <b>Mês</b>, informe o <b>salário deste mês</b> no card Receitas. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Lance como <b>receita avulsa</b>.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> no Perfil (ou em Ajustes → Contas).")},
-    {ic:"mais",t:"2. Lance seus gastos",d:`Toque no botão <b>+</b>${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Valor estilo app de banco: digite só os números.","Comprou parcelado? Ligue <b>Compra parcelada</b>.","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.")},
-    {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa e aparecem em Contas fixas até a última parcela.","<b>Categorias</b>: crie as suas, com cor, limite por mês e subcategorias.")},
-    {ic:"cofre",t:"4. Caixinha e metas",d:`Guarde dinheiro <b>separado do saldo do mês</b> na caixinha.`+L("Crie <b>metas</b> com valor e prazo (ex.: Viagem, R$ 3.000 até julho).","O app mostra quanto falta e quanto guardar por mês.")},
-    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O topo do mês mostra o <b>saldo</b> e quanto você <b>pode gastar por dia</b>.`+L("<b>Para onde foi</b>: gráfico por categoria, com aviso ao chegar em 80% do limite.","<b>Visão geral</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
-    {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo mostra contas que vencem amanhã, hoje ou estão atrasadas, com botão <b>Paguei</b>.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
-    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Ajustes</b> e no <b>Perfil</b>:`+L("<b>Importar extrato</b> do banco (OFX/CSV).","<b>Contas</b> (corrente, poupança, dinheiro) e transferências.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>Dívidas</b> com pessoas, <b>PIN e digital</b>, planilha para Excel e backup.")},
-    {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia.`,fim:true}
+    {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle financeiro, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
+    {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, role até o card <b>Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> em Perfil → Ajustes → Contas.")},
+    {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.")},
+    {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
+    {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
+    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("<b>Calendário</b>: gastos e vencimentos de cada dia, e o resumo da semana.","<b>Relatórios</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
+    {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
+    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.")},
+    {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
   ];
 }
 function abrirTutorial(){ tutAberto=true; tutI=0; renderTutorial(); }
@@ -951,7 +950,7 @@ function fecharTutorial(irSalario){
 function renderTutorial(){
   const ps=passosTutorial(), p=ps[tutI]; let el=document.getElementById("tutorial");
   if(!el){ el=document.createElement("div"); el.id="tutorial"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.setAttribute("aria-labelledby","tutTit"); document.body.appendChild(el); document.body.classList.add("tutorial"); }
-  const icone=p.ic==="logo"?`<span class="tutlogo">MB</span>`:p.ic==="cofre"?`<svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 9.5c0-2.5 3.1-4.5 7-4.5s7 2 7 4.5v4c0 2.6-2 4-3 4.5V20h-2.5v-1.6h-3V20H8v-2c-1.7-.8-3-2.3-3-4.5z"/><circle cx="15.5" cy="10.5" r=".9" fill="currentColor"/><path d="M10 7.5h3.5"/></svg>`:(ICON[p.ic]||"");
+  const icone=p.ic==="logo"?`<img class="tutlogo" src="icons/logo-128.png" alt="">`:p.ic==="cofre"?`<svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 9.5c0-2.5 3.1-4.5 7-4.5s7 2 7 4.5v4c0 2.6-2 4-3 4.5V20h-2.5v-1.6h-3V20H8v-2c-1.7-.8-3-2.3-3-4.5z"/><circle cx="15.5" cy="10.5" r=".9" fill="currentColor"/><path d="M10 7.5h3.5"/></svg>`:(ICON[p.ic]||"");
   el.innerHTML=`<div class="tutbox">
     <button type="button" class="tutpular" data-tut="pular">${p.fim?"Fechar":"Pular"}</button>
     <span class="tutic">${icone}</span>
@@ -1228,6 +1227,7 @@ function bottomNav(){
 function viewLogin(){
   const novo=ui.loginModo==="criar";
   return `<div class="login card">
+  <div class="loginmarca"><img src="icons/logo-128.png" alt="" width="56" height="56"><span><b>Monetra</b><small>Controle financeiro</small></span></div>
   <div class="seg" role="tablist" style="width:100%"><input type="radio" name="lmodo" id="lmE" value="entrar" ${novo?"":"checked"}><label for="lmE">Entrar</label><input type="radio" name="lmodo" id="lmC" value="criar" ${novo?"checked":""}><label for="lmC">Criar conta</label></div>
   <h2>${novo?"Crie sua conta grátis":"Seu controle de gastos, só seu"}</h2>
   <p>${novo?"Use sua conta Google: não precisa inventar senha nem preencher cadastro. Sua página começa vazia e só você vê os seus lançamentos.":"Entre com a conta Google que você usou para criar sua conta. Cada pessoa tem a própria página: ninguém vê os lançamentos de outra pessoa."}</p>

@@ -106,6 +106,8 @@ Ao publicar uma versão nova:
 
 1. Atualize `const VERSAO` e a lista `NOVIDADES` em `app.js`, e o `CACHE` em `sw.js`.
 2. Escreva o que mudou no topo do `CHANGELOG.md`.
+   - Se a mudança altera telas, abas ou o jeito de usar, atualize também o **tutorial** (`passosTutorial()` em `app.js`).
+   - Se cria um campo novo nas configurações ou no mês, atualize o `firestore.rules` e publique as regras antes.
 3. Faça o commit e o push.
 4. No GitHub Desktop, aba **History** → botão direito no commit → **Create Tag** → `v2.4.0` (o número da versão) → **Push origin**.
 
