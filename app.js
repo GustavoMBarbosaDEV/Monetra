@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="4.5.0";
+const VERSAO="4.6.0";
 const NOVIDADES=[
-  "Conquistas e desafios em Visão geral: sequência de dias lançando, meses seguidos no azul e 12 conquistas para desbloquear.",
-  "Crie desafios como \"30 dias sem delivery\" ou \"mercado no máximo R$ 600 no mês\": o app acompanha sozinho pelos seus lançamentos e avisa quando concluir."
+  "Lembrete de backup: uma vez por mês o sininho sugere baixar uma cópia dos seus dados (\"Baixar\" ou \"Depois\").",
+  "Sem login, o lembrete conta como aviso importante, porque os dados ficam só no aparelho. No Perfil aparece a data do último backup."
 ];
 
 /* ---------- utilidades ---------- */
@@ -984,10 +984,12 @@ function avisos(){
   Object.keys(pedidosG||{}).forEach(g=>(pedidosG[g]||[]).forEach(p=>itens.push({tipo:"pedido",g,p})));
   pendencias().forEach(x=>itens.push({tipo:"conta",x}));
   alertasOrcamento(todayKey).forEach(a=>itens.push({tipo:"orc",a}));
+  const bkL=lembreteBackup(); if(bkL&&bkL.local) itens.push({tipo:"backup",b:bkL});
   (state.config.dividas||[]).filter(x=>!quitada(x)&&x.venc&&diasAte(x.venc)<=1).forEach(x=>itens.push({tipo:"divida",x}));
   const n=itens.length;
   let rep=[]; try{ rep=assinaturas().repetidos; }catch(e){}
   rep.forEach(r=>itens.push({tipo:"dica",r}));
+  if(bkL&&!bkL.local) itens.push({tipo:"backup",b:bkL});
   const mesAt=kM(todayKey), anoR=mesAt===12?kY(todayKey):mesAt===1?kY(todayKey)-1:null;
   if(anoR&&anosRetro().includes(anoR)) itens.push({tipo:"retro",ano:anoR});
   return {itens,n};
@@ -1007,11 +1009,12 @@ function listaAvisos(){
     if(it.tipo==="divida"){ const x=it.x, dd=diasAte(x.venc), cls=dd<0?"atraso":dd===0?"hoje":"amanha";
       grupos.conta.push(linha("pagar "+cls,ICON.grupo,x.tipo==="receber"?esc(x.pessoa)+" te deve "+brl(restaDiv(x)):"Você deve "+brl(restaDiv(x))+" a "+esc(x.pessoa),dd<0?"combinado para "+dataCurta(x.venc)+" (passou)":dd===0?"combinado para hoje":"combinado para amanhã",`<button class="btn ghost mini" type="button" data-avdiv="${esc(x.id)}">Ver</button>`)); }
     if(it.tipo==="orc"){ const a=it.a; grupos.orc.push(linha("orc "+(a.nivel==="passou"?"atraso":"amanha"),`<i class="bola" style="background:${catColor(a.id)}"></i>`,esc(textoAlerta(a)),"limite de "+brl(a.o)+" em "+esc(abrMes(todayKey)),`<button class="btn ghost mini" type="button" data-avmes="1">Ver mês</button>`)); }
+    if(it.tipo==="backup"){ const b=it.b; (b.local?grupos.conta:grupos.dica).push(linha(b.local?"pagar amanha":"dica",ICON.check,"Hora de fazer um backup",(b.dias===null?"Você ainda não baixou nenhum backup":"Último backup há "+b.dias+" dias")+(b.local?" · sem login, seus dados ficam só neste aparelho":" · uma cópia sua, além da nuvem"),`<span class="bkbtns"><button class="btn mini" type="button" data-avbackup="1">Baixar</button><button class="btn ghost mini" type="button" data-avbackupdepois="1">Depois</button></span>`)); }
     if(it.tipo==="retro") grupos.dica.push(linha("pedido",ICON.ano||ICON.mais,"Sua retrospectiva de "+it.ano+" está pronta","quanto entrou, saiu e seus recordes do ano",`<button class="btn mini" type="button" data-avretro="${it.ano}">Ver</button>`));
     if(it.tipo==="dica"){ const r=it.r; grupos.dica.push(linha("dica",ICON.mais,"“"+esc(r.nome)+"” parece uma assinatura",r.meses.size+" dos últimos 4 meses · média "+brl(r.media),`<button class="btn ghost mini" type="button" data-avassin="1">Ver</button>`)); }
   });
   const bloco=(t,arr)=>arr.length?`<div class="subhead">${t}</div>${arr.join("")}`:"";
-  return bloco("Pedidos para entrar",grupos.pedido)+bloco("Contas e dívidas",grupos.conta)+bloco("Limites do mês",grupos.orc)+bloco("Dicas",grupos.dica)
+  return bloco("Pedidos para entrar",grupos.pedido)+bloco(grupos.conta.some(x=>x.includes("data-avbackup"))&&grupos.conta.length===1?"Seus dados":"Contas e dívidas",grupos.conta)+bloco("Limites do mês",grupos.orc)+bloco("Dicas",grupos.dica)
     +(notifOn?"":`<p class="hint">Quer receber esses avisos mesmo com o app fechado? <button class="link" type="button" data-avperfil="1">Ative as notificações no Perfil</button>.</p>`);
 }
 function pagarPend(spec){ const [t,id,k]=spec.split("|"); let atual=false; const m=getMonth(k);
@@ -1039,6 +1042,7 @@ function verificaLembretes(forcar){
   });
   alertasOrcamento(todayKey).forEach(a=>{ const chave=["orc",a.id,todayKey,a.nivel].join(":"); if(vistos[chave]) return; vistos[chave]=hoje;
     mostraNotif(a.nivel==="passou"?"Limite estourado: "+a.nome:a.nivel==="ritmo"?"Ritmo alto: "+a.nome:"Atenção ao limite: "+a.nome, textoAlerta(a)+" Toque para ver.",chave); });
+  const bkN=lembreteBackup(); if(bkN){ const chave="backup:"+todayKey; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Hora de fazer um backup",(bkN.dias===null?"Você ainda não baixou nenhum backup.":"Último backup há "+bkN.dias+" dias.")+" Toque para abrir o MB Controle.",chave); } }
   for(const k in vistos) if(vistos[k]<shiftKey(hoje.slice(0,7),-2)) delete vistos[k];
   try{ localStorage.setItem("mb.notif.vistos",JSON.stringify(vistos)); }catch(e){}
 }
@@ -1083,7 +1087,21 @@ function apagarItem(chave,lista,id,msg){
 }
 
 /* ---------- backup ---------- */
+/* lembrete mensal de backup: guarda neste aparelho quando foi o último e quando pediu para lembrar depois */
+const chaveBk=()=>"mb.backup."+(uid||"local");
+function infoBackup(){ try{ return JSON.parse(localStorage.getItem(chaveBk())||"{}")||{}; }catch(e){ return {}; } }
+function salvaInfoBackup(o){ try{ localStorage.setItem(chaveBk(),JSON.stringify(Object.assign(infoBackup(),o))); }catch(e){} }
+function nLancamentos(){ let n=0; Object.values(state.months||{}).forEach(m=>{ n+=((m&&m.gastos)||[]).length+((m&&m.avulsos)||[]).length; }); return n+state.config.fixos.length+state.config.parcelas.length; }
+function lembreteBackup(){
+  if(mode==="login"||!state.loaded||(mode==="cloud"&&aberto!=="pessoal")) return null;
+  const bk=infoBackup(), hj=hojeISO(), n=nLancamentos(); if(n<10) return null;
+  if(bk.depois&&bk.depois>hj) return null;
+  const dias=bk.ultimo?entreDias(bk.ultimo,hj):null;
+  if(dias!==null&&dias<30) return null;
+  return {dias,local:mode!=="cloud",n};
+}
 function exportar(){
+  salvaInfoBackup({ultimo:hojeISO(),depois:null});
   const blob=new Blob([JSON.stringify({app:"mb-controle",versao:2,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="mb-controle-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
@@ -1897,7 +1915,8 @@ function viewPerfil(){
     <div class="card"><h2>Exportar e backup</h2><p class="hint">A planilha abre no Excel e no Google Planilhas. O backup serve para restaurar tudo depois.</p>
     <button class="btn ghost" type="button" data-planilha="1">Baixar planilha (Excel)</button>
     <div class="row"><button class="btn ghost" type="button" data-export="1">Baixar backup</button><label class="btn ghost" for="impFile" style="text-align:center">Restaurar backup<input type="file" id="impFile" accept="application/json,.json" hidden></label></div>
-    ${ui.importMsg?`<p class="hint">${esc(ui.importMsg)}</p>`:""}</div>
+    ${ui.importMsg?`<p class="hint">${esc(ui.importMsg)}</p>`:""}
+    <p class="hint bkinfo">${(()=>{ const bk=infoBackup(); return bk.ultimo?"Último backup baixado neste aparelho: "+fmtIso(bk.ultimo)+"/"+bk.ultimo.slice(0,4)+(entreDias(bk.ultimo,hojeISO())>=30?" · já faz mais de um mês":""):"Você ainda não baixou um backup neste aparelho. O app lembra uma vez por mês."; })()}</p></div>
     <div class="card"><div class="cardhead"><h2>Novidades</h2><span class="versao">versão ${VERSAO}</span></div>
     <ul class="novidades">${NOVIDADES.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>
     <p class="hint">O histórico completo fica no arquivo CHANGELOG.md do projeto.</p></div>
@@ -2550,7 +2569,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -2576,6 +2595,8 @@ function bindSheet(r){
     if(b.dataset.avgrupo){ const g=b.dataset.avgrupo; closeSheet(); ui.tab="perfil"; ui.rolarPara="compartilhado"; if(g===aberto) render(); else trocarEspaco(g); return; }
     if(b.dataset.avmes){ closeSheet(); ui.tab="mes"; ui.month=todayKey; render(); window.scrollTo({top:0}); return; }
     if(b.dataset.avassin){ closeSheet(); ui.tab="ano"; ui.rolarPara="assinaturas"; render(); return; }
+    if(b.dataset.avbackup){ exportar(); toast("Backup baixado. Guarde o arquivo em um lugar seguro (Drive, e-mail…)."); renderSheet(); render(); return; }
+    if(b.dataset.avbackupdepois){ salvaInfoBackup({depois:somaDias(hojeISO(),7)}); toast("Ok, lembro de novo em 7 dias."); renderSheet(); render(); return; }
     if(b.dataset.avperfil){ closeSheet(); ui.tab="perfil"; ui.rolarPara="lembretes"; render(); return; }
     if(b.dataset.impvoltar){ s.itens=null; s.erroImp=""; renderSheet(); return; }
     if(b.dataset.sguardarmeta){ const id=s.id; openSheet("caixinha",null,{cxTipo:"guardar",metaId:id}); return; }

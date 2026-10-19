@@ -725,3 +725,6 @@ button.item.gitem{grid-template-columns:auto minmax(0,1fr) auto;gap:12px}
 .desafio .track > div{height:100%;border-radius:inherit;background:var(--accent)}
 .desafio.ok .track > div{background:var(--good)}
 .desafio .track.warn > div{background:var(--warn)} .desafio .track.over > div{background:var(--bad)}
+/* 4.6 · lembrete de backup */
+.bkbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.bkinfo{margin-top:6px}

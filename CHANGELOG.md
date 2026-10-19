@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.6.0 — 18/10/2026 **Lembrete de backup**
+
+- Uma vez por mês (a partir de 10 lançamentos) o sininho sugere baixar o backup, com os botões "Baixar" e "Depois" (lembra de novo em 7 dias).
+- Sem login, o lembrete conta como aviso importante (os dados ficam só no aparelho); com login, aparece como dica.
+- Com as notificações ligadas, chega também um aviso no aparelho, no máximo uma vez por mês.
+- Em Perfil → Exportar e backup aparece a data do último backup baixado neste aparelho.
+
 ## 4.5.0 — 18/10/2026 **Conquistas e desafios**
 
 - Novo card em Visão geral: sequência de dias lançando gastos, meses seguidos fechando no azul (com recordes) e 12 conquistas para desbloquear.
