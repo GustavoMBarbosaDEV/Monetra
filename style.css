@@ -688,3 +688,13 @@ button.item.gitem{grid-template-columns:auto minmax(0,1fr) auto;gap:12px}
 .caldia .assintot{margin-bottom:4px}
 .item.calv{grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px}
 .item.calv .vd{width:9px;height:9px}
+/* 4.4 · lançamento rápido */
+.rapido{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+.rp-in{position:relative;display:block}
+.rp-in .rp-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+.rp-in .in{padding-left:34px;background:var(--surface)}
+.rp-prev{font-size:12.5px;line-height:1.45;color:var(--fg);padding:0 2px}
+.rp-prev .muted{color:var(--muted)}
+.rp-prev small{display:block;color:var(--muted);font-size:11.5px}
+.rp-cat{display:inline-flex;align-items:center;gap:4px;font-weight:600}
+.rp-cat svg{color:var(--dot)}

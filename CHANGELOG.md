@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.4.0 — 18/10/2026 **Lançamento rápido por texto**
+
+- No topo da nova despesa há um campo rápido: escreva "45 ifood", "120 mercado ontem pix" ou "600 tv 3x crédito" e aperte Enter para lançar.
+- Entende valor (45 · 45,90 · 1.200), forma de pagamento (pix, débito, crédito/cartão, dinheiro, boleto), o nome do cartão, data (hoje, ontem, anteontem, dia 12, 12/10) e parcelas (3x).
+- A categoria vem do seu histórico (despesas com a mesma palavra), do nome da categoria/subcategoria ou de palavras conhecidas (ifood, uber, farmácia…). Sem IA paga: tudo roda no aparelho.
+- Uma prévia mostra o que vai ser lançado antes do Enter; os campos de baixo continuam funcionando para ajustar.
+
 ## 4.3.0 — 18/10/2026 **Calendário do mês**
 
 - Novo card "Calendário" na aba Mês: cada dia mostra quanto foi gasto (cor mais forte = dia mais pesado), receitas do dia e bolinhas para as contas que vencem (amarela = vence, verde = paga, vermelha = atrasada).
