@@ -12,6 +12,17 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.3 — 19/10/2026 **Espaçamentos no celular**
+
+- Espaçamentos revisados no celular (telas de 360 px):
+  - títulos que ficam fora das caixas ganharam mais espaço em relação à caixa de cima;
+  - "Últimos lançamentos" e o filtro de categorias ficam numa linha só, sem invadir a lista;
+  - nomes de metas, categorias e cartões aparecem inteiros: o valor desce de linha quando não cabe;
+  - abas das calculadoras sem a pílula oval espremida;
+  - campos lado a lado alinhados mesmo com rótulos de tamanhos diferentes.
+- Tabela "Mês a mês": no celular a coluna Acumulado fica oculta (o valor continua no card de saldo acumulado).
+- Movimentos da caixinha: pílula só com o dia; "Guardou/Retirou" vai para a linha de baixo.
+
 ## 5.0.2 — 19/10/2026 **Tutorial atualizado**
 
 - Tutorial reescrito para as abas novas (Início, Relatórios, Metas, Perfil → Ajustes) e as funções das últimas versões: lançamento rápido por texto, calendário, previsão do mês, sobra acumulada, metas e desafios, resumo da semana e ferramentas.

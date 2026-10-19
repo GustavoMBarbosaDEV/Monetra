@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.2";
+const VERSAO="5.0.3";
 const NOVIDADES=[
-  "Em Ajustes, a lista de categorias mostra só as 5 primeiras, com o botão \"Ver todas\".",
-  "Tutorial atualizado com as abas novas e as funções recentes; logo do Monetra no tutorial, na entrada e no bloqueio por PIN."
+  "Espaçamentos corrigidos no celular: títulos das caixas com mais respiro, nomes de metas e categorias aparecem inteiros e nada fica espremido pelos valores.",
+  "Tabela \"Mês a mês\" cabe na tela do celular e os movimentos da caixinha ficaram mais legíveis."
 ];
 
 /* ---------- utilidades ---------- */
@@ -25,6 +25,7 @@ const diasMes=k=>new Date(kY(k),kM(k),0).getDate();
 const nomeMes=k=>NOMES[kM(k)-1]+" "+kY(k);
 const abrMes=k=>ABR[kM(k)-1].toLowerCase()+"/"+String(kY(k)).slice(2);
 const brl=v=>(Number(v)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const brlT=v=>(Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); // tabela: sem "R$" para caber no celular
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=o=>JSON.parse(JSON.stringify(o));
 const uidGen=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
@@ -1652,7 +1653,7 @@ function viewMes(){
   const byDay={}; visiveis.forEach(g=>{(byDay[g.dia]=byDay[g.dia]||[]).push(g)});
   const days=Object.keys(byDay).map(Number).sort((a,b)=>b-a);
   const lista=`<div class="card"><div class="cardhead"><h2>Últimos lançamentos</h2>
-    <select class="in mini" id="filtroCat" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${cats.map(ct=>`<option value="${esc(ct.id)}" ${ui.filtro===ct.id?"selected":""}>${esc(ct.nome)}</option>`).join("")}</select></div>
+    <select class="in mini" id="filtroCat" aria-label="Filtrar por categoria"><option value="">Todas</option>${cats.map(ct=>`<option value="${esc(ct.id)}" ${ui.filtro===ct.id?"selected":""}>${esc(ct.nome)}</option>`).join("")}</select></div>
     <button type="button" class="btn wide desk" data-novo="gasto">${ICON.mais} Lançar despesa</button>
     ${gastos.length?`<p class="listaresumo">${gastos.length} despesa${gastos.length===1?"":"s"}${ui.filtro?" nesta categoria":""} · ${brl(soma(gastos))}</p>`:""}
     ${days.length?days.map(d=>{ const its=byDay[d], tot=totDia[d]||soma(its);
@@ -1718,7 +1719,7 @@ function viewMes(){
   const caixa=`<div class="card"><div class="cardhead"><h2>Caixinha</h2><span class="big">${brl(cx)}</span></div>
     <p class="hint">Guardar tira do saldo do mês; retirar devolve para ele.</p>
     ${metas.length?`<div class="metas">${metas.map(mt=>linhaMeta(mt,k)).join("")}<div class="metageral"><span>Geral (sem meta)</span><b class="num">${brl(geral)}</b></div></div>`:""}
-    ${m.caixinha.length?`<div class="subhead">Movimentos de ${esc(NOMES[kM(k)-1].toLowerCase())}</div><div>${m.caixinha.slice().sort((a,b)=>a.dia-b.dia).map(x=>`<button type="button" class="item" data-edit="caixinha" data-id="${esc(x.id)}" style="--dot:${x.tipo==="guardar"?"var(--accent)":"var(--warn)"}"><span class="pill">${x.tipo==="guardar"?"guardou":"retirou"} · ${pad2(x.dia)}</span><span class="desc"><b class="${x.desc?"":"empty"}">${esc(x.desc||"sem motivo")}</b><small>${esc(nomeMeta(x.metaId))}</small></span><span class="v">${x.tipo==="guardar"?"+":"−"}${brl(x.valor)}</span></button>`).join("")}</div>`:""}
+    ${m.caixinha.length?`<div class="subhead">Movimentos de ${esc(NOMES[kM(k)-1].toLowerCase())}</div><div>${m.caixinha.slice().sort((a,b)=>a.dia-b.dia).map(x=>`<button type="button" class="item" data-edit="caixinha" data-id="${esc(x.id)}" style="--dot:${x.tipo==="guardar"?"var(--accent)":"var(--warn)"}"><span class="pill">dia ${pad2(x.dia)}</span><span class="desc"><b>${esc(x.desc||(x.tipo==="guardar"?"Guardou":"Retirou"))}</b><small>${x.desc?(x.tipo==="guardar"?"Guardou · ":"Retirou · "):""}${esc(nomeMeta(x.metaId))}</small></span><span class="v">${x.tipo==="guardar"?"+":"−"}${brl(x.valor)}</span></button>`).join("")}</div>`:""}
     <div class="row2"><button type="button" class="btn ghost" data-novo="caixinha" data-cxtipo="guardar">+ Guardar</button><button type="button" class="btn ghost warnbtn" data-novo="caixinha" data-cxtipo="retirar">− Retirar</button></div>
     <button type="button" class="btn ghost" data-novo="meta">+ Nova meta de economia</button></div>`;
   /* para onde foi */
@@ -1784,10 +1785,10 @@ function viewAno(){
   <div class="card chart"><div class="cardhead"><h2>Receitas x despesas</h2><div class="legend"><span><i style="background:var(--accent)"></i>Receitas</span><span><i style="background:var(--c2)"></i>Despesas</span></div></div><div class="tablewrap">${svg}</div></div>
   ${cardAssinaturas(rows.length?T.rec/rows.length:0)}
   ${cardEtiquetas()}
-  <div class="grid"><div class="card"><div class="cardhead"><h2>Mês a mês</h2><span class="num muted">toque para abrir</span></div><div class="tablewrap"><table>
-    <thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Saldo</th><th>Acumulado</th></tr></thead>
-    <tbody>${rows.slice().reverse().map(r=>`<tr class="click ${r.k===todayKey?"cur":""}" data-open="${r.k}"><td>${esc(nomeMes(r.k))}${r.k===todayKey?' <small class="muted">atual</small>':""}</td><td>${brl(r.c.receitas)}</td><td>${brl(r.c.despesas)}</td><td class="${r.c.saldo<0?"neg":""}">${brl(r.c.saldo)}</td><td class="${r.ac<0?"neg":""}">${brl(r.ac)}</td></tr>`).join("")}</tbody>
-    <tfoot><tr><td>Total</td><td>${brl(T.rec)}</td><td>${brl(T.des)}</td><td>${brl(T.sal)}</td><td>${brl(ult.ac)}</td></tr></tfoot>
+  <div class="grid"><div class="card"><div class="cardhead"><h2>Mês a mês</h2><span class="num muted">valores em R$ · toque para abrir</span></div><div class="tablewrap"><table>
+    <thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Saldo</th><th class="ac">Acumulado</th></tr></thead>
+    <tbody>${rows.slice().reverse().map(r=>`<tr class="click ${r.k===todayKey?"cur":""}" data-open="${r.k}"><td>${esc(nomeMes(r.k))}${r.k===todayKey?' <small class="muted">atual</small>':""}</td><td>${brlT(r.c.receitas)}</td><td>${brlT(r.c.despesas)}</td><td class="${r.c.saldo<0?"neg":""}">${brlT(r.c.saldo)}</td><td class="ac ${r.ac<0?"neg":""}">${brlT(r.ac)}</td></tr>`).join("")}</tbody>
+    <tfoot><tr><td>Total</td><td>${brlT(T.rec)}</td><td>${brlT(T.des)}</td><td>${brlT(T.sal)}</td><td class="ac">${brlT(ult.ac)}</td></tr></tfoot>
   </table></div></div>
   <div class="col"><div class="card"><h2>Para onde foi o dinheiro</h2>${catTot.length?`<div class="donutwrap">${donut(catTot.map(z=>({nome:z.ct.nome,v:z.v,cor:catColor(z.ct.id)})),T.des,brl(T.des),"no período")}<div class="bars">${catTot.map(z=>`<div class="bar" style="--dot:${catColor(z.ct.id)}"><div class="t"><b>${esc(z.ct.nome)}</b><span class="num">${brl(z.v)} · ${Math.round(z.v/T.des*100)}%</span></div><div class="track"><div style="width:${(z.v/catTot[0].v*100).toFixed(1)}%"></div></div><div class="delta">média ${brl(z.v/ks.length)}/mês</div></div>`).join("")}</div></div>`:`<div class="empty-state">Assim que você lançar despesas, o total por categoria aparece aqui.</div>`}</div>
   ${fTot.length?`<div class="card"><h2>Forma de pagamento no período</h2><div class="bars">${fTot.map(x=>`<div class="bar" style="--dot:var(--fm-${x.id})"><div class="t"><b>${esc(x.n)}</b><span class="num">${brl(x.v)} · ${Math.round(x.v/T.des*100)}%</span></div><div class="track"><div style="width:${(x.v/fTot[0].v*100).toFixed(1)}%"></div></div></div>`).join("")}</div></div>`:""}</div></div>`;

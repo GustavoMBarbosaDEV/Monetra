@@ -958,3 +958,38 @@ img.tutlogo{width:64px;height:64px;border-radius:18px;box-shadow:0 0 0 1px rgba(
 .loginmarca{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .loginmarca img{width:56px;height:56px;border-radius:16px}
 .loginmarca b{display:block;font-size:22px;letter-spacing:-.02em} .loginmarca small{color:var(--muted);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+
+/* ===== 5.0.3 — espaçamentos (nada espremido no celular) ===== */
+/* título fora da caixa: mais respiro em relação à caixa de cima */
+.card:has(> .cardhead),.card:has(> h2:first-child){margin-top:44px}
+.col > .card:has(> .cardhead):first-child,.col > .card:has(> h2:first-child):first-child{margin-top:44px}
+/* cabeçalho com título + filtro numa linha só, sem invadir a caixa */
+.card > .cardhead{flex-wrap:nowrap}
+.card > .cardhead h2{white-space:nowrap;flex:0 0 auto}
+.card > .cardhead select{flex:0 1 auto;min-width:0;max-width:52%;text-overflow:ellipsis;padding-top:4px;padding-bottom:4px}
+.card > .cardhead > :not(h2){flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:380px){.card > .cardhead h2{font-size:15px}}
+/* metas: nome inteiro; o valor desce de linha quando não cabe */
+.meta .mt{flex-wrap:wrap;row-gap:2px}
+.meta .mt b{white-space:normal;overflow:visible;flex:1 1 120px;min-width:0}
+.meta .mt .num{margin-left:auto}
+/* barras (para onde foi, faturas, forma de pagamento): nome não é cortado pelo valor */
+.bar .t{flex-wrap:wrap;row-gap:2px;align-items:center}
+.bar .t > b,.bars .bar .t > b{white-space:normal;overflow:visible;flex:1 1 110px;min-width:0}
+.bar .t > span,.bars .bar .t > .num{margin-left:auto}
+/* orçamento do mês: nome em até 2 linhas em vez de cortar */
+.orow .ot b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+/* calculadoras: abas de 2 linhas sem a pílula oval */
+.calcabas button{border-radius:10px;line-height:1.25;padding:7px 3px}
+/* caixinha: pílula curta */
+button.item .pill{white-space:nowrap}
+/* campos lado a lado: rótulos de alturas diferentes alinham pela base */
+.row > label.f,.row2 > label.f{display:flex;flex-direction:column;justify-content:flex-end}
+.row select,.row2 select{min-width:0;text-overflow:ellipsis}
+/* tabela mês a mês cabe no celular */
+@media (max-width:480px){
+  th.ac,td.ac{display:none}
+  table{font-size:12.5px} th,td{padding:7px 4px} th{font-size:10.5px;letter-spacing:.03em}
+  td:first-child{white-space:normal}
+  .seg label{padding:7px 6px}
+}
