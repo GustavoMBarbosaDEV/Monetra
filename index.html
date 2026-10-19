@@ -14,14 +14,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
-<style>html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}#boot{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:radial-gradient(75% 55% at 50% 44%,#0A2419,#030605 72%);color:#EEF5F0;font:700 30px Inter,"Segoe UI",system-ui,sans-serif;letter-spacing:-.02em;transition:opacity .35s cubic-bezier(.2,.8,.2,1)}#boot img{width:min(58vw,260px);height:auto;margin-bottom:calc(min(58vw,260px) * -.2)}#boot.sai{opacity:0;pointer-events:none}@media (prefers-reduced-motion:reduce){#boot{transition:none}}</style>
 </head>
 <body>
+<div id="boot" aria-hidden="true"><img src="icons/splash-512.png" alt="" width="512" height="512"><span>Monetra</span></div>
 <div class="wrap" id="app">
   <div class="top"><div class="brand"><img class="logo" src="icons/logo-128.png" alt="" width="36" height="36"><h1>Monetra</h1><span class="status" id="status"><i></i>Carregando…</span></div></div>
   <div class="empty-state">Carregando…</div>
 </div>
 <script>
+  /* tela de abertura: some sozinha se algo demorar */
+  setTimeout(function(){ var b=document.getElementById("boot"); if(b){ b.classList.add("sai"); setTimeout(function(){ b.remove(); },400); } },6000);
   /* Service worker: deixa o app abrir sem internet e permite instalar como aplicativo */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(function () {}); });

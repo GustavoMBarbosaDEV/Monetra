@@ -10,10 +10,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.8";
+const VERSAO="5.0.9";
 const NOVIDADES=[
-  "Barra de meses mais limpa: mostra 4 meses (o anterior, o atual e os próximos com fatura ou parcela para pagar) e um botão de calendário.",
-  "No calendário você escolhe qualquer mês e ano, passados ou futuros, como no extrato do banco. Os meses com conta a pagar têm um pontinho."
+  "Tela de abertura nova: a logo do Monetra aparece grande, em tela cheia, enquanto o app carrega.",
+  "O app agora fica em gustavombarbosadev.github.io/Monetra. O endereço antigo continua levando para cá.",
+  "Arquivos baixados (backup, planilha e lembretes) agora se chamam monetra-…"
 ];
 
 /* ---------- utilidades ---------- */
@@ -909,7 +910,7 @@ async function ligarBio(){
   const c=pinCfg(); if(!c) return;
   try{
     const cred=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"Monetra"},
-      user:{id:crypto.getRandomValues(new Uint8Array(16)),name:(authUser&&authUser.email)||"mb-controle",displayName:(authUser&&authUser.displayName)||"Monetra"},
+      user:{id:crypto.getRandomValues(new Uint8Array(16)),name:(authUser&&authUser.email)||"monetra",displayName:(authUser&&authUser.displayName)||"Monetra"},
       pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"},timeout:60000,attestation:"none"}});
     c.bio=b64u.enc(cred.rawId); salvaPinCfg(c); render(); toast("Pronto: o app abre com a sua digital (ou rosto). O PIN continua valendo.");
   }catch(e){ console.warn(e); render(); toast(e&&e.name==="NotAllowedError"?"Cancelado.":"Não foi possível ligar a digital neste aparelho."); }
@@ -1103,7 +1104,7 @@ function exportarCalendario(){
   }
   L.push("END:VCALENDAR");
   if(!n){ toast("Nenhuma conta com vencimento para colocar no calendário."); return; }
-  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([L.join("\r\n")],{type:"text/calendar;charset=utf-8"})); a.download="mb-controle-lembretes.ics"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([L.join("\r\n")],{type:"text/calendar;charset=utf-8"})); a.download="monetra-lembretes.ics"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
   toast("Arquivo de lembretes baixado ("+(n/3)+" vencimentos). Abra para adicionar ao calendário.");
 }
 
@@ -1131,8 +1132,8 @@ function lembreteBackup(){
 }
 function exportar(){
   salvaInfoBackup({ultimo:hojeISO(),depois:null});
-  const blob=new Blob([JSON.stringify({app:"mb-controle",versao:2,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2)],{type:"application/json"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="mb-controle-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  const blob=new Blob([JSON.stringify({app:"monetra",versao:2,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="monetra-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
 function importar(file){
   if(mode==="cloud"&&aberto!=="pessoal"){ ui.importMsg="Para restaurar um backup, abra o controle Pessoal (botões no topo)."; render(); return; }
@@ -1160,7 +1161,7 @@ function exportarPlanilha(){
     m.caixinha.forEach(x=>linhas.push([mes,x.dia,x.tipo==="guardar"?"Caixinha (guardou)":"Caixinha (retirou)","",x.desc,"",(x.tipo==="guardar"?"-":"")+num(x.valor),""]));
   });
   const csv="﻿"+linhas.map(l=>l.map(cel).join(";")).join("\r\n");
-  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download="mb-controle-planilha-"+new Date().toISOString().slice(0,10)+".csv"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download="monetra-planilha-"+new Date().toISOString().slice(0,10)+".csv"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
   toast("Planilha baixada.");
 }
 /* Apaga tudo da pessoa e recomeça do zero */
@@ -1194,6 +1195,7 @@ function trataAtalho(){
    ===================================================================== */
 function render(){
   if(state.loaded) buildMeses();
+  if(mode!=="loading") tiraBoot();
   const a=document.activeElement, inApp=a&&document.getElementById("app").contains(a);
   const fid=inApp&&a.id, sel=(fid&&"selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const app=document.getElementById("app");
@@ -1635,6 +1637,8 @@ function graficoSaldo(sr){
   const P=sr.map((v,i)=>[i/(sr.length-1)*W,H-4-(v-mn)/rg*(H-8)]), d="M"+P.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" L"), u=P[P.length-1];
   return `<svg class="hs-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="${d} L${W},${H} L0,${H}Z" fill="url(#hsg)"/><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><circle cx="${u[0].toFixed(1)}" cy="${u[1].toFixed(1)}" r="3.5" fill="currentColor"/></svg>`;
 }
+/* tela de abertura (logo em tela cheia) some com um fade quando o app fica pronto */
+function tiraBoot(){ const b=document.getElementById("boot"); if(!b||b.dataset.saindo) return; b.dataset.saindo="1"; const espera=Math.max(0,700-performance.now()); setTimeout(()=>{ b.classList.add("sai"); setTimeout(()=>b.remove(),400); },espera); }
 /* seção recolhível do Início (celular) */
 function secaoMes(id,titulo,resumo,icone,html){
   if(!html||!String(html).trim()) return "";

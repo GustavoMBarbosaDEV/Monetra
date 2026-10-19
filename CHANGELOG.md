@@ -1,4 +1,4 @@
-# Histórico de versões — MB Controle
+# Histórico de versões — Monetra
 
 Cada versão publicada fica registrada aqui, da mais nova para a mais antiga.
 O número segue o padrão **MAIOR.MENOR.CORREÇÃO**:
@@ -11,6 +11,14 @@ Ao publicar uma versão, atualize o número em `app.js` (`const VERSAO`) e em `s
 escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
+
+## 5.0.9 — 19/10/2026 **Novo endereço e tela de abertura**
+
+- Tela de abertura: logo do Monetra grande, sem o quadrado, em fundo escuro de tela cheia, que some com um fade quando o app fica pronto (fica pelo menos ~0,7 s para não piscar; some sozinha em 6 s se algo travar).
+- Novo `icons/splash-512.png` (logo sem fundo) para a tela de abertura do APK; cor de fundo do app `#030605`.
+- Nome antigo removido do que aparece para quem usa: backup `monetra-backup-AAAA-MM-DD.json`, planilha `monetra-planilha…`, lembretes `monetra-lembretes.ics`. Backups antigos continuam podendo ser restaurados.
+- Endereço novo: `https://gustavombarbosadev.github.io/Monetra/` (repositório renomeado de MB-Controle para Monetra). O endereço antigo redireciona, mantendo convites.
+- README e DESENVOLVIMENTO atualizados (passo a passo da troca de nome e do APK).
 
 ## 5.0.8 — 19/10/2026 **Barra de meses nova**
 

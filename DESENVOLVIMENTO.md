@@ -8,7 +8,7 @@ Para a apresentação do app, veja o [README](README.md).
 ## Passo 1 — Colocar o app no GitHub (GitHub Pages)
 
 1. Entre em **github.com** e clique em **New repository** (botão verde "New").
-2. Nome: `MB-Controle` (ou mantenha `Meu-Caixa`, se já criou). Deixe **Public** e clique em **Create repository**.
+2. Nome: `Monetra` (era `MB-Controle` até a 5.0.9; veja "Troca de nome do repositório" abaixo). Deixe **Public** e clique em **Create repository**.
 3. Na página do repositório, clique em **uploading an existing file**.
 4. Arraste **todos os arquivos e a pasta `icons`** deste projeto (não a pasta de fora, o conteúdo dela)
    e clique em **Commit changes**.
@@ -121,7 +121,7 @@ Para mudanças grandes, use um branch `testes` e só junte na `main` (que é a v
 
 1. Abra **pwabuilder.com**, cole o endereço do app e clique em **Start**.
 2. Clique em **Package for stores** → **Android** → **Generate Package**.
-3. Em *Package ID*, use algo como `io.github.gustavombarbosadev.mbcontrole`. Em *Signing key*, deixe **Create new**.
+3. Em *Package ID*, use **sempre o mesmo** do APK já instalado (`io.github.gustavombarbosadev.twa`), senão o celular instala como outro app. Em *Signing key*, deixe **Create new**.
 4. Baixe o .zip. Dentro dele:
    - o arquivo **.apk**, para instalar e compartilhar;
    - o **signing.keystore** e o **signing-key-info.txt**: **guarde em lugar seguro**, porque sem eles não dá para atualizar o app depois;
@@ -133,3 +133,21 @@ Para mudanças grandes, use um branch `testes` e só junte na `main` (que é a v
 `GustavoMBarbosaDEV.github.io`, coloque nele a pasta `.well-known` com o `assetlinks.json` e um arquivo `.nojekyll`, e ative o GitHub Pages.
 
 O APK abre o próprio site, então toda atualização publicada no GitHub aparece no app sem gerar outro APK.
+
+
+## Troca de nome do repositório (MB-Controle → Monetra, na 5.0.9)
+
+O endereço do app passou de `https://gustavombarbosadev.github.io/MB-Controle/` para
+`https://gustavombarbosadev.github.io/Monetra/`.
+
+- **Firebase:** nada muda (o domínio autorizado continua `gustavombarbosadev.github.io`). O projeto no Firebase
+  continua se chamando `mb-controle`; esse nome não aparece para quem usa.
+- **Dados no aparelho** (modo local, PIN, preferências) continuam, porque ficam guardados por domínio, não por pasta.
+- **Endereço antigo:** um repositório novo chamado `MB-Controle` só com a pasta `redirecionar-mb-controle`
+  (index.html, 404.html, sw.js, .nojekyll) manda quem abrir o link antigo para o novo, mantendo convites
+  (`?convite=...`), e desliga o service worker antigo.
+- **APK:** gerar de novo no PWABuilder com o endereço novo, o **mesmo Package ID**, a **mesma chave** (signing key
+  existente) e um **número de versão maior**. O `assetlinks.json` fica na raiz do domínio
+  (`GustavoMBarbosaDEV.github.io/.well-known/`), então não precisa mudar.
+- **Tela de abertura do APK:** no PWABuilder, use em *Icon URL* o `icons/splash-512.png` (logo sem o quadrado)
+  e em *Background color* / *Splash color* o `#030605`. O ícone do celular continua vindo do `icon-maskable-512.png`.

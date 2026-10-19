@@ -1,7 +1,7 @@
 // Service worker: deixa o app abrir mesmo sem internet.
-const CACHE = "monetra-5.0.8"; // acompanhe a versão do app (VERSAO em app.js)
+const CACHE = "monetra-5.0.9"; // acompanhe a versão do app (VERSAO em app.js)
 const SHELL = ["./", "index.html", "style.css", "app.js", "firebase-config.js", "manifest.webmanifest",
-  "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png"];
+  "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png"];
 self.addEventListener("install", e => {
   // guarda cada arquivo separadamente: se um falhar, os outros continuam
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => null)))).then(() => self.skipWaiting()));
@@ -25,7 +25,7 @@ self.addEventListener("fetch", e => {
     .catch(() => caches.match(e.request).then(r => r || caches.match("index.html"))));
 });
 
-// Tocar na notificação abre (ou traz para frente) o MB Controle
+// Tocar na notificação abre (ou traz para frente) o Monetra
 self.addEventListener("notificationclick", e => {
   e.notification.close();
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(cs => {
