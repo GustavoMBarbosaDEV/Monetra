@@ -10,10 +10,9 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.4";
+const VERSAO="5.0.5";
 const NOVIDADES=[
-  "O botão + da barra de baixo voltou a ficar bem visível.",
-  "Tema claro com contraste melhor: verdes, alertas e textos secundários mais fáceis de ler, botões do topo maiores para tocar."
+  "Ao escrever no lançamento rápido (ex.: 45 ifood pix), o formulário abaixo já se preenche sozinho: valor, categoria, forma de pagamento, data e descrição. Os campos preenchidos piscam rapidinho para você conferir."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1513,22 +1512,26 @@ function previaRapido(r){
   if(!r||!r.valor) return `<span class="muted">Comece pelo valor: <b>45 ifood</b>, <b>120 mercado ontem pix</b>, <b>600 tv 3x crédito</b></span>`;
   const forma=r.forma||ui.gForma||"pix", cat=r.cat||(ui.gCat&&catIndex(ui.gCat)>=0?ui.gCat:state.config.categorias[0]?.id);
   const quando=r.mes&&(r.mes!==mesSheet()||r.dia!==(mesSheet()===todayKey?today.getDate():1))?pad2(r.dia)+"/"+pad2(kM(r.mes)):(mesSheet()===todayKey?"hoje":"dia 01");
-  return `<b>${brl(r.valor)}</b>${r.n?` em ${r.n}x`:""} · <span style="--dot:${catColor(cat)}" class="rp-cat">${svgCat(catIc(cat),13)}${esc(catName(cat))}${r.cat?"":" (padrão)"}</span> · ${esc(formaNome(forma))}${r.cartao?" "+esc((state.config.cartoes.find(c=>c.id===r.cartao)||{}).nome||""):""} · ${quando}${r.desc?` · “${esc(r.desc)}”`:""}<small>Enter para lançar · confira e ajuste abaixo se quiser</small>`;
+  return `<b>${brl(r.valor)}</b>${r.n?` em ${r.n}x`:""} · <span style="--dot:${catColor(cat)}" class="rp-cat">${svgCat(catIc(cat),13)}${esc(catName(cat))}${r.cat?"":" (padrão)"}</span> · ${esc(formaNome(forma))}${r.cartao?" "+esc((state.config.cartoes.find(c=>c.id===r.cartao)||{}).nome||""):""} · ${quando}${r.desc?` · “${esc(r.desc)}”`:""}<small>Já preenchido no formulário abaixo · Enter para salvar</small>`;
 }
-function aplicaRapido(salvar){
+function aplicaRapido(salvar,silencioso){
   const inp=document.getElementById("s-rapido"); if(!inp) return false;
-  const r=interpretaRapido(inp.value); if(!r.valor){ erroSheet("Escreva o valor primeiro. Ex.: 45 ifood","s-rapido"); return false; }
-  const ev=el=>el&&el.dispatchEvent(new Event("change",{bubbles:true}));
-  const v=document.getElementById("s-valor"); if(v){ v.value=moneyInput(r.valor); v.dispatchEvent(new Event("input",{bubbles:true})); }
+  const r=interpretaRapido(inp.value); if(!r.valor){ if(!silencioso) erroSheet("Escreva o valor primeiro. Ex.: 45 ifood","s-rapido"); return false; }
+  const ev=el=>{ if(!el) return; el.dispatchEvent(new Event("change",{bubbles:true})); if(silencioso) marcaPreenchido(el); };
+  const v=document.getElementById("s-valor"); if(v){ v.value=moneyInput(r.valor); v.dispatchEvent(new Event("input",{bubbles:true})); if(silencioso) marcaPreenchido(v); }
   if(r.cat){ const c=document.getElementById("s-cat-"+r.cat); if(c){ c.checked=true; ev(c); } }
   if(r.sub){ const sb=document.getElementById("s-sub-"+r.sub); if(sb){ sb.checked=true; } }
   if(r.forma){ const f=document.getElementById("s-fm-"+r.forma); if(f){ f.checked=true; ev(f); } }
   if(r.cartao){ const c=document.getElementById("s-cartao"); if(c){ c.value=r.cartao; ev(c); } }
   if(r.mes){ const gm=document.getElementById("s-gmes"); if(gm&&[...gm.options].some(o=>o.value===r.mes)){ gm.value=r.mes; ev(gm); } const ds=document.getElementById("s-dia"); if(ds) ds.value=String(r.dia); }
   if(r.n){ const pc=document.getElementById("s-parc"); if(pc){ pc.checked=true; const bx=document.getElementById("s-parcbox"); if(bx) bx.hidden=false; const n=document.getElementById("s-n"); if(n) n.value=r.n; ev(pc); } }
-  const d=document.getElementById("s-desc"); if(d&&r.desc) d.value=r.desc;
+  const d=document.getElementById("s-desc"); if(d&&r.desc){ d.value=r.desc; if(silencioso) marcaPreenchido(d); }
   if(salvar){ salvarSheet(false); } return true;
 }
+/* destaca por um instante o campo que o lançamento rápido preencheu */
+function marcaPreenchido(el){ const alvo=el.matches('input[type=radio],input[type=checkbox]')?(document.querySelector(`label[for="${el.id}"]`)||el.parentElement):el;
+  if(!alvo) return; alvo.classList.remove("rp-ok"); void alvo.offsetWidth; alvo.classList.add("rp-ok"); setTimeout(()=>alvo.classList.remove("rp-ok"),900); }
+let _rapT=null;
 /* ---------- calendário do mês ---------- */
 function vencimentosDoMes(k){
   const m=state.months[k], out=[];
@@ -2838,7 +2841,7 @@ function bindSheet(r){
     if(b.dataset.sabrir){ openSheet(b.dataset.sabrir,s.id); return; }
   });
   r.addEventListener("keydown",e=>{ if(e.target.id==="s-rapido"&&e.key==="Enter"){ e.preventDefault(); if(!salvando) aplicaRapido(true); } });
-  r.addEventListener("input",e=>{ if(/^s-sim/.test(e.target.id)){ setTimeout(atualizaSim,0); return; } if(/^s-c/.test(e.target.id)&&ui.sheet&&ui.sheet.tipo==="calc"){ setTimeout(atualizaCalc,0); return; } if(e.target.id==="s-rapido"){ const pv=document.getElementById("s-rapprev"); if(pv) pv.innerHTML=previaRapido(e.target.value.trim()?interpretaRapido(e.target.value):null); return; } if(e.target.id==="s-busca") atualizaBusca(); if(["s-valor","s-n"].includes(e.target.id)) atualizaParc(); });
+  r.addEventListener("input",e=>{ if(/^s-sim/.test(e.target.id)){ setTimeout(atualizaSim,0); return; } if(/^s-c/.test(e.target.id)&&ui.sheet&&ui.sheet.tipo==="calc"){ setTimeout(atualizaCalc,0); return; } if(e.target.id==="s-rapido"){ const pv=document.getElementById("s-rapprev"); if(pv) pv.innerHTML=previaRapido(e.target.value.trim()?interpretaRapido(e.target.value):null); clearTimeout(_rapT); _rapT=setTimeout(()=>{ const inp=document.getElementById("s-rapido"); if(inp&&inp.value.trim()){ aplicaRapido(false,true); if(document.activeElement!==inp) inp.focus(); } },250); return; } if(e.target.id==="s-busca") atualizaBusca(); if(["s-valor","s-n"].includes(e.target.id)) atualizaParc(); });
   r.addEventListener("change",e=>{
     if(e.target.name==="s-tipo"){ const v=(document.getElementById("s-valor")||{}).value||""; ui.sheet={tipo:e.target.value,id:null,valorRasc:v,mes:ui.sheet.mes}; renderSheet(); const f=document.querySelector("#sheet [data-autofocus]"); if(f) f.focus(); return; }
     if(e.target.id==="s-parc"||e.target.name==="s-forma"||e.target.id==="s-dia"||e.target.id==="s-cartao") atualizaParc();

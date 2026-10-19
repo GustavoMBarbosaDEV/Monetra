@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.5 — 19/10/2026 **Lançamento rápido preenche o formulário**
+
+- Nova despesa: o campo rápido agora preenche o formulário enquanto você digita (com uma pequena espera), em vez de só mostrar uma prévia. Antes a prévia dizia "R$ 45,00 · Lazer" e o formulário continuava "0,00 · Mercado", e tocar em Salvar podia gravar o valor errado.
+- Os campos preenchidos ganham um destaque rápido (sem animação para quem prefere menos movimento).
+- O cursor continua no campo rápido; Enter salva como antes.
+
 ## 5.0.4 — 19/10/2026 **Contraste e botão +**
 
 - Botão + da barra inferior: o ícone herdava o cinza dos outros botões e ficava quase invisível; agora usa a cor de texto do botão.
