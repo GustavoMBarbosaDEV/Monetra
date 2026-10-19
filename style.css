@@ -788,8 +788,9 @@ button.item.gitem{grid-template-columns:auto minmax(0,1fr) auto;gap:12px}
    ===================================================================== */
 :root{
   --bg:#F2F4F2; --surface:#FFFFFF; --sunk:#EEF2EF; --line:#E5EBE7;
-  --fg:#0E1A13; --muted:#66756C; --accent:#0E9F6E; --accent-ink:#FFFFFF; --accent-soft:#E3F4EA;
-  --good:#0E9F6E; --bad:#E5484D; --bad-soft:#FDECEC; --warn:#C47F17; --warn-soft:#FDF3DF;
+  --fg:#0E1A13; --muted:#5A675F; --accent:#0A7A55; --accent-ink:#FFFFFF; --accent-soft:#E3F4EA;
+  --good:#0A7A55; --bad:#C62F35; --bad-soft:#FDECEC; --warn:#9A5B00; --warn-soft:#FDF3DF;
+  --accent-vivo:#12A672; /* só para preenchimentos (barras, anéis); texto usa --accent */
   --c0:#10B981; --c1:#8B5CF6; --c2:#F97316; --c3:#3B82F6; --c4:#EC4899; --c5:#65A30D; --c6:#EAB308; --c7:#06B6D4; --c8:#94A3B8; --c9:#C2763B; --c10:#6366F1; --c11:#22C55E;
   --display:"Inter", "Segoe UI", system-ui, sans-serif; --body:"Inter", "Segoe UI", system-ui, sans-serif;
   --r:22px; --sombra:0 1px 2px rgba(14,26,19,.04),0 10px 28px -14px rgba(14,26,19,.18); --shadow:var(--sombra);
@@ -993,3 +994,22 @@ button.item .pill{white-space:nowrap}
   td:first-child{white-space:normal}
   .seg label{padding:7px 6px}
 }
+
+
+/* ===== 5.0.4 — contraste (WCAG AA) e botão + ===== */
+/* botão + da barra: ícone na cor certa (antes herdava o cinza da barra) */
+.bottomnav .navfab .fab{color:var(--accent-ink)}
+.bottomnav .navfab .fab svg{stroke:currentColor;stroke-width:2.4}
+/* botões cheios no tema claro: degradê escuro o bastante para texto branco */
+.tema-claro .btn:not(.ghost):not(.danger):not(.mini),.tema-claro .bottomnav .navfab .fab{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 88%,#22C98A),var(--accent))}
+/* textos pequenos: mínimo ~11.5px */
+.chip small{opacity:1;font-size:11.5px}
+.hs-mini .lab{font-size:11.5px}
+/* alvos de toque (≥ 44px no cabeçalho, 40px nos meses) */
+@media (max-width:760px){
+  .top .iconbtn{width:44px;height:44px}
+  .months .arrow{width:40px;height:40px}
+  .months .chip{min-height:38px}
+}
+/* foco dos campos visível também no tema claro */
+.in:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent)}

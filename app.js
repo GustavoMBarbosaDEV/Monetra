@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.3";
+const VERSAO="5.0.4";
 const NOVIDADES=[
-  "Espaçamentos corrigidos no celular: títulos das caixas com mais respiro, nomes de metas e categorias aparecem inteiros e nada fica espremido pelos valores.",
-  "Tabela \"Mês a mês\" cabe na tela do celular e os movimentos da caixinha ficaram mais legíveis."
+  "O botão + da barra de baixo voltou a ficar bem visível.",
+  "Tema claro com contraste melhor: verdes, alertas e textos secundários mais fáceis de ler, botões do topo maiores para tocar."
 ];
 
 /* ---------- utilidades ---------- */

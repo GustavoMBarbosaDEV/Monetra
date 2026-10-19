@@ -12,6 +12,17 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.4 — 19/10/2026 **Contraste e botão +**
+
+- Botão + da barra inferior: o ícone herdava o cinza dos outros botões e ficava quase invisível; agora usa a cor de texto do botão.
+- Tema claro dentro do contraste mínimo (WCAG AA, 4,5:1):
+  - verde de texto e botões: #0E9F6E → #0A7A55;
+  - laranja de alerta: #C47F17 → #9A5B00; vermelho: #E5484D → #C62F35; cinza secundário: #66756C → #5A675F;
+  - degradê dos botões cheios escurecido para o texto branco continuar legível.
+- Textos pequenos (ano nos meses, Receitas/Despesas no topo) passaram para 11,5px.
+- Alvos de toque no celular: lupa, sino 44px; setas dos meses 40px; meses 38px de altura.
+- Anel de foco dos campos mais visível no tema claro.
+
 ## 5.0.3 — 19/10/2026 **Espaçamentos no celular**
 
 - Espaçamentos revisados no celular (telas de 360 px):
