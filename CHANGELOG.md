@@ -12,6 +12,16 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.7 — 19/10/2026 **Tom mais calmo**
+
+- Vermelho reservado para o que pede ação (conta atrasada, limite estourado):
+  - total de Despesas no topo em cor normal;
+  - calendário de calor em tom neutro (antes rosa/vermelho em todo dia com gasto); semana mais pesada com borda neutra;
+  - variação do saldo vs mês anterior ("▼ 49%") sem vermelho.
+- Faixa de avisos do Início: cada aviso numa linha própria, em vez de tudo numa frase.
+- Notificações: conta atrasada com ícone de alerta e conta a vencer com relógio (antes era um ✓).
+- Previsão do mês: "≈ R$ ..." não quebra mais de linha no meio.
+
 ## 5.0.6 — 19/10/2026 **Início mais enxuto**
 
 - Início (celular): a página caiu de ~5.400px para ~2.500px de altura.

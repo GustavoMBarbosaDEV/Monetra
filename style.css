@@ -1043,3 +1043,18 @@ button.item .pill{white-space:nowrap}
   .mais#sec-faturas .maisbody > .card:has(> .cardhead){margin-top:44px}
 }
 @media (prefers-reduced-motion:reduce){.maishead .mc{transition:none}}
+
+/* ===== 5.0.7 — tom calmo: vermelho só para atraso e limite estourado ===== */
+/* calendário: intensidade em tom neutro (gasto não é erro) */
+.cd{background:color-mix(in srgb,var(--fg) calc(var(--h,0) * 16%),var(--surface))}
+.cd.pesada{border-color:color-mix(in srgb,var(--fg) 30%,var(--line))}
+.calleg .sq{background:linear-gradient(90deg,var(--surface),color-mix(in srgb,var(--fg) 16%,var(--surface)))}
+/* variação do saldo no topo: informação, não alarme */
+.hs-down{color:inherit;font-weight:700}
+.tema-claro .hs-down{color:#fff}
+/* faixa de avisos: um aviso por linha */
+.faixa .fx-t{display:flex;flex-direction:column;gap:2px}
+.faixa .fx-l{display:block}
+.nowrap{white-space:nowrap}
+/* conta atrasada: ícone de alerta em vez de ✓ */
+.aviso.pagar.atraso .ic,.aviso.pagar.atraso > span:first-child{color:var(--bad)}

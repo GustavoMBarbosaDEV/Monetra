@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.6";
+const VERSAO="5.0.7";
 const NOVIDADES=[
-  "Início mais enxuto no celular: saldo, atalhos, avisos, orçamento e últimos lançamentos ficam em cima; calendário, para onde foi, faturas, contas fixas, receitas, caixinha e forma de pagamento ficam em \"Mais do mês\", é só tocar para abrir.",
-  "Ajustes organizados: cada item abre ao tocar, e o app lembra o que você deixou aberto. No computador continua tudo à mostra, em duas colunas."
+  "Cores mais calmas: o vermelho agora aparece só para conta atrasada e limite estourado. O calendário mostra a intensidade dos gastos em tom neutro e as despesas do topo não ficam mais em vermelho.",
+  "Na faixa de avisos, cada aviso aparece numa linha, e conta atrasada usa um ícone de alerta."
 ];
 
 /* ---------- utilidades ---------- */
@@ -74,6 +74,7 @@ const ICAT={
   dinheiro:'<rect x="3.5" y="7" width="17" height="10" rx="2"/><circle cx="12" cy="12" r="2.3"/>',
   pontos:'<circle cx="6.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="17.5" cy="12" r="1.3"/>'
 };
+const ICON_ALERTA='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 2.8 19.5a1 1 0 0 0 .9 1.5h16.6a1 1 0 0 0 .9-1.5z"/><path d="M12 10v4.5M12 17.6v.1"/></svg>', ICON_RELOGIO='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const ICAT_NOMES={carrinho:"Mercado",casa:"Casa",raio:"Contas",carro:"Transporte",saude:"Saúde",livro:"Educação",taca:"Lazer",sacola:"Compras",pata:"Pet",presente:"Presente",aviao:"Viagem",cafe:"Café",celular:"Celular",dinheiro:"Dinheiro",pontos:"Outros"};
 function icAuto(nome){ const n=String(nome||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   return /mercad|aliment|super|feira/.test(n)?"carrinho":/morad|alug|casa|condom/.test(n)?"casa":/conta|luz|agua|internet|energia/.test(n)?"raio":/transp|combust|carro|uber|gasol/.test(n)?"carro":/saude|farm|medic/.test(n)?"saude":/educa|escola|curso|faculd/.test(n)?"livro":/lazer|restaur|bar|cinema/.test(n)?"taca":/compra|vestu|roupa|loja/.test(n)?"sacola":/pet|cachorro|gato/.test(n)?"pata":/present/.test(n)?"presente":/viag/.test(n)?"aviao":/cafe|padar|lanche/.test(n)?"cafe":/celular|telefone/.test(n)?"celular":/invest|poup/.test(n)?"dinheiro":"pontos"; }
@@ -814,7 +815,7 @@ function cardLembretes(){
   const rit=al.filter(a=>a.nivel==="ritmo"), lim=al.filter(a=>a.nivel!=="ritmo");
   if(lim.length){ partes.push(passou.length?`${passou.length} categoria${passou.length===1?"":"s"} passou do limite`:`${lim.length} categoria${lim.length===1?"":"s"} perto do limite`); if(cls==="info") cls="hoje"; }
   if(rit.length) partes.push(rit.length===1?`${esc(rit[0].nome)} estoura o limite no dia ${rit[0].diaEstoura}`:`${rit.length} categorias em ritmo de estourar o limite`);
-  return `<button type="button" class="faixa ${cls}" data-avisos="1"><span class="fx-ic">${ICON.sino}</span><span class="fx-t">${partes.join("<span class=\"fx-sep\"> · </span>")}</span><span class="fx-ver">Ver</span></button>`;
+  return `<button type="button" class="faixa ${cls}" data-avisos="1"><span class="fx-ic">${ICON.sino}</span><span class="fx-t">${partes.map(p=>`<span class="fx-l">${p}</span>`).join("")}</span><span class="fx-ver">Ver</span></button>`;
 }
 /* ---------- bloqueio com PIN (vale só para este aparelho) ---------- */
 const PINKEY="mb.pin", PINLEN=4;
@@ -1011,7 +1012,7 @@ function listaAvisos(){
   const grupos={pedido:[],conta:[],orc:[],dica:[]};
   itens.forEach(it=>{
     if(it.tipo==="pedido"){ const nome=((eu.grupos||{})[it.g]||{}).nome||""; grupos.pedido.push(linha("pedido",ICON.grupo,esc(primeiroNome(it.p.nome))+" quer entrar em “"+esc(nome)+"”",esc(it.p.email||""),`<button class="btn mini" type="button" data-avgrupo="${esc(it.g)}">Ver pedido</button>`)); }
-    if(it.tipo==="conta"){ const x=it.x, e=estadoPend(x); grupos.conta.push(linha("pagar "+e.cls,ICON.check,esc(x.nome)+" · "+brl(x.valor),esc(e.txt)+(x.dd>=0?" · "+fmtData(x.data):""),`<button class="btn mini" type="button" data-avpagar="${x.tipo}|${esc(x.id)}|${x.k}">Paguei</button>`)); }
+    if(it.tipo==="conta"){ const x=it.x, e=estadoPend(x); grupos.conta.push(linha("pagar "+e.cls,x.dd<0?ICON_ALERTA:ICON_RELOGIO,esc(x.nome)+" · "+brl(x.valor),esc(e.txt)+(x.dd>=0?" · "+fmtData(x.data):""),`<button class="btn mini" type="button" data-avpagar="${x.tipo}|${esc(x.id)}|${x.k}">Paguei</button>`)); }
     if(it.tipo==="divida"){ const x=it.x, dd=diasAte(x.venc), cls=dd<0?"atraso":dd===0?"hoje":"amanha";
       grupos.conta.push(linha("pagar "+cls,ICON.grupo,x.tipo==="receber"?esc(x.pessoa)+" te deve "+brl(restaDiv(x)):"Você deve "+brl(restaDiv(x))+" a "+esc(x.pessoa),dd<0?"combinado para "+dataCurta(x.venc)+" (passou)":dd===0?"combinado para hoje":"combinado para amanhã",`<button class="btn ghost mini" type="button" data-avdiv="${esc(x.id)}">Ver</button>`)); }
     if(it.tipo==="orc"){ const a=it.a; grupos.orc.push(linha("orc "+(a.nivel==="passou"?"atraso":"amanha"),`<i class="bola" style="background:${catColor(a.id)}"></i>`,esc(textoAlerta(a)),"limite de "+brl(a.o)+" em "+esc(abrMes(todayKey)),`<button class="btn ghost mini" type="button" data-avmes="1">Ver mês</button>`)); }
@@ -1636,14 +1637,14 @@ function viewMes(){
   const usoPct=c.receitas>0?Math.round((c.despesas+c.guardado-c.retirado)/c.receitas*100):null;
   const mesN=NOMES[kM(k)-1].toLowerCase(), varS=prev&&Math.abs(prev.saldo)>0.5?(c.saldo-prev.saldo)/Math.abs(prev.saldo):null;
   const pv=c.receitas>0?previsaoMes(k,c):null, alTop=isCur?alertasOrcamento(k).find(a=>a.diaEstoura||a.nivel==="passou"):null;
-  const notaTxt=pv?(pv.ritmo>0?`No ritmo atual, ${mesN} termina com <b>≈ ${brl(pv.saldo)}</b>.`:`Sem gastos do dia a dia até agora: ${mesN} termina com <b>${brl(pv.saldo)}</b> se continuar assim.`):c.porDia!==null&&c.receitas>0?`Você pode gastar <b>${brl(c.porDia)}</b> por dia ${isCur?"até o fim do mês":"neste mês"}.`:"";
+  const notaTxt=pv?(pv.ritmo>0?`No ritmo atual, ${mesN} termina com <b class="nowrap">≈&nbsp;${brl(pv.saldo)}</b>.`:`Sem gastos do dia a dia até agora: ${mesN} termina com <b>${brl(pv.saldo)}</b> se continuar assim.`):c.porDia!==null&&c.receitas>0?`Você pode gastar <b>${brl(c.porDia)}</b> por dia ${isCur?"até o fim do mês":"neste mês"}.`:"";
   const notaAl=alTop?(alTop.nivel==="passou"?` ${esc(alTop.nome)} passou do limite.`:` ${esc(alTop.nome)} estoura o limite no dia ${alTop.diaEstoura}.`):"";
   const tiles=`<div class="heroSaldo ${c.saldo<0?"neg":""}">
     <span class="lab">Saldo de ${esc(mesN)}</span>
     <b class="hs-val">${brl(c.saldo)}</b>
     <div class="hs-sub">${varS!==null?`<span class="${varS>=0?"hs-up":"hs-down"}">${varS>=0?"▲":"▼"} ${Math.round(Math.abs(varS)*100)}%</span> vs ${esc(NOMES[kM(prevK)-1].toLowerCase())} · `:""}acumulado <b>${brl(acum)}</b></div>
     ${graficoSaldo(serieSaldo(k))}
-    <div class="hs-duo"><div class="hs-mini"><span class="lab">Receitas</span><b>${brl(c.receitas)}</b></div><div class="hs-mini"><span class="lab">Despesas</span><b class="neg">${brl(c.despesas)}</b></div></div>
+    <div class="hs-duo"><div class="hs-mini"><span class="lab">Receitas</span><b>${brl(c.receitas)}</b></div><div class="hs-mini"><span class="lab">Despesas</span><b>${brl(c.despesas)}</b></div></div>
   </div>
   <div class="qa">
     <button type="button" class="q" data-novo="gasto"><span class="qi">${icq("seta-baixo")}</span>Despesa</button>
