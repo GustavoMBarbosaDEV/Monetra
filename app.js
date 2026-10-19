@@ -10,11 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.9";
+const VERSAO="5.0.10";
 const NOVIDADES=[
-  "Tela de abertura nova: a logo do Monetra aparece grande, em tela cheia, enquanto o app carrega.",
-  "O app agora fica em gustavombarbosadev.github.io/Monetra. O endereço antigo continua levando para cá.",
-  "Arquivos baixados (backup, planilha e lembretes) agora se chamam monetra-…"
+  "As caixas do Início voltaram a ficar sempre abertas: fatura do cartão, contas fixas, receitas e caixinha aparecem direto, para marcar como paga e editar sem precisar abrir nada.",
+  "A barra com 4 meses e o calendário para escolher o mês continuam como estavam."
 ];
 
 /* ---------- utilidades ---------- */
@@ -955,11 +954,11 @@ function passosTutorial(){
   const L=(...xs)=>`<ul>${xs.map(x=>`<li>${x}</li>`).join("")}</ul>`;
   return [
     {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle financeiro, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
-    {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, abra <b>Mais do mês → Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> em Perfil → Ajustes → Contas.")},
+    {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, role até o card <b>Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> em Perfil → Ajustes → Contas.")},
     {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.")},
-    {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões (toque no item para abrir).`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
+    {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
-    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("Para ir a outro mês, toque no <b>calendário</b> ao lado dos meses: ali aparecem todos, passados e futuros.","Logo abaixo, em <b>Mais do mês</b>, abra o <b>calendário</b>, <b>para onde foi</b>, faturas, contas fixas e caixinha (no computador, aparecem direto).","<b>Relatórios</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
+    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b>, <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no círculo e toque na conta para editar).","<b>Relatórios</b>: meses lado a lado, assinaturas, etiquetas e a retrospectiva do ano.")},
     {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
     {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
@@ -1639,9 +1638,12 @@ function graficoSaldo(sr){
 }
 /* tela de abertura (logo em tela cheia) some com um fade quando o app fica pronto */
 function tiraBoot(){ const b=document.getElementById("boot"); if(!b||b.dataset.saindo) return; b.dataset.saindo="1"; const espera=Math.max(0,700-performance.now()); setTimeout(()=>{ b.classList.add("sai"); setTimeout(()=>b.remove(),400); },espera); }
+const SECOES_RECOLHIVEIS=false;
 /* seção recolhível do Início (celular) */
 function secaoMes(id,titulo,resumo,icone,html){
   if(!html||!String(html).trim()) return "";
+  /* 5.0.10: as caixas voltaram a ficar sempre abertas (contas fixas e faturas visíveis para marcar e editar) */
+  if(!SECOES_RECOLHIVEIS) return html;
   const ab=!!(ui.abre&&ui.abre[id]);
   return `<section class="mais ${ab?"aberta":""}" id="sec-${id}"><button type="button" class="maishead" data-abre="${id}" aria-expanded="${ab}" aria-controls="secb-${id}"><span class="mi" aria-hidden="true">${icone||""}</span><span class="mt"><b>${esc(titulo)}</b>${resumo?`<small>${resumo}</small>`:""}</span><span class="mc" aria-hidden="true">${icq("chev",18)}</span></button><div class="maisbody" id="secb-${id}">${html}</div></section>`;
 }
@@ -1797,7 +1799,7 @@ function viewMes(){
     +secaoMes("receitas","Receitas",brl(c.receitas),icq("seta-cima",18),receitas)
     +secaoMes("caixa","Caixinha",brl(cx),icq("cofre",18),caixa)
     +secaoMes("pag","Forma de pagamento","como você pagou",svgCat("dinheiro",18),pag);
-  return aviso+(k===todayKey?cardViagemMes():"")+tiles.replace('<!--LEMB-->',cardLembretes())+`<div class="grid"><div class="col">${lista}<h2 class="maistit">Mais de ${esc(mesN)}</h2>${secs1}</div><div class="col">${secs2}</div></div>`;
+  return aviso+(k===todayKey?cardViagemMes():"")+tiles.replace('<!--LEMB-->',cardLembretes())+`<div class="grid"><div class="col">${lista}${SECOES_RECOLHIVEIS?`<h2 class="maistit">Mais de ${esc(mesN)}</h2>`:""}${secs1}</div><div class="col">${secs2}</div></div>`;
 }
 
 /* ---------- aba Visão geral (só meses que já passaram + o atual) ---------- */

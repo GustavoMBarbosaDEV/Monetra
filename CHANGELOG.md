@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.10 — 19/10/2026 **Caixas do Início abertas de novo**
+
+- Início e Ajustes: as caixas voltaram a ficar sempre abertas, como antes da 5.0.6. Fatura do cartão, contas fixas, receitas, caixinha, calendário e para onde foi aparecem direto, com o círculo de "paga" e o toque para editar à mão.
+- Mantidos: barra de meses com 4 meses + calendário de mês e ano (5.0.8) e a correção da faixa verde do topo.
+- Tutorial atualizado: explica a barra de meses e onde marcar contas como pagas.
+
 ## 5.0.9 — 19/10/2026 **Novo endereço e tela de abertura**
 
 - Tela de abertura: logo do Monetra grande, sem o quadrado, em fundo escuro de tela cheia, que some com um fade quando o app fica pronto (fica pelo menos ~0,7 s para não piscar; some sozinha em 6 s se algo travar).
