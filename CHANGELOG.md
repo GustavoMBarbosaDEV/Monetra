@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.8.0 — 18/10/2026 **Simulador de quitação**
+
+- Nova seção Ferramentas em Ajustes, com o Simulador de quitação (também pelo link no card Dívidas).
+- Informe quanto deve, os juros ao mês e quanto paga por mês: o app mostra em quantos meses quita, em que mês, quanto paga de juros e o total. Se a parcela não cobre os juros, avisa que a dívida nunca acaba.
+- Campo "E se pagar a mais?": compara os dois cenários, mostra quantos meses antes quita e quanto economiza de juros, com gráfico do saldo.
+- Para financiamento sem saber o saldo: informe as parcelas que faltam e o app estima o saldo. Taxas de exemplo para preencher rápido e atalho para usar uma dívida anotada.
+
 ## 4.7.0 — 18/10/2026 **Resumo da semana**
 
 - De domingo a terça, o sininho mostra o resumo da semana (segunda a domingo): quanto gastou, comparação com a semana anterior e a categoria que mais subiu. Com as notificações ligadas, chega um aviso por semana.

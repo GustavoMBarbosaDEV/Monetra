@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="4.7.0";
+const VERSAO="4.8.0";
 const NOVIDADES=[
-  "Resumo da semana: de domingo a terça o sininho mostra quanto você gastou na semana, a comparação com a anterior e a categoria que mais subiu.",
-  "Toque em \"Ver\" (ou em \"Resumo da semana\" no calendário) para ver o gasto por dia, onde mais gastou e navegar pelas semanas anteriores."
+  "Simulador de quitação (Ajustes → Ferramentas): informe quanto deve, os juros e quanto paga por mês e veja em quanto tempo quita.",
+  "Teste um valor a mais por mês: o app mostra quantos meses antes você quita e quanto economiza de juros, com gráfico. Serve para cartão, empréstimo e financiamento."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1351,6 +1351,40 @@ function avisoSemana(){
   const hj=hojeISO(), [y,m,d]=hj.split("-").map(Number), wd=new Date(y,m-1,d).getDay(); if(!(wd===0||wd===1||wd===2)) return null;
   const r=resumoSemana(ultimoDomingo()); if(!(r.tot>0||r.totA>0)) return null; return r;
 }
+/* ---------- simulador de quitação de dívidas / financiamento ---------- */
+function simulaQuitacao(saldo,taxa,pag){
+  const r=taxa/100; let b=saldo, juros=0, m=0; const serie=[saldo];
+  if(!(saldo>0)||!(pag>0)) return null;
+  if(r>0&&pag<=Math.round(saldo*r*100)/100+0.004) return {nunca:true,jurosMes:Math.round(saldo*r*100)/100};
+  while(b>0.5&&m<600){ const j=Math.round(b*r*100)/100; juros+=j; b=Math.round((b+j-pag)*100)/100; m++; serie.push(Math.max(0,b)); }
+  const ultimo=Math.round((pag+Math.min(0,b))*100)/100;
+  return {meses:m,juros:Math.round(juros*100)/100,total:Math.round((saldo+juros)*100)/100,ultimo,serie,longo:m>=600};
+}
+const saldoPorParcelas=(taxa,n,pmt)=>{ const r=taxa/100; return r>0?pmt*(1-Math.pow(1+r,-n))/r:pmt*n; };
+const nMeses=m=>m+(m===1?" mês":" meses");
+const fmtMeses=m=>m<12?nMeses(m):Math.floor(m/12)+" ano"+(m>=24?"s":"")+(m%12?" e "+nMeses(m%12):"");
+const mesDaqui=m=>nomeMes(shiftKey(todayKey,m-1)).toLowerCase();
+function graficoSim(a,b){
+  const W=320,H=120, n=Math.max(a.serie.length,b?b.serie.length:0), mx=Math.max(...a.serie,1);
+  const pts=sr=>sr.map((v,i)=>`${(i/(n-1||1)*W).toFixed(1)},${(H-v/mx*H).toFixed(1)}`).join(" ");
+  return `<svg class="simgraf" viewBox="0 -4 ${W} ${H+8}" preserveAspectRatio="none" role="img" aria-label="Saldo devedor ao longo dos meses"><polyline class="ga" points="${pts(a.serie)}"/>${b?`<polyline class="gb" points="${pts(b.serie)}"/>`:""}</svg>
+    <div class="simleg"><span><i class="la"></i>pagando só o atual</span>${b?`<span><i class="lb"></i>com o valor extra</span>`:""}</div>`;
+}
+function resultadoSim(){
+  const v=id=>parseMoney((document.getElementById(id)||{}).value||""), num=id=>{ const t=String((document.getElementById(id)||{}).value||"").replace(",","."); return Number(t)||0; };
+  let saldo=v("s-simsaldo"); const taxa=num("s-simtaxa"), pag=v("s-simpag"), extra=v("s-simextra")||0, nP=Math.round(num("s-simn"));
+  if(!(saldo>0)&&nP>0&&pag>0){ saldo=Math.round(saldoPorParcelas(taxa,nP,pag)*100)/100; const sl=document.getElementById("s-simsaldoinfo"); if(sl) sl.textContent="Saldo estimado pelas parcelas: "+brl(saldo); }
+  else { const sl=document.getElementById("s-simsaldoinfo"); if(sl) sl.textContent=""; }
+  if(!(saldo>0)||!(pag>0)) return `<p class="hint">Preencha quanto deve, os juros ao mês e quanto paga por mês para ver em quanto tempo quita.</p>`;
+  const a=simulaQuitacao(saldo,taxa,pag), b=extra>0?simulaQuitacao(saldo,taxa,pag+extra):null;
+  if(a.nunca&&!(b&&!b.nunca)) return `<div class="simalerta">Com ${brl(pag)} por mês a dívida <b>nunca acaba</b>: só os juros do mês dão ${brl(a.jurosMes)}. Pague mais que isso para o saldo começar a cair.</div>`;
+  const bloco=(t,x,cls)=>x.nunca?`<div class="simcol ${cls}"><span class="lab">${t}</span><b>Nunca quita</b><small>juros de ${brl(x.jurosMes)}/mês comem a parcela</small></div>`:`<div class="simcol ${cls}"><span class="lab">${t}</span><b>${fmtMeses(x.meses)}</b><small>quita em ${esc(mesDaqui(x.meses))}${x.longo?" (ou mais)":""}</small><small>juros: <b>${brl(x.juros)}</b> · total: ${brl(x.total)}</small></div>`;
+  let eco="";
+  if(b&&!b.nunca){ eco=a.nunca?`<div class="simeco">Com ${brl(extra)} a mais por mês, a dívida passa a ter fim: quita em <b>${fmtMeses(b.meses)}</b>.</div>`:`<div class="simeco">Pagando ${brl(extra)} a mais por mês você quita <b>${fmtMeses(a.meses-b.meses)} antes</b> e economiza <b>${brl(Math.max(0,a.juros-b.juros))}</b> de juros.</div>`; }
+  return `<div class="simres">${bloco("Pagando "+brl(pag)+"/mês",a,"a")}${b?bloco("Com "+brl(pag+extra)+"/mês",b,"b"):""}</div>${eco}${a.nunca?"":graficoSim(a,b&&!b.nunca?b:null)}
+    <p class="hint">Conta simples com juros compostos sobre o saldo, mês a mês (sem IOF, multas ou seguros). Use a taxa que aparece na fatura ou no contrato.</p>`;
+}
+function atualizaSim(){ const el=document.getElementById("s-simres"); if(el) el.innerHTML=resultadoSim(); }
 /* ---------- lançamento rápido por texto ("45 ifood pix", "120 mercado ontem", "300 tv 3x crédito") ---------- */
 const semAcento=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 const RAP_KW={carrinho:/^(mercado|supermercado|feira|padaria|acougue|hortifruti|atacad|assai|carrefour|sacolao)/,cafe:/^(cafe|lanche|salgado|cafeteria)/,taca:/^(ifood|restaurante|pizza|hamburguer|burger|bar|cerveja|cinema|show|rappi|lanchonete|almoco|jantar|delivery|netflix|spotify|streaming)/,
@@ -1799,7 +1833,8 @@ function cardDividas(){
     :`<p class="hint">Anote quem te deve e para quem você deve: empréstimos, divisão de conta, vaquinha. Registre os pagamentos aos poucos e o app mostra quanto falta.</p>`}
   ${Object.values(pessoas).sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo)).map(pp=>`<div class="subhead pessoa"><span>${esc(pp.nome)}</span><span class="${pp.saldo>=0?"pos":"neg"}">${pp.saldo>=0?"te deve "+brl(pp.saldo):"você deve "+brl(-pp.saldo)}</span></div>${pp.itens.map(linha).join("")}`).join("")}
   ${q.length?`<button class="link" type="button" data-verquit="1">${ui.verQuit?"Esconder":"Ver"} quitadas (${q.length})</button>${ui.verQuit?`<div class="quitadas">${q.map(x=>`<button type="button" class="item" data-edit="divida" data-id="${esc(x.id)}" style="--dot:var(--line)"><span class="pill">quitada</span><span class="desc"><b>${esc(x.pessoa)}${x.desc?" · "+esc(x.desc):""}</b><small>${x.tipo==="receber"?"te devia":"você devia"} ${brl(x.valor)}</small></span><span class="v muted">${brl(x.valor)}</span></button>`).join("")}</div>`:""}`:""}
-  <div class="row2"><button class="btn ghost" type="button" data-novo="divida" data-dtipo="receber">+ Alguém me deve</button><button class="btn ghost" type="button" data-novo="divida" data-dtipo="pagar">+ Eu devo</button></div></div>`;
+  <div class="row2"><button class="btn ghost" type="button" data-novo="divida" data-dtipo="receber">+ Alguém me deve</button><button class="btn ghost" type="button" data-novo="divida" data-dtipo="pagar">+ Eu devo</button></div>
+  <button class="link" type="button" data-novo="simulador">Simular quitação de uma dívida com juros</button></div>`;
 }
 const catOutros=()=>(state.config.categorias.find(c=>/outro/.test(norm(c.nome)))||state.config.categorias[state.config.categorias.length-1]||{}).id;
 function registrarPagDiv(tudo){
@@ -1898,6 +1933,8 @@ function viewAjustes(){
     ${quitadas?`<p class="hint">${quitadas} compra(s) já quitada(s).</p>`:""}</div>
     ${cardViagens()}
     ${cardDividas()}
+    <div class="card" id="ferramentas"><h2>Ferramentas</h2>
+    <button type="button" class="ferr" data-novo="simulador"><span class="fi" aria-hidden="true">📉</span><span><b>Simulador de quitação</b><small>Em quanto tempo quita uma dívida ou financiamento e quanto economiza pagando a mais.</small></span></button></div>
     <div class="card"><h2>Importar extrato do banco</h2>
     <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX ou CSV no app do seu banco e traga tudo de uma vez, com a categoria já sugerida.</p>
     <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>
@@ -2177,8 +2214,8 @@ function renderSheet(){
   if(!s){ r.innerHTML=""; document.body.classList.remove("sheet-open"); return; }
   document.body.classList.add("sheet-open");
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
-  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="semana"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",semana:"Resumo da semana",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="semana"&&s.tipo!=="simulador"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
+  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",simulador:"Simulador de quitação",semana:"Resumo da semana",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -2374,6 +2411,17 @@ function renderSheet(){
     sub=""; botoes=`<button class="btn ${s.pinModo==="desligar"?"danger":""}" type="submit">${s.pinModo==="desligar"?"Desligar PIN":s.pinModo==="trocar"?"Trocar PIN":"Criar PIN"}</button>`;
   }else if(s.tipo==="avisos"){
     corpo=`<div class="avisos">${listaAvisos()}</div>`; sub=""; botoes="";
+  }else if(s.tipo==="simulador"){
+    const devo=(state.config.dividas||[]).filter(x=>x.tipo==="pagar"&&!quitada(x));
+    corpo=`<p class="hint">Descubra em quanto tempo quita uma dívida (cartão, cheque especial, empréstimo ou financiamento) e quanto economiza pagando um pouco a mais.</p>
+      ${devo.length?`<div class="f"><span>Usar uma dívida anotada</span><div class="cats">${devo.map(x=>`<button type="button" class="tag" data-simdiv="${esc(x.id)}">${esc(x.pessoa)} · ${brl(restaDiv(x))}</button>`).join("")}</div></div>`:""}
+      <label class="f money">Quanto deve hoje<input class="in num" id="s-simsaldo" inputmode="numeric" placeholder="0,00" value="${s.simSaldo?moneyInput(s.simSaldo):""}"></label>
+      <p class="hint" id="s-simsaldoinfo"></p>
+      <div class="row"><label class="f">Juros ao mês (%)<input class="in num" id="s-simtaxa" inputmode="decimal" placeholder="ex.: 2,5" maxlength="6"></label><label class="f">Ou: faltam quantas parcelas?<input class="in num" id="s-simn" type="number" min="1" max="600" inputmode="numeric" placeholder="opcional"></label></div>
+      <div class="f"><span>Taxas de exemplo (confira a sua)</span><div class="cats">${[["Rotativo do cartão","14"],["Cheque especial","8"],["Empréstimo pessoal","4"],["Consignado","1,8"],["Financiamento","1,2"]].map(([n,t])=>`<button type="button" class="tag" data-simtaxa="${t}">${n} ~${t}%</button>`).join("")}</div></div>
+      <div class="row"><label class="f money">Paga por mês hoje<input class="in num" id="s-simpag" inputmode="numeric" placeholder="0,00"></label><label class="f money">E se pagar a mais?<input class="in num" id="s-simextra" inputmode="numeric" placeholder="0,00"></label></div>
+      <div id="s-simres">${resultadoSim()}</div>`;
+    sub=""; botoes="";
   }else if(s.tipo==="semana"){
     corpo=`<div class="semana">${corpoSemana(s.fim||ultimoDomingo())}</div>`; sub=""; botoes="";
   }else if(s.tipo==="dia"){
@@ -2604,7 +2652,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -2620,6 +2668,8 @@ function bindSheet(r){
     if(b.dataset.desmodelo){ ui.sheet=Object.assign({},ui.sheet,{mod:b.dataset.desmodelo}); renderSheet(); return; }
     if(b.dataset.caledit){ openSheet("gasto",b.dataset.caledit); return; }
     if(b.dataset.callancar){ openSheet("gasto",null,{dia:Number(b.dataset.callancar)}); return; }
+    if(b.dataset.simtaxa){ const t=document.getElementById("s-simtaxa"); if(t){ t.value=b.dataset.simtaxa; atualizaSim(); } return; }
+    if(b.dataset.simdiv){ const x=(state.config.dividas||[]).find(d=>d.id===b.dataset.simdiv), el=document.getElementById("s-simsaldo"); if(x&&el){ el.value=moneyInput(restaDiv(x)); atualizaSim(); } return; }
     if(b.dataset.avsemana){ openSheet("semana",null,{fim:b.dataset.avsemana}); return; }
     if(b.dataset.semnav){ const nf=somaDias(ui.sheet.fim||ultimoDomingo(),Number(b.dataset.semnav)); if(nf<=ultimoDomingo()){ ui.sheet.fim=nf; renderSheet(); } return; }
     if(b.dataset.avretro){ openSheet("retro",null,{ano:Number(b.dataset.avretro),slide:0}); return; }
@@ -2674,7 +2724,7 @@ function bindSheet(r){
     if(b.dataset.sabrir){ openSheet(b.dataset.sabrir,s.id); return; }
   });
   r.addEventListener("keydown",e=>{ if(e.target.id==="s-rapido"&&e.key==="Enter"){ e.preventDefault(); if(!salvando) aplicaRapido(true); } });
-  r.addEventListener("input",e=>{ if(e.target.id==="s-rapido"){ const pv=document.getElementById("s-rapprev"); if(pv) pv.innerHTML=previaRapido(e.target.value.trim()?interpretaRapido(e.target.value):null); return; } if(e.target.id==="s-busca") atualizaBusca(); if(["s-valor","s-n"].includes(e.target.id)) atualizaParc(); });
+  r.addEventListener("input",e=>{ if(/^s-sim/.test(e.target.id)){ setTimeout(atualizaSim,0); return; } if(e.target.id==="s-rapido"){ const pv=document.getElementById("s-rapprev"); if(pv) pv.innerHTML=previaRapido(e.target.value.trim()?interpretaRapido(e.target.value):null); return; } if(e.target.id==="s-busca") atualizaBusca(); if(["s-valor","s-n"].includes(e.target.id)) atualizaParc(); });
   r.addEventListener("change",e=>{
     if(e.target.name==="s-tipo"){ const v=(document.getElementById("s-valor")||{}).value||""; ui.sheet={tipo:e.target.value,id:null,valorRasc:v,mes:ui.sheet.mes}; renderSheet(); const f=document.querySelector("#sheet [data-autofocus]"); if(f) f.focus(); return; }
     if(e.target.id==="s-parc"||e.target.name==="s-forma"||e.target.id==="s-dia"||e.target.id==="s-cartao") atualizaParc();
