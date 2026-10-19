@@ -663,7 +663,8 @@ button.item.gitem{grid-template-columns:auto minmax(0,1fr) auto;gap:12px}
 .sobrabox .switch{margin-bottom:2px}
 .sobrabox .hint b{color:var(--fg);font-weight:600}
 /* 4.3 · calendário do mês */
-.cal .cardhead .num b{color:var(--fg)}
+.cal .cardhead .num b,.calsub b{color:var(--fg)}
+.calsub{font-size:13px;color:var(--muted);margin:-4px 0 4px}
 .calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:6px}
 .calgrid .cw{font-size:11px;font-weight:600;color:var(--muted);text-align:center;padding-bottom:2px}
 .cd{position:relative;min-height:54px;border-radius:10px;border:1px solid var(--line);font:inherit;color:var(--fg);cursor:pointer;padding:4px 3px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;
@@ -728,3 +729,26 @@ button.item.gitem{grid-template-columns:auto minmax(0,1fr) auto;gap:12px}
 /* 4.6 · lembrete de backup */
 .bkbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .bkinfo{margin-top:6px}
+/* 4.7 · resumo da semana */
+.semnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.semnav b{font-size:15px}
+.semnav .iconbtn{font-size:20px;line-height:1}
+.semnav .iconbtn[disabled]{opacity:.35;cursor:default}
+.semtot{background:var(--accent-soft);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.semtot .lab{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.semtot b{font-family:var(--display);font-size:30px;font-variant-numeric:tabular-nums}
+.semtot small{font-size:12.5px;color:var(--muted)} .semtot small.neg{color:var(--bad)} .semtot small.pos{color:var(--good)}
+.semdias{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;height:130px;margin:14px 0 6px;align-items:end}
+.sd{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px}
+.sd i{display:block;width:70%;min-height:2px;border-radius:6px 6px 2px 2px;background:var(--accent)}
+.sd .sv{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sd .sl{font-size:11px;font-weight:600;color:var(--muted)}
+.sd.hoje .sl{color:var(--accent)}
+.semdest{display:flex;gap:10px;align-items:center;font-size:13px;padding:10px 12px;border-radius:12px;background:var(--warn-soft);margin:8px 0}
+.semdest .ico{width:28px;height:28px;border-radius:9px}
+.semana h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 6px}
+.semcat{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.semcat .ico{width:28px;height:28px;border-radius:9px}
+.semcat .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.semcat .v{font-weight:600;font-variant-numeric:tabular-nums}
+.semcat small{font-size:11.5px;color:var(--muted);min-width:64px;text-align:right}

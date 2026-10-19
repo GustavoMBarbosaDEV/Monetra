@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.7.0 — 18/10/2026 **Resumo da semana**
+
+- De domingo a terça, o sininho mostra o resumo da semana (segunda a domingo): quanto gastou, comparação com a semana anterior e a categoria que mais subiu. Com as notificações ligadas, chega um aviso por semana.
+- Tela "Resumo da semana" (pelo sininho ou pelo botão no card Calendário): gasto por dia em gráfico, onde mais gastou com a diferença para a semana anterior, maior gasto e setas para ver semanas anteriores.
+
 ## 4.6.0 — 18/10/2026 **Lembrete de backup**
 
 - Uma vez por mês (a partir de 10 lançamentos) o sininho sugere baixar o backup, com os botões "Baixar" e "Depois" (lembra de novo em 7 dias).

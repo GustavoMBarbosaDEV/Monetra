@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="4.6.0";
+const VERSAO="4.7.0";
 const NOVIDADES=[
-  "Lembrete de backup: uma vez por mês o sininho sugere baixar uma cópia dos seus dados (\"Baixar\" ou \"Depois\").",
-  "Sem login, o lembrete conta como aviso importante, porque os dados ficam só no aparelho. No Perfil aparece a data do último backup."
+  "Resumo da semana: de domingo a terça o sininho mostra quanto você gastou na semana, a comparação com a anterior e a categoria que mais subiu.",
+  "Toque em \"Ver\" (ou em \"Resumo da semana\" no calendário) para ver o gasto por dia, onde mais gastou e navegar pelas semanas anteriores."
 ];
 
 /* ---------- utilidades ---------- */
@@ -990,6 +990,7 @@ function avisos(){
   let rep=[]; try{ rep=assinaturas().repetidos; }catch(e){}
   rep.forEach(r=>itens.push({tipo:"dica",r}));
   if(bkL&&!bkL.local) itens.push({tipo:"backup",b:bkL});
+  const rs=avisoSemana(); if(rs) itens.push({tipo:"semana",r:rs});
   const mesAt=kM(todayKey), anoR=mesAt===12?kY(todayKey):mesAt===1?kY(todayKey)-1:null;
   if(anoR&&anosRetro().includes(anoR)) itens.push({tipo:"retro",ano:anoR});
   return {itens,n};
@@ -1010,6 +1011,7 @@ function listaAvisos(){
       grupos.conta.push(linha("pagar "+cls,ICON.grupo,x.tipo==="receber"?esc(x.pessoa)+" te deve "+brl(restaDiv(x)):"Você deve "+brl(restaDiv(x))+" a "+esc(x.pessoa),dd<0?"combinado para "+dataCurta(x.venc)+" (passou)":dd===0?"combinado para hoje":"combinado para amanhã",`<button class="btn ghost mini" type="button" data-avdiv="${esc(x.id)}">Ver</button>`)); }
     if(it.tipo==="orc"){ const a=it.a; grupos.orc.push(linha("orc "+(a.nivel==="passou"?"atraso":"amanha"),`<i class="bola" style="background:${catColor(a.id)}"></i>`,esc(textoAlerta(a)),"limite de "+brl(a.o)+" em "+esc(abrMes(todayKey)),`<button class="btn ghost mini" type="button" data-avmes="1">Ver mês</button>`)); }
     if(it.tipo==="backup"){ const b=it.b; (b.local?grupos.conta:grupos.dica).push(linha(b.local?"pagar amanha":"dica",ICON.check,"Hora de fazer um backup",(b.dias===null?"Você ainda não baixou nenhum backup":"Último backup há "+b.dias+" dias")+(b.local?" · sem login, seus dados ficam só neste aparelho":" · uma cópia sua, além da nuvem"),`<span class="bkbtns"><button class="btn mini" type="button" data-avbackup="1">Baixar</button><button class="btn ghost mini" type="button" data-avbackupdepois="1">Depois</button></span>`)); }
+    if(it.tipo==="semana"){ const r=it.r; grupos.dica.push(linha("pedido",ICON.ano||ICON.mais,"Sua semana: "+brl(r.tot),esc(textoVarSemana(r))+(r.subiu?" · mais subiu: "+esc(catName(r.subiu.id)):""),`<button class="btn mini" type="button" data-avsemana="${r.fim}">Ver</button>`)); }
     if(it.tipo==="retro") grupos.dica.push(linha("pedido",ICON.ano||ICON.mais,"Sua retrospectiva de "+it.ano+" está pronta","quanto entrou, saiu e seus recordes do ano",`<button class="btn mini" type="button" data-avretro="${it.ano}">Ver</button>`));
     if(it.tipo==="dica"){ const r=it.r; grupos.dica.push(linha("dica",ICON.mais,"“"+esc(r.nome)+"” parece uma assinatura",r.meses.size+" dos últimos 4 meses · média "+brl(r.media),`<button class="btn ghost mini" type="button" data-avassin="1">Ver</button>`)); }
   });
@@ -1042,6 +1044,7 @@ function verificaLembretes(forcar){
   });
   alertasOrcamento(todayKey).forEach(a=>{ const chave=["orc",a.id,todayKey,a.nivel].join(":"); if(vistos[chave]) return; vistos[chave]=hoje;
     mostraNotif(a.nivel==="passou"?"Limite estourado: "+a.nome:a.nivel==="ritmo"?"Ritmo alto: "+a.nome:"Atenção ao limite: "+a.nome, textoAlerta(a)+" Toque para ver.",chave); });
+  const rsN=avisoSemana(); if(rsN){ const chave="semana:"+rsN.fim; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Resumo da semana: "+brl(rsN.tot),textoVarSemana(rsN)+(rsN.subiu?". Mais subiu: "+catName(rsN.subiu.id):"")+". Toque para ver.",chave); } }
   const bkN=lembreteBackup(); if(bkN){ const chave="backup:"+todayKey; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Hora de fazer um backup",(bkN.dias===null?"Você ainda não baixou nenhum backup.":"Último backup há "+bkN.dias+" dias.")+" Toque para abrir o MB Controle.",chave); } }
   for(const k in vistos) if(vistos[k]<shiftKey(hoje.slice(0,7),-2)) delete vistos[k];
   try{ localStorage.setItem("mb.notif.vistos",JSON.stringify(vistos)); }catch(e){}
@@ -1318,6 +1321,36 @@ function checaConquistas(){
         else if(fins.length){ const [d,st]=fins[0]; toast(st==="ok"?"⚡ Desafio concluído: "+d.nome:"Desafio “"+d.nome+"” não deu desta vez. Bora de novo?"); } }
       localStorage.setItem(chave,JSON.stringify(agora)); }catch(e){} },900);
 }
+/* ---------- resumo da semana (segunda a domingo) ---------- */
+function domingoDe(iso){ const [y,m,d]=iso.split("-").map(Number), wd=new Date(y,m-1,d).getDay(); return somaDias(iso,wd===0?0:7-wd); }
+const ultimoDomingo=()=>{ const hj=hojeISO(), [y,m,d]=hj.split("-").map(Number), wd=new Date(y,m-1,d).getDay(); return wd===0?hj:somaDias(hj,-wd); };
+function resumoSemana(fim,gs){
+  gs=gs||todosGastos(); const ini=somaDias(fim,-6), iniA=somaDias(fim,-13), fimA=somaDias(fim,-7);
+  const sem=gs.filter(x=>x.data>=ini&&x.data<=fim), ant=gs.filter(x=>x.data>=iniA&&x.data<=fimA);
+  const tot=soma(sem.map(x=>x.g)), totA=soma(ant.map(x=>x.g));
+  const pc=(arr)=>{ const o={}; arr.forEach(x=>{ o[x.g.cat]=(o[x.g.cat]||0)+(Number(x.g.valor)||0); }); return o; };
+  const cs=pc(sem), ca=pc(ant), cats=[...new Set(Object.keys(cs).concat(Object.keys(ca)))].map(id=>({id,v:cs[id]||0,a:ca[id]||0,d:(cs[id]||0)-(ca[id]||0)}));
+  const subiu=cats.filter(x=>x.d>0.005).sort((a,b)=>b.d-a.d)[0]||null, top=cats.filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,4);
+  const dias=[...Array(7)].map((_,i)=>{ const d=somaDias(ini,i); return {d,v:soma(sem.filter(x=>x.data===d).map(x=>x.g))}; });
+  const maior=sem.slice().sort((a,b)=>(Number(b.g.valor)||0)-(Number(a.g.valor)||0))[0]||null;
+  return {ini,fim,tot,totA,n:sem.length,subiu,top,dias,maior,var:totA>0?(tot-totA)/totA:null};
+}
+function textoVarSemana(r){ if(r.var===null) return r.tot>0?"primeira semana com lançamentos para comparar":"nenhum gasto nas duas semanas"; if(Math.abs(r.var)<0.005) return "igual à semana anterior"; return (r.var>0?"▲ ":"▼ ")+Math.round(Math.abs(r.var)*100)+"% vs semana anterior ("+brl(r.totA)+")"; }
+function corpoSemana(fim){
+  const r=resumoSemana(fim), max=Math.max(1,...r.dias.map(x=>x.v)), podeAvancar=fim<ultimoDomingo();
+  return `<div class="semnav"><button type="button" class="iconbtn" data-semnav="-7" aria-label="Semana anterior">‹</button><b>${fmtIso(r.ini)} a ${fmtIso(r.fim)}</b><button type="button" class="iconbtn" data-semnav="7" aria-label="Próxima semana" ${podeAvancar?"":"disabled"}>›</button></div>
+    <div class="semtot"><span class="lab">Gastou na semana</span><b>${brl(r.tot)}</b><small class="${r.var>0.005?"neg":r.var<-0.005?"pos":""}">${esc(textoVarSemana(r))}</small></div>
+    <div class="semdias" role="img" aria-label="Gasto por dia da semana">${r.dias.map((x,i)=>`<div class="sd ${x.d===hojeISO()?"hoje":""}"><span class="sv">${x.v?valCurto(x.v):""}</span><i style="height:${Math.round(x.v/max*100)}%"></i><span class="sl">${["S","T","Q","Q","S","S","D"][i]}</span></div>`).join("")}</div>
+    ${r.subiu?`<div class="semdest">${icoCat(r.subiu.id,16)}<span><b>${esc(catName(r.subiu.id))}</b> foi o que mais subiu: ${brl(r.subiu.v)} (+${brl(r.subiu.d)} vs semana anterior)</span></div>`:""}
+    ${r.top.length?`<h3>Onde mais gastou</h3>${r.top.map(x=>`<div class="semcat">${icoCat(x.id,15)}<span class="t">${esc(catName(x.id))}</span><span class="v">${brl(x.v)}</span><small>${x.a>0?(x.d>=0?"+":"−")+brl(Math.abs(x.d)):"novo"}</small></div>`).join("")}`:`<p class="hint">Nenhuma despesa lançada nesta semana.</p>`}
+    ${r.maior?`<p class="hint">${r.n} lançamento${r.n===1?"":"s"} · maior: ${brl(r.maior.g.valor)}${r.maior.g.desc?" ("+esc(r.maior.g.desc)+")":" em "+esc(catName(r.maior.g.cat))} no dia ${fmtIso(r.maior.data)}</p>`:""}`;
+}
+/* aparece no sininho de domingo a terça, sobre a semana que terminou no domingo */
+function avisoSemana(){
+  if(mode==="login"||!state.loaded) return null;
+  const hj=hojeISO(), [y,m,d]=hj.split("-").map(Number), wd=new Date(y,m-1,d).getDay(); if(!(wd===0||wd===1||wd===2)) return null;
+  const r=resumoSemana(ultimoDomingo()); if(!(r.tot>0||r.totA>0)) return null; return r;
+}
 /* ---------- lançamento rápido por texto ("45 ifood pix", "120 mercado ontem", "300 tv 3x crédito") ---------- */
 const semAcento=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 const RAP_KW={carrinho:/^(mercado|supermercado|feira|padaria|acougue|hortifruti|atacad|assai|carrefour|sacolao)/,cafe:/^(cafe|lanche|salgado|cafeteria)/,taca:/^(ifood|restaurante|pizza|hamburguer|burger|bar|cerveja|cinema|show|rappi|lanchonete|almoco|jantar|delivery|netflix|spotify|streaming)/,
@@ -1418,7 +1451,7 @@ function cardCalendario(k){
     const venc=x.v.length?x.v.map(v=>`<i class="vd ${v.pago?"ok":(passado||(hoje&&d<hoje))?"atr":"pend"}"></i>`).slice(0,3).join(""):"";
     const rot=`${d} de ${NOMES[kM(k)-1].toLowerCase()}: `+(x.g?"gastou "+brl(x.g):"sem gastos")+(x.v.length?", "+x.v.length+" vencimento"+(x.v.length>1?"s":""):"")+(x.r?", recebeu "+brl(x.r):"");
     cel+=`<button type="button" class="cd ${d===hoje?"hoje":""} ${w===wPesada?"pesada":""} ${hoje&&d>hoje?"futuro":""}" data-caldia="${d}" style="--h:${h.toFixed(2)}" aria-label="${esc(rot)}"><b>${d}</b>${x.g?`<span class="cg">${valCurto(x.g)}</span>`:x.r?`<span class="cr">+${valCurto(x.r)}</span>`:""}${venc?`<span class="cv">${venc}</span>`:""}</button>`; }
-  return `<div class="card cal"><div class="cardhead"><h2>Calendário</h2>${wPesada>=0?`<span class="num muted">semana mais pesada: <b>${pesada.a===pesada.b?pad2(pesada.a):pad2(pesada.a)+"–"+pad2(pesada.b)}</b> · ${brl(pesada.t)}</span>`:""}</div>
+  return `<div class="card cal"><div class="cardhead"><h2>Calendário</h2><button type="button" class="btn ghost mini" data-semana="1">Resumo da semana</button></div><div class="calsub">${wPesada>=0?`<span class="num muted">semana mais pesada: <b>${pesada.a===pesada.b?pad2(pesada.a):pad2(pesada.a)+"–"+pad2(pesada.b)}</b> · ${brl(pesada.t)}</span>`:""}</div>
     <div class="calgrid" role="group" aria-label="Calendário de ${esc(nomeMes(k).toLowerCase())}">${["D","S","T","Q","Q","S","S"].map(x=>`<span class="cw" aria-hidden="true">${x}</span>`).join("")}${cel}</div>
     <div class="calleg"><span><i class="sq"></i>quanto mais forte, mais gasto no dia</span><span><i class="vd pend"></i>vence</span><span><i class="vd ok"></i>pago</span><span><i class="vd atr"></i>atrasado</span></div></div>`;
 }
@@ -2144,8 +2177,8 @@ function renderSheet(){
   if(!s){ r.innerHTML=""; document.body.classList.remove("sheet-open"); return; }
   document.body.classList.add("sheet-open");
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
-  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="semana"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
+  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",semana:"Resumo da semana",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -2341,6 +2374,8 @@ function renderSheet(){
     sub=""; botoes=`<button class="btn ${s.pinModo==="desligar"?"danger":""}" type="submit">${s.pinModo==="desligar"?"Desligar PIN":s.pinModo==="trocar"?"Trocar PIN":"Criar PIN"}</button>`;
   }else if(s.tipo==="avisos"){
     corpo=`<div class="avisos">${listaAvisos()}</div>`; sub=""; botoes="";
+  }else if(s.tipo==="semana"){
+    corpo=`<div class="semana">${corpoSemana(s.fim||ultimoDomingo())}</div>`; sub=""; botoes="";
   }else if(s.tipo==="dia"){
     const dd=Math.min(diasMes(k),Math.max(1,Number(s.dia)||1));
     corpo=corpoDia(k,dd); sub=esc(nomeMes(k));
@@ -2569,7 +2604,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -2585,6 +2620,8 @@ function bindSheet(r){
     if(b.dataset.desmodelo){ ui.sheet=Object.assign({},ui.sheet,{mod:b.dataset.desmodelo}); renderSheet(); return; }
     if(b.dataset.caledit){ openSheet("gasto",b.dataset.caledit); return; }
     if(b.dataset.callancar){ openSheet("gasto",null,{dia:Number(b.dataset.callancar)}); return; }
+    if(b.dataset.avsemana){ openSheet("semana",null,{fim:b.dataset.avsemana}); return; }
+    if(b.dataset.semnav){ const nf=somaDias(ui.sheet.fim||ultimoDomingo(),Number(b.dataset.semnav)); if(nf<=ultimoDomingo()){ ui.sheet.fim=nf; renderSheet(); } return; }
     if(b.dataset.avretro){ openSheet("retro",null,{ano:Number(b.dataset.avretro),slide:0}); return; }
     if(b.dataset.vgcot){ buscarCotacao(); return; }
     if(b.dataset.rtoque){ const nx=document.querySelector('#sheet [data-rpasso="1"]'); if(nx) nx.click(); return; }
@@ -2697,6 +2734,7 @@ app.addEventListener("click",e=>{
   if(d.gpago){ const g=getMonth(d.mes||ui.month).gastos.find(x=>x.id===d.gpago); if(g) marcaGastoPago(d.mes||ui.month,d.gpago,!g.pago); return; }
   if(d.pagar){ pagarPend(d.pagar); return; }
   if(d.avisos){ openSheet("avisos"); return; }
+  if(d.semana){ openSheet("semana",null,{fim:ultimoDomingo()}); return; }
   if(d.caldia){ openSheet("dia",null,{dia:Number(d.caldia)}); return; }
   if(d.status){ toast(statusTxt); return; }
   if(d.tutorial){ abrirTutorial(); return; }

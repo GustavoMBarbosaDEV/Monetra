@@ -1,5 +1,5 @@
 // Service worker: deixa o app abrir mesmo sem internet.
-const CACHE = "mb-controle-4.6.0"; // acompanhe a versão do app (VERSAO em app.js)
+const CACHE = "mb-controle-4.7.0"; // acompanhe a versão do app (VERSAO em app.js)
 const SHELL = ["./", "index.html", "style.css", "app.js", "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 self.addEventListener("install", e => {
