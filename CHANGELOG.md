@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.1 — 19/10/2026 **Início como no modelo + botão voltar**
+
+- Início no formato aprovado: saudação ("Boa tarde, Gustavo"), saldo com variação vs mês anterior, gráfico do saldo dia a dia, receitas e despesas dentro do cartão, atalhos rápidos, previsão do mês e o card "Orçamento do mês" (ou "Onde mais gastou", sem limites).
+- Logo e ícones refeitos a partir da imagem em alta resolução; no topo aparece só o M.
+- Barra de baixo: Início, Relatórios, +, Metas e Perfil. Ajustes abre pelo Perfil (e pelas abas no computador).
+- Botão voltar do celular: fecha a janela aberta (nova despesa, edição etc.) ou volta para o Início, em vez de fechar o app.
+- Barra de rolagem dos meses escondida.
+
 ## 5.0.0 — 19/10/2026 **Monetra**
 
 - O app passa a se chamar **Monetra**, com logo e ícones novos (tela inicial do celular, aba do navegador e APK).

@@ -904,3 +904,51 @@ h1,h2,h3{letter-spacing:-.02em}
 .streaks > div{border-radius:18px}
 /* login */
 .loginbox,.login{border-radius:26px}
+/* 5.0 · Início no formato do modelo */
+.brand .logo{width:34px;height:auto;border-radius:0;box-shadow:none}
+.saud{padding:2px 2px 0}
+.saud small{font-size:13.5px;color:var(--muted)}
+.saud h2{margin:1px 0 0;font-size:24px;font-weight:700;letter-spacing:-.02em}
+.tema-claro .saud small{color:rgba(255,255,255,.72)} .tema-claro .saud h2{color:#fff}
+.heroSaldo{display:flex;flex-direction:column;gap:2px;padding:20px 20px 16px}
+.heroSaldo .lab{font-size:11.5px;letter-spacing:.07em}
+.heroSaldo .hs-val{margin:4px 0 2px}
+.hs-sub{font-size:13px;color:var(--muted)} .hs-sub b{font-weight:600}
+.tema-claro .hs-sub{color:rgba(255,255,255,.72)} .tema-claro .hs-sub b{color:#fff}
+.hs-up{color:#5BE9A4;font-weight:700} .hs-down{color:#FF9B9B;font-weight:700}
+.tema-escuro .hs-up{color:var(--accent)}
+.hs-graf{display:block;width:100%;height:72px;margin:12px 0 6px;color:#7CF2B6;overflow:visible}
+.tema-escuro .hs-graf{color:var(--accent)}
+.hs-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.hs-mini{border-radius:16px;padding:10px 12px;background:rgba(255,255,255,.08);display:flex;flex-direction:column;gap:2px}
+.tema-escuro .hs-mini{background:#0B1712;box-shadow:inset 0 0 0 1px #173326}
+.hs-mini .lab{font-size:10.5px}
+.hs-mini b{font-size:16px;font-variant-numeric:tabular-nums}
+.hs-mini b.neg{color:#FF8A8A} .tema-escuro .hs-mini b.neg{color:var(--bad)}
+.qa{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.q{border:0;font:inherit;cursor:pointer;background:var(--surface);color:var(--fg);box-shadow:var(--sombra);border-radius:20px;padding:12px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12.5px;font-weight:600}
+.tema-claro .q{box-shadow:0 10px 26px -12px rgba(0,0,0,.28)}
+.q .qi{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.q:hover .qi{background:var(--accent);color:var(--accent-ink)}
+.nota{display:flex;gap:12px;align-items:center;font-size:13.5px;line-height:1.45;padding:12px 14px;border-radius:20px;background:var(--accent-soft)}
+.tema-escuro .nota{background:#0C1A13;box-shadow:inset 0 0 0 1px #173326}
+.nota .ni{width:34px;height:34px;border-radius:11px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:0 0 auto}
+.nota small{display:block;color:var(--muted);font-size:12px}
+.card.orc{padding:6px 16px}
+.orow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0}
+.orow + .orow{box-shadow:0 -1px 0 var(--line)}
+.orow .ot{display:flex;flex-direction:column;gap:7px;min-width:0}
+.orow .ot b{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orow .track{height:7px;display:block}
+.orow .track i{display:block;height:100%;border-radius:9px;background:var(--dot)}
+.orow.warn .track i{background:var(--warn)} .orow.over .track i{background:var(--bad)}
+.orow .ov{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.orow .ov small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.card.orc .link{margin:4px 0 10px}
+.cardhead .link{font-size:13px;font-weight:600;color:var(--accent);background:none;border:0;cursor:pointer;padding:0}
+.ajlink{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:var(--fg);background:var(--surface);border:0;border-radius:22px;box-shadow:var(--sombra);padding:14px 16px;cursor:pointer}
+.ajlink .aji{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:0 0 auto}
+.ajlink b{display:block;font-size:15px} .ajlink small{display:block;font-size:12.5px;color:var(--muted)}
+.ajlink .chev{margin-left:auto;color:var(--muted);display:grid}
+@media (min-width:761px){ .qa{max-width:640px} }
+.months .chips{scrollbar-width:none} .months .chips::-webkit-scrollbar{display:none}
