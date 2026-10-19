@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.3.0 — 18/10/2026 **Calendário do mês**
+
+- Novo card "Calendário" na aba Mês: cada dia mostra quanto foi gasto (cor mais forte = dia mais pesado), receitas do dia e bolinhas para as contas que vencem (amarela = vence, verde = paga, vermelha = atrasada).
+- O topo do card mostra a semana mais pesada do mês.
+- Toque num dia para ver as despesas e contas dele, marcar conta como paga ou lançar uma despesa já com aquela data.
+
 ## 4.2.0 — 18/10/2026 **Orçamento com sobra acumulada**
 
 - Opção por categoria (Ajustes → Categorias → "Sobra passa para o mês seguinte"): o que não foi gasto do limite entra no limite do mês seguinte. Ex.: limite de R$ 800, gastou R$ 700 → no mês seguinte o limite é R$ 900.

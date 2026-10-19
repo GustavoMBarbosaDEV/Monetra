@@ -662,3 +662,29 @@ button.item.gitem{grid-template-columns:auto minmax(0,1fr) auto;gap:12px}
 .bar .sobraln{margin-top:4px;font-size:12px;color:var(--good)}
 .sobrabox .switch{margin-bottom:2px}
 .sobrabox .hint b{color:var(--fg);font-weight:600}
+/* 4.3 · calendário do mês */
+.cal .cardhead .num b{color:var(--fg)}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:6px}
+.calgrid .cw{font-size:11px;font-weight:600;color:var(--muted);text-align:center;padding-bottom:2px}
+.cd{position:relative;min-height:54px;border-radius:10px;border:1px solid var(--line);font:inherit;color:var(--fg);cursor:pointer;padding:4px 3px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;
+  background:color-mix(in srgb,var(--bad) calc(var(--h,0) * 42%),var(--surface))}
+.cd.vazio{border:0;background:none;cursor:default}
+.cd b{font-size:12px;font-weight:600;line-height:1.2}
+.cd .cg{font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--fg);opacity:.85;line-height:1.2}
+.cd .cr{font-size:10.5px;color:var(--good);font-weight:600;line-height:1.2}
+.cd .cv{display:flex;gap:2px;margin-top:auto}
+.cd.futuro{opacity:.75}
+.cd.hoje{outline:2px solid var(--accent);outline-offset:-1px}
+.cd.hoje b{color:var(--accent)}
+.cd.pesada{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.cd:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.vd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.vd.ok{background:var(--good)} .vd.atr{background:var(--bad)}
+.calleg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:11.5px;color:var(--muted)}
+.calleg span{display:inline-flex;align-items:center;gap:5px}
+.calleg .sq{width:12px;height:12px;border-radius:4px;background:linear-gradient(90deg,var(--surface),color-mix(in srgb,var(--bad) 42%,var(--surface)));border:1px solid var(--line)}
+@media (max-width:420px){ .calgrid{gap:3px} .cd{min-height:50px;border-radius:8px} .cd .cg,.cd .cr{font-size:10px} }
+.caldia h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 4px}
+.caldia .assintot{margin-bottom:4px}
+.item.calv{grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px}
+.item.calv .vd{width:9px;height:9px}
