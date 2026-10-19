@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="4.4.0";
+const VERSAO="4.5.0";
 const NOVIDADES=[
-  "Lançamento rápido: na nova despesa, escreva \"45 ifood\", \"120 mercado ontem pix\" ou \"600 tv 3x crédito\" e aperte Enter.",
-  "O app entende valor, categoria (pelo seu histórico e pelos nomes), forma de pagamento, cartão, data (hoje, ontem, dia 12, 12/10) e parcelas, sem usar IA paga."
+  "Conquistas e desafios em Visão geral: sequência de dias lançando, meses seguidos no azul e 12 conquistas para desbloquear.",
+  "Crie desafios como \"30 dias sem delivery\" ou \"mercado no máximo R$ 600 no mês\": o app acompanha sozinho pelos seus lançamentos e avisa quando concluir."
 ];
 
 /* ---------- utilidades ---------- */
@@ -102,7 +102,7 @@ const ICON={
 };
 
 /* ---------- estado ---------- */
-function defaultConfig(){ return {viagens:[],dividas:[],termos:null,salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
+function defaultConfig(){ return {desafios:[],viagens:[],dividas:[],termos:null,salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
 const state={config:defaultConfig(), months:{}, loaded:false};
 let MESES=[];
 const today=new Date();
@@ -166,8 +166,9 @@ function normConfig(d){
   const iso=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||"")?x:null;
   const dividas=Array.isArray(d?.dividas)?d.dividas.filter(x=>x&&x.id).map(x=>({id:String(x.id),pessoa:String(x.pessoa||"Alguém"),tipo:x.tipo==="pagar"?"pagar":"receber",valor:Number(x.valor)||0,desc:String(x.desc||""),data:iso(x.data),venc:iso(x.venc),pags:Array.isArray(x.pags)?x.pags.filter(y=>y&&y.id).map(y=>({id:String(y.id),valor:Number(y.valor)||0,data:iso(y.data)})):[]})):[];
   const viagens=Array.isArray(d?.viagens)?d.viagens.filter(x=>x&&x.id).map(x=>({id:String(x.id),nome:String(x.nome||"Viagem"),moeda:/^[A-Z]{3}$/.test(x.moeda||"")?x.moeda:"USD",cotacao:Number(x.cotacao)>0?Number(x.cotacao):1,taxa:Math.max(0,Number(x.taxa)||0),inicio:iso(x.inicio),fim:iso(x.fim),orcamento:Math.max(0,Number(x.orcamento)||0)})):[];
+  const desafios=Array.isArray(d?.desafios)?d.desafios.filter(x=>x&&x.id&&iso(x.inicio)).map(x=>({id:String(x.id),nome:String(x.nome||"Desafio").slice(0,50),tipo:x.tipo==="max"?"max":"sem",cat:x.cat?String(x.cat):null,palavras:String(x.palavras||"").slice(0,80),dias:Math.min(365,Math.max(1,Math.round(Number(x.dias)||30))),inicio:x.inicio,valor:Number(x.valor)>0?Number(x.valor):0})):[];
   const termos=d?.termos&&typeof d.termos.v==="string"?{v:d.termos.v,em:String(d.termos.em||"")}:null;
-  return {viagens, dividas, termos, salarioPadrao:Number(d?.salarioPadrao)||0, saldoInicial:Number(d?.saldoInicial)||0, saldoCaixinha:Number(d?.saldoCaixinha)||0, ate, inicio, categorias:cats, fixos, parcelas, rendas, cartoes, contas, contaSalario, metas};
+  return {desafios, viagens, dividas, termos, salarioPadrao:Number(d?.salarioPadrao)||0, saldoInicial:Number(d?.saldoInicial)||0, saldoCaixinha:Number(d?.saldoCaixinha)||0, ate, inicio, categorias:cats, fixos, parcelas, rendas, cartoes, contas, contaSalario, metas};
 }
 function getMonth(k){ if(!state.months[k]) state.months[k]=normMonth({}); else state.months[k]=Object.assign(normMonth({}),state.months[k]); return state.months[k]; }
 const catIndex=id=>state.config.categorias.findIndex(c=>c.id===id);
@@ -390,7 +391,7 @@ function save(k){
   clearTimeout(timers[id]); timers[id]=setTimeout(()=>{ delete timers[id]; flush(id); },400);
 }
 /* Junta o que está no servidor com o que está aqui: itens novos de outro aparelho não se perdem */
-const LISTAS_MES=["gastos","avulsos","caixinha","transf"], LISTAS_CFG=["categorias","fixos","parcelas","rendas","metas","cartoes","contas","dividas","viagens"];
+const LISTAS_MES=["gastos","avulsos","caixinha","transf"], LISTAS_CFG=["categorias","fixos","parcelas","rendas","metas","cartoes","contas","dividas","viagens","desafios"];
 const MAPAS_MES=["fixos","rendas","parcelas","faturasPagas"];
 const J=x=>JSON.stringify(x===undefined?null:x);
 /* Mescla em 3 vias: local (o que está aqui), servidor (o que está lá agora) e b (a última versão do servidor que este aparelho viu).
@@ -434,6 +435,7 @@ async function flush(id){
     await fb.runTransaction(fb.db,async tx=>{
       const snap=await tx.get(ref), body=clone(local0);
       mudou=snap.exists()?mescla(body,id==="config"?normConfig(snap.data()):normMonth(snap.data()),id):false;
+      if(id==="config"&&Array.isArray(body.desafios)&&!body.desafios.length) delete body.desafios;
       tx.set(ref,body); corpo=body;
     });
     ok=true;
@@ -1150,6 +1152,7 @@ function render(){
   const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="perfil"?viewPerfil():viewAjustes();
   const rolY=window.scrollY;
   app.innerHTML=header()+corpo+bottomNav();
+  if(state.loaded&&mode!=="login") checaConquistas();
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus({preventScroll:true}); if(sel&&el.setSelectionRange){ try{el.setSelectionRange(sel[0],sel[1])}catch(e){} } } }
   /* centraliza o mês escolhido na barra só na horizontal, sem mexer na rolagem da página */
   const on=document.querySelector(".chip.on"), barra=on&&on.parentElement; if(barra&&!fid){ barra.scrollLeft=Math.max(0,on.offsetLeft-barra.offsetLeft-(barra.clientWidth-on.clientWidth)/2); }
@@ -1210,6 +1213,93 @@ function donut(itens,total,centro,sub){
 }
 
 /* ---------- aba Mês ---------- */
+/* ---------- conquistas e desafios ---------- */
+const isoDe=(k,d)=>k+"-"+pad2(Math.min(diasMes(k),Math.max(1,Number(d)||1)));
+const somaDias=(iso,n)=>{ const [y,m,d]=iso.split("-").map(Number), t=new Date(y,m-1,d+n); return keyOf(t.getFullYear(),t.getMonth()+1)+"-"+pad2(t.getDate()); };
+const entreDias=(a,b)=>{ const f=x=>{ const [y,m,d]=x.split("-").map(Number); return Date.UTC(y,m-1,d); }; return Math.round((f(b)-f(a))/864e5); };
+const fmtIso=x=>x.slice(8,10)+"/"+x.slice(5,7);
+function todosGastos(){ const out=[]; Object.keys(state.months).forEach(k=>{ if(!/^\d{4}-\d{2}$/.test(k)) return; ((state.months[k]||{}).gastos||[]).forEach(g=>out.push({g,k,data:isoDe(k,g.dia)})); }); return out; }
+const palavrasDes=d=>String(d.palavras||"").split(/[,;]+/).map(x=>semAcento(x).trim()).filter(x=>x.length>=2);
+function casaDesafio(d,g){ const ps=palavrasDes(d), desc=semAcento(g.desc); return (!!d.cat&&g.cat===d.cat)||(ps.length>0&&ps.some(p=>desc.includes(p))); }
+function estadoDesafio(d,gs){
+  gs=gs||todosGastos(); const fim=somaDias(d.inicio,d.dias-1), hj=hojeISO();
+  const dentro=gs.filter(x=>x.data>=d.inicio&&x.data<=fim&&casaDesafio(d,x.g)).sort((a,b)=>a.data<b.data?-1:1);
+  const total=Math.round(soma(dentro.map(x=>x.g))*100)/100;
+  const feitos=hj<d.inicio?0:Math.min(d.dias,entreDias(d.inicio,hj)+1);
+  if(d.tipo==="sem"){ if(dentro.length&&dentro[0].data<=hj) return {st:"quebrou",quando:dentro[0].data,total,feitos:Math.max(0,entreDias(d.inicio,dentro[0].data)),fim,pct:Math.max(0,entreDias(d.inicio,dentro[0].data))/d.dias};
+    return hj>fim?{st:"ok",total,feitos:d.dias,fim,pct:1}:{st:hj<d.inicio?"espera":"andando",total,feitos,fim,pct:feitos/d.dias}; }
+  if(total>d.valor){ let acc=0, quando=null; for(const x of dentro){ acc+=Number(x.g.valor)||0; if(acc>d.valor){ quando=x.data; break; } } return {st:"quebrou",quando,total,feitos,fim,pct:Math.min(1,total/(d.valor||1))}; }
+  return hj>fim?{st:"ok",total,feitos:d.dias,fim,pct:1}:{st:hj<d.inicio?"espera":"andando",total,feitos,fim,pct:d.valor?total/d.valor:0,resta:d.valor-total};
+}
+function textoDesafio(d,e){
+  if(e.st==="ok") return d.tipo==="sem"?"Concluído! "+d.dias+" dias sem gastar com isso.":"Concluído! Gastou "+brl(e.total)+" de "+brl(d.valor)+".";
+  if(e.st==="quebrou") return d.tipo==="sem"?"Não deu desta vez: gasto em "+fmtIso(e.quando)+", depois de "+e.feitos+" dia"+(e.feitos===1?"":"s")+".":"Passou do limite em "+fmtIso(e.quando)+": "+brl(e.total)+" de "+brl(d.valor)+".";
+  if(e.st==="espera") return "Começa em "+fmtIso(d.inicio)+".";
+  return d.tipo==="sem"?"Dia "+e.feitos+" de "+d.dias+" · termina em "+fmtIso(e.fim):"Gastou "+brl(e.total)+" de "+brl(d.valor)+" · dia "+e.feitos+" de "+d.dias;
+}
+function sequencias(gs){
+  const dias=new Set(gs.map(x=>x.data)), hj=hojeISO();
+  let atual=0, d=dias.has(hj)?hj:somaDias(hj,-1); while(dias.has(d)){ atual++; d=somaDias(d,-1); }
+  let melhor=0; const ord=[...dias].filter(x=>x<=hj).sort(); let run=0, ant=null; ord.forEach(x=>{ run=ant&&entreDias(ant,x)===1?run+1:1; ant=x; if(run>melhor) melhor=run; });
+  const fechados=MESES.filter(k=>k<todayKey&&ativo(k)&&(calc(k).receitas>0||calc(k).despesas>0));
+  let azulAtual=0; for(let i=fechados.length-1;i>=0;i--){ if(calc(fechados[i]).saldo>=0&&(i===fechados.length-1||entre(fechados[i],fechados[i+1])===1)) azulAtual++; else break; }
+  let azulMelhor=0, r=0; fechados.forEach((k,i)=>{ r=calc(k).saldo>=0?(i&&entre(fechados[i-1],k)===1?r+1:1):0; if(r>azulMelhor) azulMelhor=r; });
+  return {atual,melhor,azulAtual,azulMelhor,fechados};
+}
+const CONQ=[
+  {id:"primeiro",ic:"🌱",nome:"Primeiro passo",como:"Lance sua primeira despesa."},
+  {id:"semana",ic:"🔥",nome:"Semana firme",como:"Lance gastos 7 dias seguidos."},
+  {id:"mesint",ic:"🏅",nome:"Mês inteiro",como:"Lance gastos 30 dias seguidos."},
+  {id:"azul1",ic:"💙",nome:"No azul",como:"Feche um mês com saldo positivo."},
+  {id:"azul3",ic:"🌤️",nome:"Trimestre no azul",como:"Feche 3 meses seguidos no azul."},
+  {id:"azul6",ic:"☀️",nome:"Semestre no azul",como:"Feche 6 meses seguidos no azul."},
+  {id:"azul12",ic:"🏆",nome:"Ano no azul",como:"Feche 12 meses seguidos no azul."},
+  {id:"limite",ic:"🎯",nome:"Dentro do limite",como:"Feche um mês com limites sem estourar nenhum."},
+  {id:"poupa",ic:"🐷",nome:"Poupador",como:"Guarde na caixinha 3 meses seguidos."},
+  {id:"meta",ic:"🎉",nome:"Meta batida",como:"Complete uma meta de economia."},
+  {id:"desafio",ic:"⚡",nome:"Desafiante",como:"Conclua um desafio."},
+  {id:"cem",ic:"💯",nome:"Centena",como:"Chegue a 100 despesas lançadas."}
+];
+function conquistas(){
+  const gs=todosGastos(), sq=sequencias(gs), got={};
+  got.primeiro=gs.length>0; got.semana=sq.melhor>=7; got.mesint=sq.melhor>=30; got.cem=gs.length>=100;
+  got.azul1=sq.azulMelhor>=1; got.azul3=sq.azulMelhor>=3; got.azul6=sq.azulMelhor>=6; got.azul12=sq.azulMelhor>=12;
+  got.limite=sq.fechados.some(k=>{ const c=calc(k), cs=state.config.categorias.filter(ct=>ct.orcamento>0); return cs.length&&c.despesas>0&&cs.every(ct=>(c.porCat[ct.id]||0)<=limiteCat(ct,k)); });
+  let r=0, mp=0; MESES.filter(k=>k<=todayKey).forEach(k=>{ r=calc(k).guardado>0?r+1:0; if(r>mp) mp=r; }); got.poupa=mp>=3;
+  got.meta=state.config.metas.some(mt=>infoMeta(mt,null).feita);
+  got.desafio=(state.config.desafios||[]).some(d=>estadoDesafio(d,gs).st==="ok");
+  return {sq,got,gs};
+}
+const MODELOS_DES={delivery:{nome:"30 dias sem delivery",tipo:"sem",palavras:"ifood, delivery, rappi, aiqfome",dias:30},impulso:{nome:"Semana sem compras",tipo:"sem",icCat:"sacola",dias:7},mercado:{nome:"Mercado no limite",tipo:"max",icCat:"carrinho",dias:30,valor:600},lazer:{nome:"15 dias com lazer contado",tipo:"max",icCat:"taca",dias:15,valor:200}};
+function cardConquistas(){
+  if(mode==="login"||!state.loaded) return "";
+  const {sq,got,gs}=conquistas(), ds=(state.config.desafios||[]).map(d=>({d,e:estadoDesafio(d,gs)}));
+  const ativos=ds.filter(x=>x.e.st==="andando"||x.e.st==="espera"), antigos=ds.filter(x=>x.e.st==="ok"||x.e.st==="quebrou").slice(-3).reverse();
+  const nGot=CONQ.filter(c=>got[c.id]).length;
+  const linhaD=({d,e})=>`<button type="button" class="desafio ${e.st}" data-edit="desafio" data-id="${esc(d.id)}"><div class="t"><b>${esc(d.nome)}</b><span>${e.st==="ok"?"✓":e.st==="quebrou"?"✕":Math.round(e.pct*100)+"%"}</span></div><div class="track ${e.st==="quebrou"?"over":d.tipo==="max"&&e.pct>=0.85?"warn":""}"><div style="width:${Math.min(100,Math.round(e.pct*100))}%"></div></div><small>${esc(textoDesafio(d,e))}</small></button>`;
+  return `<div class="card conq"><div class="cardhead"><h2>Conquistas e desafios</h2><span class="num muted">${nGot} de ${CONQ.length}</span></div>
+    <div class="streaks"><div><span class="lab">Sequência lançando</span><b>🔥 ${sq.atual} dia${sq.atual===1?"":"s"}</b><small>recorde: ${sq.melhor}</small></div><div><span class="lab">Meses no azul seguidos</span><b>💙 ${sq.azulAtual}</b><small>recorde: ${sq.azulMelhor}</small></div></div>
+    <h3>Desafios</h3>
+    ${ativos.length?ativos.map(linhaD).join(""):`<p class="hint">Desafie você mesmo: "30 dias sem delivery", "semana sem compras" ou um limite para o mercado. O app acompanha sozinho pelos seus lançamentos.</p>`}
+    ${antigos.length?`<details class="desant"><summary>Anteriores (${antigos.length})</summary>${antigos.map(linhaD).join("")}</details>`:""}
+    <button type="button" class="btn ghost" data-novo="desafio">+ Novo desafio</button>
+    <h3>Conquistas</h3>
+    <div class="conqs">${CONQ.map(c=>`<div class="conqb ${got[c.id]?"on":""}" title="${esc(c.como)}"><span class="bi" aria-hidden="true">${c.ic}</span><b>${esc(c.nome)}</b><small>${got[c.id]?"conquistada":esc(c.como)}</small></div>`).join("")}</div></div>`;
+}
+/* avisa conquistas novas e desafios que terminaram (uma vez por aparelho) */
+let _conqTimer=null;
+function checaConquistas(){
+  if(_conqTimer) clearTimeout(_conqTimer);
+  _conqTimer=setTimeout(()=>{ _conqTimer=null; if(mode==="login"||!state.loaded||precisaTermos()) return;
+    try{ const chave="mb.conq."+(uid||"local")+"."+(aberto||"p"); const raw=localStorage.getItem(chave), visto=raw?JSON.parse(raw):null;
+      const {got,gs}=conquistas(), ds=(state.config.desafios||[]).map(d=>[d,estadoDesafio(d,gs).st]);
+      const agora={c:CONQ.filter(c=>got[c.id]).map(c=>c.id),d:Object.fromEntries(ds.map(([d,st])=>[d.id,st]))};
+      if(visto){ const novas=CONQ.filter(c=>got[c.id]&&!(visto.c||[]).includes(c.id));
+        const fins=ds.filter(([d,st])=>(st==="ok"||st==="quebrou")&&(visto.d||{})[d.id]!==st);
+        if(novas.length) toast(novas[0].ic+" Conquista desbloqueada: "+novas[0].nome+(novas.length>1?" (+"+(novas.length-1)+")":""));
+        else if(fins.length){ const [d,st]=fins[0]; toast(st==="ok"?"⚡ Desafio concluído: "+d.nome:"Desafio “"+d.nome+"” não deu desta vez. Bora de novo?"); } }
+      localStorage.setItem(chave,JSON.stringify(agora)); }catch(e){} },900);
+}
 /* ---------- lançamento rápido por texto ("45 ifood pix", "120 mercado ontem", "300 tv 3x crédito") ---------- */
 const semAcento=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 const RAP_KW={carrinho:/^(mercado|supermercado|feira|padaria|acougue|hortifruti|atacad|assai|carrefour|sacolao)/,cafe:/^(cafe|lanche|salgado|cafeteria)/,taca:/^(ifood|restaurante|pizza|hamburguer|burger|bar|cerveja|cinema|show|rappi|lanchonete|almoco|jantar|delivery|netflix|spotify|streaming)/,
@@ -1504,7 +1594,7 @@ function viewAno(){
   const cats=state.config.categorias;
   const catTot=cats.map((ct,i)=>({ct,i,v:rows.reduce((a,r)=>a+(r.c.porCat[ct.id]||0),0)})).filter(z=>z.v>0).sort((a,b)=>b.v-a.v);
   const fTot=FORMAS.map(([id,n])=>({id,n,v:rows.reduce((a,r)=>a+(r.c.porForma[id]||0),0)})).filter(z=>z.v>0).sort((a,b)=>b.v-a.v);
-  return `${cardRetro()}<div class="tiles">
+  return `${cardRetro()}${cardConquistas()}<div class="tiles">
     <div class="tile"><span class="lab">Receitas</span><span class="val">${brl(T.rec)}</span><span class="sub">${esc(periodo)}</span></div>
     <div class="tile"><span class="lab">Despesas</span><span class="val">${brl(T.des)}</span><span class="sub">${T.rec>0?Math.round(T.des/T.rec*100)+"% das receitas":"—"}</span></div>
     <div class="tile hero"><span class="lab">Saldo acumulado</span><span class="val ${ult.ac<0?"neg":"pos"}">${brl(ult.ac)}</span><span class="sub">até ${esc(abrMes(ult.k))}, com saldo inicial</span></div>
@@ -1997,6 +2087,7 @@ function itemAtual(){
     case "rendaMes": return rendasDoMes(k).find(x=>x.id===s.id);
     case "categoria": return state.config.categorias.find(x=>x.id===s.id);
     case "meta": return state.config.metas.find(x=>x.id===s.id);
+    case "desafio": return (state.config.desafios||[]).find(x=>x.id===s.id);
     case "conta": return state.config.contas.find(x=>x.id===s.id);
     case "cartao": return state.config.cartoes.find(x=>x.id===s.id);
     case "transf": return m.transf.find(x=>x.id===s.id);
@@ -2035,7 +2126,7 @@ function renderSheet(){
   document.body.classList.add("sheet-open");
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
   if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  const titulos={gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar lançamentos",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="tablist">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -2171,6 +2262,19 @@ function renderSheet(){
         ${its.length>400?`<p class="hint">Mostrando os 400 primeiros.</p>`:""}`;
       botoes=`<button class="btn ghost" type="button" data-impvoltar="1">Outro arquivo</button><button class="btn" type="button" data-impok="1">Importar ${inc.length} lançamento${inc.length===1?"":"s"}</button>`;
     }
+  }else if(s.tipo==="desafio"){
+    const e=it?estadoDesafio(it):null, tp=it?it.tipo:(s.mod&&MODELOS_DES[s.mod]?MODELOS_DES[s.mod].tipo:"sem"), md=s.mod&&MODELOS_DES[s.mod]||{};
+    const catSel=it?it.cat:(md.icCat?((state.config.categorias.find(c=>catIc(c.id)===md.icCat)||{}).id||""):"");
+    corpo=`${novo?`<div class="f"><span>Comece por um modelo</span><div class="cats modelos">${Object.entries(MODELOS_DES).map(([kk,m])=>`<button type="button" class="tag ${s.mod===kk?"on":""}" data-desmodelo="${kk}">${esc(m.nome)}</button>`).join("")}</div></div>`:""}
+      ${e?`<div class="desafio ${e.st}" style="cursor:default"><div class="track ${e.st==="quebrou"?"over":""}"><div style="width:${Math.min(100,Math.round(e.pct*100))}%"></div></div><small>${esc(textoDesafio(it,e))}</small></div>`:""}
+      <label class="f">Nome<input class="in" id="s-nome" maxlength="50" placeholder="ex.: 30 dias sem delivery" value="${esc(it?it.nome:md.nome||"")}"></label>
+      <div class="f"><span>Tipo</span><div class="seg"><input type="radio" name="s-dtipo" id="s-dt-sem" value="sem" ${tp==="sem"?"checked":""}><label for="s-dt-sem">Não gastar nada</label><input type="radio" name="s-dtipo" id="s-dt-max" value="max" ${tp==="max"?"checked":""}><label for="s-dt-max">Gastar no máximo</label></div></div>
+      <div id="s-dvalbox" ${tp==="max"?"":"hidden"}>${valorCampo(it?it.valor:md.valor||null,"Valor máximo no período",false)}</div>
+      <label class="f">Com o quê (categoria)<select class="in" id="s-dcat"><option value="">Qualquer categoria (use as palavras)</option>${state.config.categorias.map(c=>`<option value="${esc(c.id)}" ${c.id===catSel?"selected":""}>${esc(c.nome)}</option>`).join("")}</select></label>
+      <label class="f">Palavras na descrição (opcional)<input class="in" id="s-dpal" maxlength="80" placeholder="ex.: ifood, delivery, rappi" value="${esc(it?it.palavras:md.palavras||"")}"></label>
+      <div class="row"><label class="f">Duração<select class="in" id="s-ddias">${[7,10,15,21,30,60,90].concat(it&&![7,10,15,21,30,60,90].includes(it.dias)?[it.dias]:[]).map(n=>`<option value="${n}" ${n===(it?it.dias:md.dias||30)?"selected":""}>${n} dias</option>`).join("")}</select></label><label class="f">Começa em<input class="in" id="s-dini" type="date" value="${it?it.inicio:hojeISO()}"></label></div>
+      <p class="hint">O app confere sozinho pelos seus lançamentos: conta se a despesa for da categoria escolhida <b>ou</b> tiver uma das palavras na descrição.</p>`;
+    sub=""; botoes=novo?`<button class="btn" type="submit">Começar desafio</button>`:`<button class="btn danger" type="button" data-sapagar="1">Excluir</button><button class="btn" type="submit">Salvar</button>`;
   }else if(s.tipo==="meta"){
     const i=it?infoMeta(it,null):null;
     corpo=`<label class="f">Nome da meta<input class="in" id="s-nome" maxlength="40" placeholder="ex.: Viagem, Reserva de emergência" value="${esc(it?it.nome:"")}" data-autofocus></label>
@@ -2263,7 +2367,7 @@ function atualizaBusca(){
   el.innerHTML=res.length?`<p class="hint">${res.length} resultado${res.length===1?"":"s"}</p>`+res.slice(0,60).map(x=>`<button type="button" class="item" data-sres="${x.tipo}" data-id="${esc(x.id)}" data-mes="${x.k||""}"><span class="pill">${x.k?esc(abrMes(x.k)):"fixa"}</span><span class="desc"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span><span class="v ${x.v>0?"pos":""}">${brl(Math.abs(x.v))}</span></button>`).join(""):'<p class="hint">Nada encontrado.</p>';
 }
 function erroSheet(msg,campo){ salvando=false; const e=document.getElementById("s-erro"); if(e){ e.textContent=msg; e.hidden=false; } if(campo){ const c=document.getElementById(campo); if(c) c.focus(); } }
-const TIPOS_COM_ITEM=["viagem","gasto","avulso","caixinha","fixo","fixoMes","parcela","renda","rendaMes","categoria","meta","conta","cartao","transf","divida"];
+const TIPOS_COM_ITEM=["desafio","viagem","gasto","avulso","caixinha","fixo","fixoMes","parcela","renda","rendaMes","categoria","meta","conta","cartao","transf","divida"];
 let salvando=false;
 function salvarSheet(outro){
   const s=ui.sheet, k=mesSheet(); if(!s) return;
@@ -2318,6 +2422,19 @@ function salvarSheet(outro){
     const dia=Number(valSel("s-dia"))||1, desc=((document.getElementById("s-desc")||{}).value||"").trim(), m=getMonth(k);
     if(s.id) Object.assign(itemAtual(),{valor:v,de,para,dia,desc}); else m.transf.push({id:uidGen(),valor:v,de,para,dia,desc});
     save(k); closeSheet(); render(); toast(brl(v)+" de "+nomeConta(de)+" para "+nomeConta(para)+"."); return;
+  }
+  if(s.tipo==="desafio"){
+    const nome=((document.getElementById("s-nome")||{}).value||"").trim(); if(!nome) return erroSheet("Dê um nome para o desafio.","s-nome");
+    const tipo=(document.querySelector('#sheet input[name="s-dtipo"]:checked')||{}).value==="max"?"max":"sem";
+    const valor=tipo==="max"?parseMoney((document.getElementById("s-valor")||{}).value):0; if(tipo==="max"&&!(valor>0)) return erroSheet("Digite o valor máximo, ex.: 200,00","s-valor");
+    const cat=valSel("s-dcat")||null, palavras=((document.getElementById("s-dpal")||{}).value||"").trim().slice(0,80);
+    if(!cat&&!palavrasDes({palavras}).length) return erroSheet("Escolha uma categoria ou escreva pelo menos uma palavra.","s-dpal");
+    const dias=Math.min(365,Math.max(1,Number(valSel("s-ddias"))||30)), ini=(document.getElementById("s-dini")||{}).value||hojeISO();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(ini)) return erroSheet("Data de início inválida.","s-dini");
+    const d={nome,tipo,valor:valor||0,cat,palavras,dias,inicio:ini};
+    if(!state.config.desafios) state.config.desafios=[];
+    if(s.id) Object.assign(itemAtual(),d); else state.config.desafios.push(Object.assign({id:"d"+uidGen()},d));
+    save("config"); closeSheet(); render(); toast(s.id?"Desafio atualizado.":"Desafio começou! Boa sorte."); return;
   }
   if(s.tipo==="meta"){
     const nome=((document.getElementById("s-nome")||{}).value||"").trim(); if(!nome) return erroSheet("Dê um nome para a meta.","s-nome");
@@ -2433,7 +2550,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -2446,6 +2563,7 @@ function bindSheet(r){
     if(b.dataset.divquitar){ registrarPagDiv(true); return; }
     if(b.dataset.divdelpag){ const x=itemAtual(); if(x){ x.pags=x.pags.filter(p=>p.id!==b.dataset.divdelpag); save("config"); render(); renderSheet(); toast("Pagamento apagado."); } return; }
     if(b.dataset.avdiv){ openSheet("divida",b.dataset.avdiv); return; }
+    if(b.dataset.desmodelo){ ui.sheet=Object.assign({},ui.sheet,{mod:b.dataset.desmodelo}); renderSheet(); return; }
     if(b.dataset.caledit){ openSheet("gasto",b.dataset.caledit); return; }
     if(b.dataset.callancar){ openSheet("gasto",null,{dia:Number(b.dataset.callancar)}); return; }
     if(b.dataset.avretro){ openSheet("retro",null,{ano:Number(b.dataset.avretro),slide:0}); return; }
@@ -2481,6 +2599,7 @@ function bindSheet(r){
       else if(s.tipo==="transf") apagarItem(k,"transf",id,"Transferência apagada.");
       else if(s.tipo==="divida") apagarItem("config","dividas",id,"Dívida excluída.");
       else if(s.tipo==="viagem") apagarItem("config","viagens",id,"Viagem excluída (os gastos continuam no mês).");
+      else if(s.tipo==="desafio") apagarItem("config","desafios",id,"Desafio excluído.");
       else if(s.tipo==="meta") apagarItem("config","metas",id,"Meta excluída (o dinheiro guardado volta para a caixinha geral).");
       else apagarItem(k,s.tipo==="gasto"?"gastos":s.tipo==="avulso"?"avulsos":"caixinha",id,"Lançamento apagado.");
       return;
@@ -2503,6 +2622,7 @@ function bindSheet(r){
     if(e.target.id==="s-parc"||e.target.name==="s-forma"||e.target.id==="s-dia"||e.target.id==="s-cartao") atualizaParc();
     if(e.target.name==="s-forma") atualizaFormaBox();
     if(e.target.name==="s-cat") atualizaSubBox();
+    if(e.target.name==="s-dtipo"){ const bx=document.getElementById("s-dvalbox"); if(bx) bx.hidden=e.target.value!=="max"; }
     if(e.target.id==="s-vgon"||e.target.id==="s-vgid"||e.target.name==="s-vgmoeda") atualizaVg();
     if(e.target.id==="s-vmoeda"){ const c=document.getElementById("s-vcot"), l=document.getElementById("s-vcotlab"); if(l) l.textContent="Cotação (1 "+e.target.value+" em R$)"; if(c){ c.value=e.target.value==="BRL"?"1":""; } buscarCotacao(); }
     if(e.target.id==="s-gmes"){ const ds=document.getElementById("s-dia"), km=e.target.value; if(ds){ const d=Number(ds.value)||1; ds.outerHTML=selDia(km,Math.min(d,diasMes(km))); } atualizaParc(); }

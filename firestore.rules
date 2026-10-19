@@ -32,7 +32,8 @@ service cloud.firestore {
     }
     // Formato das configurações do controle
     function configValida(d) {
-      return d.keys().hasOnly(['viagens','dividas','termos','salarioPadrao','saldoInicial','saldoCaixinha','ate','inicio','categorias','fixos','parcelas','rendas','cartoes','contas','contaSalario','metas'])
+      return d.keys().hasOnly(['desafios','viagens','dividas','termos','salarioPadrao','saldoInicial','saldoCaixinha','ate','inicio','categorias','fixos','parcelas','rendas','cartoes','contas','contaSalario','metas'])
+        && (!('desafios' in d) || d.desafios is list)
         && (!('categorias' in d) || d.categorias is list)
         && (!('fixos' in d) || d.fixos is list)
         && (!('parcelas' in d) || d.parcelas is list)

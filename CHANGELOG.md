@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 4.5.0 — 18/10/2026 **Conquistas e desafios**
+
+- Novo card em Visão geral: sequência de dias lançando gastos, meses seguidos fechando no azul (com recordes) e 12 conquistas para desbloquear.
+- Desafios: "não gastar nada" ou "gastar no máximo R$ X" com uma categoria e/ou palavras da descrição, por 7 a 90 dias. Modelos prontos: 30 dias sem delivery, semana sem compras, mercado no limite. O app acompanha sozinho pelos lançamentos.
+- Avisa quando uma conquista é desbloqueada ou quando um desafio termina.
+- **Regras do Firebase atualizadas** (nova lista `desafios` nas configurações) — publique o firestore.rules antes de usar desafios na conta.
+
 ## 4.4.0 — 18/10/2026 **Lançamento rápido por texto**
 
 - No topo da nova despesa há um campo rápido: escreva "45 ifood", "120 mercado ontem pix" ou "600 tv 3x crédito" e aperte Enter para lançar.
