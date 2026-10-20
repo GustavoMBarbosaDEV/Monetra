@@ -12,6 +12,17 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.11 — 19/10/2026 **Nada sai da caixa**
+
+- Calculadora "Quanto guardar": o botão "Criar meta de economia com esses valores" saía para a direita (com letra grande no celular) e encostava no resultado e no texto; agora ocupa a largura certa, quebra a linha e tem espaço entre os blocos.
+- Botões em geral: texto longo quebra a linha em vez de passar da borda.
+- Títulos das caixas com nome comprido (viagem, desafio etc.) ganham reticências em vez de empurrar a tela.
+- Nomes sem espaço (ex.: "aaaa…") em categorias, metas, contas fixas, lançamentos e avisos quebram a linha em vez de criar rolagem para o lado.
+- Barra de meses em telas estreitas: o ano fica embaixo do mês, para caber com letra grande.
+- Relatórios: a legenda do gráfico (Receitas/Despesas) foi para dentro da caixa.
+- Valores muito altos no topo (Receitas/Despesas) diminuem a letra para caber.
+- Testado página por página e função por função: celular (360 e 390 px) e computador, temas claro e escuro, letra normal e 30% maior, usuário novo, nomes longos e virada do ano.
+
 ## 5.0.10 — 19/10/2026 **Caixas do Início abertas de novo**
 
 - Início e Ajustes: as caixas voltaram a ficar sempre abertas, como antes da 5.0.6. Fatura do cartão, contas fixas, receitas, caixinha, calendário e para onde foi aparecem direto, com o círculo de "paga" e o toque para editar à mão.

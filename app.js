@@ -10,10 +10,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.10";
+const VERSAO="5.0.11";
 const NOVIDADES=[
-  "As caixas do Início voltaram a ficar sempre abertas: fatura do cartão, contas fixas, receitas e caixinha aparecem direto, para marcar como paga e editar sem precisar abrir nada.",
-  "A barra com 4 meses e o calendário para escolher o mês continuam como estavam."
+  "Corrigido o botão da calculadora Quanto guardar que saía para fora da tela; botões com texto grande agora quebram a linha.",
+  "Revisão de layout em todas as telas, inclusive com letra grande no celular: meses, gráfico e nomes longos não saem mais do lugar."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1838,7 +1838,7 @@ function viewAno(){
     <div class="tile"><span class="lab">Média de gasto/mês</span><span class="val">${brl(media)}</span><span class="sub">${comGasto.length} ${comGasto.length===1?"mês":"meses"} com lançamentos</span></div>
   </div>
   ${maior||melhor?`<div class="destaques">${maior?`<div><span class="lab">Mês que mais gastou</span><b>${esc(nomeMes(maior.k))}</b><span>${brl(maior.c.despesas)}</span></div>`:""}${melhor&&melhor.c.saldo>0?`<div><span class="lab">Melhor saldo</span><b>${esc(nomeMes(melhor.k))}</b><span class="pos">${brl(melhor.c.saldo)}</span></div>`:""}${catTot[0]?`<div><span class="lab">Categoria que mais pesou</span><b>${esc(catTot[0].ct.nome)}</b><span>${brl(catTot[0].v)} · ${Math.round(catTot[0].v/T.des*100)}%</span></div>`:""}</div>`:""}
-  <div class="card chart"><div class="cardhead"><h2>Receitas x despesas</h2><div class="legend"><span><i style="background:var(--accent)"></i>Receitas</span><span><i style="background:var(--c2)"></i>Despesas</span></div></div><div class="tablewrap">${svg}</div></div>
+  <div class="card chart"><div class="cardhead"><h2>Receitas x despesas</h2></div><div class="legend"><span><i style="background:var(--accent)"></i>Receitas</span><span><i style="background:var(--c2)"></i>Despesas</span></div><div class="tablewrap">${svg}</div></div>
   ${cardAssinaturas(rows.length?T.rec/rows.length:0)}
   ${cardEtiquetas()}
   <div class="grid"><div class="card"><div class="cardhead"><h2>Mês a mês</h2><span class="num muted">valores em R$ · toque para abrir</span></div><div class="tablewrap"><table>

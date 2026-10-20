@@ -966,9 +966,9 @@ img.tutlogo{width:64px;height:64px;border-radius:18px;box-shadow:0 0 0 1px rgba(
 .col > .card:has(> .cardhead):first-child,.col > .card:has(> h2:first-child):first-child{margin-top:44px}
 /* cabeçalho com título + filtro numa linha só, sem invadir a caixa */
 .card > .cardhead{flex-wrap:nowrap}
-.card > .cardhead h2{white-space:nowrap;flex:0 0 auto}
+.card > .cardhead h2{white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .card > .cardhead select{flex:0 1 auto;min-width:0;max-width:52%;text-overflow:ellipsis;padding-top:4px;padding-bottom:4px}
-.card > .cardhead > :not(h2){flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card > .cardhead > :not(h2){flex:0 0 auto;max-width:55%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:380px){.card > .cardhead h2{font-size:15px}}
 /* metas: nome inteiro; o valor desce de linha quando não cabe */
 .meta .mt{flex-wrap:wrap;row-gap:2px}
@@ -1083,3 +1083,20 @@ button.item .pill{white-space:nowrap}
 .mg.on .mgdot{background:var(--accent-ink)}
 .mgleg{display:flex;align-items:center;gap:6px;margin:0}
 @media (min-width:861px){ .months .chips{flex:0 1 480px} }
+
+/* ===== 5.0.11 — textos do usuário sem espaço (ex.: "aaaa…") não empurram a tela para o lado ===== */
+.bar .t > b,.orow .ot b,.item .desc b,.item .desc small,.meta .mt b,.catitem .desc b,.conta .desc b,.fixrow .desc b,
+.card > .cardhead h2,.card h2,.card h3,.aviso .t b,.aviso .t small,.faixa .fx-t,.desafio b,.retrocard b,.pill,.tag{overflow-wrap:anywhere}
+.donutwrap,.bars,.bar,.bar .t{min-width:0}
+#app,#sheet{overflow-wrap:anywhere} /* qualquer texto sem espaço quebra em vez de empurrar a tela */
+.hs-mini{min-width:0}
+.hs-mini b{font-size:clamp(13px,4.3vw,16px);overflow-wrap:anywhere}
+/* botões com texto longo (ou letra grande no celular) quebram a linha em vez de sair da caixa */
+.btn{white-space:normal;max-width:100%;text-align:center;line-height:1.25}
+.btn.mini,.convrow .btn{white-space:nowrap}
+#s-calcres{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+#s-calcres > .btn{width:100%}
+#s-calcres > .hint{margin:0}
+.card.chart > .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted)}
+/* meses da barra: em tela estreita o ano vai para baixo do mês (cabe mesmo com letra grande) */
+@media (max-width:400px){ .months .chip{flex-direction:column;gap:0;line-height:1.1;padding-block:4px;white-space:normal} .months .chip small{display:block;font-size:11px} }
