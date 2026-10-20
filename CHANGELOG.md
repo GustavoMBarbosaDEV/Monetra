@@ -12,6 +12,15 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.12 — 19/10/2026 **Checagem de tipos (só para desenvolvimento)**
+
+- `// @ts-check` no topo do `app.js` e tipos em JSDoc (comentários) para Config, Mes, Gasto, Parcela, Cartao, Conta,
+  Categoria, Fixo, Renda, Meta, Divida, Viagem, Desafio, UI e os resultados de calc/previsaoMes.
+- Funções de cálculo anotadas: calc, parcelasDoMes, faturaDoMes, saldosContas, previsaoMes, sobraCat, parseMoney, valorParcela.
+- Novo `jsconfig.json` para o VS Code entender o projeto e mostrar os avisos.
+- Nenhuma mudança de funcionamento ou visual: só comentários (além do número da versão).
+- Checagem: `npx -p typescript tsc -p jsconfig.json` (veja DESENVOLVIMENTO/CHANGELOG para o que os avisos significam).
+
 ## 5.0.11 — 19/10/2026 **Nada sai da caixa**
 
 - Calculadora "Quanto guardar": o botão "Criar meta de economia com esses valores" saía para a direita (com letra grande no celular) e encostava no resultado e no texto; agora ocupa a largura certa, quebra a linha e tem espaço entre os blocos.

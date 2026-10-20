@@ -1,8 +1,349 @@
+// @ts-check
 (function(){
 "use strict";
 /* =====================================================================
    Monetra — controle de gastos
    ===================================================================== */
+/* ---------------------------------------------------------------------
+   Tipos (JSDoc) — só para o editor e para o "tsc --noEmit" checarem o código.
+   Não mudam nada no funcionamento: são comentários.
+   Base: defaultConfig, normConfig, normMonth e limpaItem.
+   --------------------------------------------------------------------- */
+/** Chave de mês no formato "AAAA-MM" (ex.: "2026-10").
+ * @typedef {string} MesKey */
+/** Data no formato "AAAA-MM-DD".
+ * @typedef {string} DataISO */
+/** Forma de pagamento: "pix" | "debito" | "credito" | "dinheiro" | "boleto" (ou outra vinda de importação).
+ * @typedef {string} Forma */
+/**
+ * Valor original em moeda estrangeira (modo viagem).
+ * @typedef {Object} ValorOrig
+ * @property {string} moeda   código de 3 letras (USD, EUR…)
+ * @property {number} valor
+ * @property {number} cotacao
+ * @property {number} taxa
+ */
+/**
+ * Lançamento genérico de um mês (despesa, receita avulsa, caixinha ou transferência) — saída de limpaItem.
+ * Os campos opcionais só existem em alguns tipos de lançamento.
+ * @typedef {Object} Gasto
+ * @property {string} id
+ * @property {number} dia          1 a 31
+ * @property {number} valor
+ * @property {string} desc
+ * @property {string} [cat]        id da categoria
+ * @property {string} [sub]        id da subcategoria
+ * @property {Forma}  [forma]
+ * @property {string} [contaId]
+ * @property {string} [cartaoId]
+ * @property {string} [metaId]     caixinha: meta ligada
+ * @property {string} [tipo]       caixinha: "guardar" | "retirar"
+ * @property {string} [de]         transferência: conta de origem
+ * @property {string} [para]       transferência: conta de destino
+ * @property {string} [por]        quem lançou (controle compartilhado)
+ * @property {string} [imp]        id da importação de extrato
+ * @property {string} [viagemId]
+ * @property {string[]} [tags]
+ * @property {boolean} [pago]
+ * @property {DataISO} [pagoEm]
+ * @property {ValorOrig} [orig]
+ */
+/**
+ * Lançamento como aparece nas listas calculadas (faturaDoMes, cartaoDoMes, despesasDoMes):
+ * um Gasto, uma parcela do mês ou uma conta fixa do mês, com alguns campos a mais.
+ * @typedef {Object} ItemMes
+ * @property {string} id
+ * @property {number} dia
+ * @property {number} valor
+ * @property {string} [desc]
+ * @property {string} [cat]
+ * @property {string|null} [sub]
+ * @property {Forma}  [forma]
+ * @property {string|null} [contaId]
+ * @property {string|null} [cartaoId]
+ * @property {string[]} [tags]
+ * @property {boolean} [pago]
+ * @property {MesKey} [compraK]    mês da compra (itens de fatura)
+ * @property {boolean} [parcela]
+ * @property {number} [idx]        parcela: número desta parcela
+ * @property {number} [n]          parcela: total de parcelas
+ * @property {boolean} [fixo]
+ * @property {boolean} [pular]
+ * @property {boolean} [cartao]
+ */
+/**
+ * Parcela de uma compra parcelada que cai num mês (saída de parcelasDoMes).
+ * @typedef {Object} ParcelaMes
+ * @property {string} id
+ * @property {true} parcela
+ * @property {number} idx          número desta parcela (1 = primeira)
+ * @property {number} n            total de parcelas
+ * @property {string} desc
+ * @property {string} cat
+ * @property {string|null} sub
+ * @property {string[]} tags
+ * @property {Forma} forma
+ * @property {string|null} contaId
+ * @property {string|null} cartaoId
+ * @property {number} dia
+ * @property {number} valor
+ * @property {number} total
+ * @property {MesKey} compra
+ * @property {boolean} cartao      true quando entra na fatura de um cartão
+ * @property {boolean} pago
+ * @property {DataISO|null} pagoEm
+ */
+/**
+ * Mês guardado (saída de normMonth). As chaves de fixos/rendas/parcelas/faturasPagas são ids.
+ * @typedef {Object} Mes
+ * @property {number|null} salario
+ * @property {Gasto[]} avulsos     receitas avulsas
+ * @property {Gasto[]} gastos      despesas lançadas à mão
+ * @property {Gasto[]} caixinha
+ * @property {Object<string,{pago?:boolean,valor?:number,pular?:boolean,pagoEm?:string}>} fixos
+ * @property {Object<string,{valor?:number,pular?:boolean}>} rendas
+ * @property {Object<string,{pago?:boolean,pagoEm?:string}>} parcelas
+ * @property {Object<string,boolean>} faturasPagas
+ * @property {Gasto[]} transf
+ * @property {boolean} faturaPaga  versões antigas (um cartão só)
+ */
+/**
+ * @typedef {Object} Subcategoria
+ * @property {string} id
+ * @property {string} nome
+ */
+/**
+ * @typedef {Object} Categoria
+ * @property {string} id
+ * @property {string} nome
+ * @property {number} orcamento    limite do mês (0 = sem limite)
+ * @property {number|null} [cor]   0 a 11
+ * @property {string|null} [ic]    nome do ícone
+ * @property {boolean} [sobra]     orçamento com sobra acumulada
+ * @property {MesKey|null} [sobraDesde]
+ * @property {Subcategoria[]} [subs]
+ */
+/**
+ * Conta fixa (aluguel, internet…).
+ * @typedef {Object} Fixo
+ * @property {string} id
+ * @property {string} nome
+ * @property {string} cat
+ * @property {number} valor
+ * @property {number} dia
+ * @property {Forma} forma
+ * @property {MesKey} desde
+ * @property {MesKey|null} ate
+ * @property {string|null} contaId
+ */
+/**
+ * Compra parcelada (cadastro).
+ * @typedef {Object} Parcela
+ * @property {string} id
+ * @property {string} desc
+ * @property {string} cat
+ * @property {string|null} sub
+ * @property {string[]} tags
+ * @property {Forma} forma
+ * @property {number} total
+ * @property {number} n            2 a 48
+ * @property {MesKey} compra
+ * @property {number} dia
+ * @property {number|null} venc    dia de vencimento (fora do cartão)
+ * @property {string|null} contaId
+ * @property {string|null} cartaoId
+ * @property {string|null} viagemId
+ * @property {ValorOrig|null} orig
+ */
+/**
+ * Renda fixa (bolsa, pensão, aluguel recebido…).
+ * @typedef {Object} Renda
+ * @property {string} id
+ * @property {string} nome
+ * @property {number} valor
+ * @property {MesKey} desde
+ * @property {MesKey|null} ate
+ * @property {string|null} contaId
+ */
+/**
+ * @typedef {Object} Cartao
+ * @property {string} id
+ * @property {string} nome
+ * @property {number|null} fecha   dia de fechamento
+ * @property {number|null} vence   dia de vencimento
+ * @property {number} limite
+ * @property {string|null} contaId conta que paga a fatura
+ */
+/**
+ * Conta bancária / carteira.
+ * @typedef {Object} Conta
+ * @property {string} id
+ * @property {string} nome
+ * @property {string} tipo         "corrente" | "poupanca" | "dinheiro"…
+ * @property {number} saldoInicial
+ */
+/**
+ * Meta de economia.
+ * @typedef {Object} Meta
+ * @property {string} id
+ * @property {string} nome
+ * @property {number} alvo
+ * @property {MesKey|null} prazo
+ */
+/**
+ * @typedef {Object} PagamentoDivida
+ * @property {string} id
+ * @property {number} valor
+ * @property {DataISO|null} data
+ */
+/**
+ * Dívida com uma pessoa.
+ * @typedef {Object} Divida
+ * @property {string} id
+ * @property {string} pessoa
+ * @property {"pagar"|"receber"} tipo
+ * @property {number} valor
+ * @property {string} desc
+ * @property {DataISO|null} data
+ * @property {DataISO|null} venc
+ * @property {PagamentoDivida[]} pags
+ */
+/**
+ * @typedef {Object} Viagem
+ * @property {string} id
+ * @property {string} nome
+ * @property {string} moeda
+ * @property {number} cotacao
+ * @property {number} taxa         % (IOF + spread)
+ * @property {DataISO|null} inicio
+ * @property {DataISO|null} fim
+ * @property {number} orcamento
+ */
+/**
+ * @typedef {Object} Desafio
+ * @property {string} id
+ * @property {string} nome
+ * @property {"sem"|"max"} tipo    "sem" = não gastar; "max" = gastar no máximo `valor`
+ * @property {string|null} cat
+ * @property {string} palavras
+ * @property {number} dias
+ * @property {DataISO} inicio
+ * @property {number} valor
+ */
+/**
+ * Configurações (saída de normConfig / defaultConfig).
+ * @typedef {Object} Config
+ * @property {Desafio[]} desafios
+ * @property {Viagem[]} viagens
+ * @property {Divida[]} dividas
+ * @property {{v:string,em:string}|null} termos
+ * @property {number} salarioPadrao
+ * @property {number} saldoInicial
+ * @property {number} saldoCaixinha
+ * @property {MesKey} ate
+ * @property {MesKey|null} inicio
+ * @property {Parcela[]} parcelas
+ * @property {Renda[]} rendas
+ * @property {Meta[]} metas
+ * @property {Cartao[]} cartoes
+ * @property {Conta[]} contas
+ * @property {string|null} contaSalario
+ * @property {Categoria[]} categorias
+ * @property {Fixo[]} fixos
+ */
+/**
+ * Folha (janela) aberta. `tipo` diz qual é; os outros campos dependem do tipo.
+ * @typedef {Object} Folha
+ * @property {string} tipo
+ * @property {string|null} id
+ * @property {MesKey} [mes]
+ * @property {number} [ano]
+ * @property {string} [calc]
+ * @property {number} [dia]
+ * @property {string} [fim]
+ * @property {MesKey} [sel]
+ * @property {string} [q]
+ * @property {Array<any>} [itens]
+ * @property {string} [pinModo]
+ * @property {string} [cartaoArq]
+ * @property {string} [cartaoImp]
+ * @property {string} [contaImp]
+ * @property {string} [dTipo]       dívida: "receber" | "pagar"
+ * @property {string} [cxTipo]      caixinha: "guardar" | "retirar"
+ * @property {number} [slide]       retrospectiva: tela atual
+ * @property {any} [mod]             importação: itens lidos do extrato
+ * @property {string} [erroImp]
+ * @property {any} [arquivo]
+ * @property {string} [valorRasc]
+ * @property {number} [simSaldo]
+ * @property {string} [metaId]
+ * @property {string} [nomeRasc]
+ */
+/**
+ * Estado da interface (o que está aberto, filtros, mensagens temporárias).
+ * @typedef {Object} UI
+ * @property {Object<string,boolean>} abre   seções abertas (guardado no aparelho)
+ * @property {string} tab                    "mes" | "ano" | "metas" | "perfil" | "ajustes"
+ * @property {MesKey|null} month
+ * @property {Folha|null} sheet
+ * @property {string} importMsg
+ * @property {string} loginModo
+ * @property {string|null} gCat              última categoria usada
+ * @property {Forma} gForma                  última forma de pagamento usada
+ * @property {string} filtro                 filtro de categoria em "Últimos lançamentos"
+ * @property {string|null} [gConta]
+ * @property {string|null} [gCartao]
+ * @property {string} [forma]
+ * @property {string|null} [rolarPara]       id do elemento para rolar depois de desenhar
+ * @property {boolean} [ocupado]
+ * @property {boolean} [lerTermos]
+ * @property {number} [revogarCont]     toques em "Retirar meu aceite"
+ * @property {boolean} [verQuit]
+ * @property {boolean} [verCats]
+ * @property {string|null} [verTodas]
+ * @property {string|null} [verTodasRec]
+ * @property {string} [convErro]
+ * @property {string} [compErro]
+ * @property {boolean} [confirmaApagar]
+ * @property {boolean} [recusouTermos]
+ * @property {string} [conviteUrl]
+ * @property {any} [repetidos]
+ */
+/**
+ * Resultado de calc(k).
+ * @typedef {Object} CalcMes
+ * @property {number} salario
+ * @property {number} avulsos
+ * @property {number} rendas
+ * @property {number} despesas
+ * @property {number} receitas
+ * @property {number} saldo
+ * @property {number} guardado
+ * @property {number} retirado
+ * @property {number|null} porDia
+ * @property {string} porDiaSub
+ * @property {Object<string,number>} porCat
+ * @property {Object<string,number>} porForma
+ * @property {number} dim          dias do mês
+ * @property {number} fixosTotal
+ * @property {number} fixosPend
+ * @property {number} fatura
+ * @property {number} pct          despesas / receitas
+ */
+/**
+ * Resultado de previsaoMes(k).
+ * @typedef {Object} Previsao
+ * @property {number} dia
+ * @property {number} rest
+ * @property {number} dim
+ * @property {number} ritmo        gasto do dia a dia por dia (fora do cartão)
+ * @property {number} extra
+ * @property {number} saldo        saldo previsto para o fim do mês
+ * @property {number} cartao       previsto no cartão até o fim do mês
+ * @property {number} foraRitmo    compras grandes que não entram no ritmo
+ * @property {number} grande
+ * @property {(id:string)=>number} ritmoCat
+ */
 const NOMES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const ABR=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
@@ -10,7 +351,7 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.11";
+const VERSAO="5.0.12";
 const NOVIDADES=[
   "Corrigido o botão da calculadora Quanto guardar que saía para fora da tela; botões com texto grande agora quebram a linha.",
   "Revisão de layout em todas as telas, inclusive com letra grande no celular: meses, gráfico e nomes longos não saem mais do lugar."
@@ -32,8 +373,20 @@ const uidGen=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).
 const formaNome=f=>(FORMAS.find(x=>x[0]===f)||[null,"Não informado"])[1];
 /* Aceita "1.200", "1.200,50", "1200", "25,9", "R$ 2.800,00". Ponto seguido de 3 dígitos = milhar. */
 /* valor de cada parcela em centavos inteiros: a diferença de centavos fica na última */
+/**
+ * Valor da parcela i (0 = primeira) de um total dividido em n, em centavos inteiros.
+ * @param {number} total
+ * @param {number} n
+ * @param {number} i
+ * @returns {number}
+ */
 function valorParcela(total,n,i){ const c=Math.round((Number(total)||0)*100), b=Math.floor(c/n); return (i===n-1?c-b*(n-1):b)/100; }
 function faltaParcelas(total,n,idx){ const c=Math.round((Number(total)||0)*100), b=Math.floor(c/n); return Math.max(0,c-b*(idx-1))/100; }
+/**
+ * Lê um valor digitado ("1.200,50", "R$ 2.800", "25,9"). Devolve NaN se não for número.
+ * @param {string|number|null|undefined} s
+ * @returns {number}
+ */
 function parseMoney(s){
   s=String(s||"").replace(/R\$|\s/g,"");
   if(!s) return NaN;
@@ -107,7 +460,9 @@ const ICON={
 };
 
 /* ---------- estado ---------- */
+/** @returns {Config} */
 function defaultConfig(){ return {desafios:[],viagens:[],dividas:[],termos:null,salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
+/** @type {{config:Config, months:Object<string,Mes>, loaded:boolean}} */
 const state={config:defaultConfig(), months:{}, loaded:false};
 let MESES=[];
 const today=new Date();
@@ -141,6 +496,7 @@ function mesesVisiveis(){
   return MESES.filter(k=>k>=de);
 }
 
+/** @type {UI} */
 const ui={abre:(()=>{ try{ const x=JSON.parse(localStorage.getItem("mb.abre")||"{}"); return x&&typeof x==="object"&&!Array.isArray(x)?x:{}; }catch(e){ return {}; } })(),tab:"mes",month:null,sheet:null,importMsg:"",loginModo:"entrar",gCat:null,gForma:"pix",filtro:""};
 let mode="loading", uid=null, statusTxt="Carregando…", statusCls="";
 buildMeses();
@@ -148,6 +504,10 @@ ui.month=todayKey;
 try{ ui.gForma=localStorage.getItem("meucaixa.ui.forma")||"pix"; }catch(e){}
 
 /* limpa cada lançamento vindo de fora (nuvem, backup, outro participante): tipos certos e nada de HTML escondido */
+/**
+ * @param {any} x
+ * @returns {Gasto|null}
+ */
 function limpaItem(x){
   if(!x||typeof x!=="object"||Array.isArray(x)) return null;
   const o=Object.assign({},x);
@@ -161,6 +521,10 @@ function limpaItem(x){
 }
 const listaLimpa=a=>Array.isArray(a)?a.map(limpaItem).filter(Boolean):[];
 const mesValido=k=>typeof k==="string"&&/^\d{4}-(0[1-9]|1[0-2])$/.test(k);
+/**
+ * @param {any} d
+ * @returns {Mes}
+ */
 function normMonth(d){
   return {salario:(typeof d?.salario==="number"&&isFinite(d.salario))?d.salario:null,
     avulsos:listaLimpa(d?.avulsos),
@@ -173,6 +537,10 @@ function normMonth(d){
     transf:listaLimpa(d?.transf),
     faturaPaga:!!(d&&d.faturaPaga)};
 }
+/**
+ * @param {any} d
+ * @returns {Config}
+ */
 function normConfig(d){
   const ate=(typeof d?.ate==="string"&&/^\d{4}-\d{2}$/.test(d.ate)&&d.ate>=INICIO&&d.ate<=LIMITE_ATE)?d.ate:PADRAO_ATE;
   const cats=Array.isArray(d?.categorias)&&d.categorias.length?d.categorias.map(c=>({id:String(c.id),nome:String(c.nome||""),orcamento:Number(c.orcamento)||0,cor:(typeof c.cor==="number"&&c.cor>=0&&c.cor<12)?c.cor:null,ic:typeof c.ic==="string"&&/^[a-z]{2,12}$/.test(c.ic)?c.ic:null,sobra:c.sobra===true,sobraDesde:typeof c.sobraDesde==="string"&&/^\d{4}-(0[1-9]|1[0-2])$/.test(c.sobraDesde)?c.sobraDesde:null,subs:Array.isArray(c.subs)?c.subs.filter(x=>x&&x.id&&x.nome).map(x=>({id:String(x.id),nome:String(x.nome)})):[]})):defaultConfig().categorias;
@@ -247,6 +615,10 @@ function rendasDoMes(k){
   return state.config.rendas.filter(r=>r.desde<=k&&(!r.ate||k<=r.ate)).map(r=>{ const o=ov[r.id]||{}; return {id:r.id,nome:r.nome,contaId:r.contaId||null,valor:(typeof o.valor==="number")?o.valor:r.valor,padrao:r.valor,pular:!!o.pular}; });
 }
 /* Parcelas que caem no mês k (no cartão, a 1ª parcela vai na fatura da compra) */
+/**
+ * @param {MesKey} k
+ * @returns {ParcelaMes[]}
+ */
 function parcelasDoMes(k){
   const dim=diasMes(k), out=[];
   state.config.parcelas.forEach(p=>{
@@ -268,6 +640,11 @@ function cartaoDoMes(k){
   return avista.concat(parc).sort((a,b)=>a.dia-b.dia);
 }
 /* Compras no crédito (lançadas em qualquer mês) cuja fatura vence em k — de um cartão ou de todos */
+/**
+ * @param {MesKey} k
+ * @param {string} [cid]   id do cartão; sem ele, todos os cartões
+ * @returns {ItemMes[]}
+ */
 function faturaDoMes(k,cid){
   if(!cartaoAtivo()) return [];
   const out=[];
@@ -297,6 +674,11 @@ const contaOk=id=>state.config.contas.some(c=>c.id===id)?id:(contaPrincipal()||{
 const nomeConta=id=>{ const c=state.config.contas.find(x=>x.id===contaOk(id)); return c?c.nome:""; };
 const saldoInicialTotal=()=>temContas()?soma(state.config.contas.map(c=>({valor:c.saldoInicial}))):state.config.saldoInicial;
 /* Saldo de cada conta até o mês k (inclusive) */
+/**
+ * Saldo de cada conta até o mês k, por id da conta.
+ * @param {MesKey} k
+ * @returns {Object<string,number>}
+ */
 function saldosContas(k){
   const S={}; state.config.contas.forEach(c=>S[c.id]=Number(c.saldoInicial)||0);
   if(!temContas()) return S;
@@ -316,6 +698,10 @@ function saldosContas(k){
   return S;
 }
 const soma=(arr,f)=>arr.reduce((a,x)=>a+(Number(f?f(x):x.valor)||0),0);
+/**
+ * @param {MesKey} k
+ * @returns {CalcMes}
+ */
 function calc(k){
   const m=normMonth(state.months[k]||{});
   const salario=m.salario??(ativo(k)?state.config.salarioPadrao:0);
@@ -348,6 +734,11 @@ function infoMeta(mt,k){
 const nomeMeta=id=>{ const m=state.config.metas.find(x=>x.id===id); return m?m.nome:"Geral"; };
 /* Previsão do fim do mês: projeta o gasto do dia a dia (lançamentos avulsos até hoje) pelos dias que faltam.
    Contas fixas e parcelas já estão no saldo; só o gasto variável é estimado. Só para o mês atual. */
+/**
+ * @param {MesKey} k
+ * @param {CalcMes} [c]   resultado de calc(k), se já tiver
+ * @returns {Previsao|null}
+ */
 function previsaoMes(k,c){
   if(k!==todayKey||!ativo(k)) return null;
   c=c||calc(k); const dim=c.dim, dia=today.getDate(), rest=dim-dia;
@@ -362,6 +753,12 @@ function previsaoMes(k,c){
 }
 /* Orçamento com sobra acumulada (opcional por categoria): o que não foi gasto do limite passa para o mês seguinte.
    Estourou? A sobra zera e o mês seguinte recomeça com o limite normal. Conta a partir do mês em que a opção foi ligada. */
+/**
+ * Sobra acumulada do limite de uma categoria que entra no mês k.
+ * @param {Categoria|null|undefined} ct
+ * @param {MesKey} k
+ * @returns {number}
+ */
 function sobraCat(ct,k){
   if(!ct||!ct.sobra||!(ct.orcamento>0)) return 0;
   const desde=ct.sobraDesde||k; if(desde>=k) return 0;
