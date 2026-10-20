@@ -151,3 +151,12 @@ O endereço do app passou de `https://gustavombarbosadev.github.io/MB-Controle/`
   (`GustavoMBarbosaDEV.github.io/.well-known/`), então não precisa mudar.
 - **Tela de abertura do APK:** no PWABuilder, use em *Icon URL* o `icons/splash-512.png` (logo sem o quadrado)
   e em *Background color* / *Splash color* o `#030605`. O ícone do celular continua vindo do `icon-maskable-512.png`.
+
+
+## Checagem de tipos (VS Code / TypeScript)
+
+- O `app.js` começa com `// @ts-check` e tem os tipos principais em JSDoc (Config, Mes, Gasto, Parcela…).
+- `jsconfig.json` liga a checagem; `tipos.d.ts` completa os tipos dos elementos da tela. Nenhum dos dois é carregado pelo app.
+- No VS Code: abra a pasta do projeto e veja os avisos em **Problemas** (Ctrl+Shift+M).
+- No terminal (com Node): `npx -p typescript tsc -p jsconfig.json` — o esperado é terminar sem nenhum erro.
+- Ao criar campos novos nos dados, atualize o typedef correspondente no topo do `app.js`.

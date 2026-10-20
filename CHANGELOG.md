@@ -12,6 +12,16 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.14 — 19/10/2026 **Checagem de tipos sem avisos**
+
+- `tsc -p jsconfig.json` agora passa com **0 avisos** (eram 416 na 5.0.12).
+- Novo `tipos.d.ts` (só para o editor, o app não carrega): diz ao TypeScript que os elementos da tela lidos com
+  `getElementById` podem ser campos de formulário (`.value`, `.checked`…), e declara o `FIREBASE_CONFIG` global.
+- `itemAtual()` anotado como "qualquer item" (depende da folha aberta); listas e objetos montados aos poucos ganharam tipo em comentário.
+- Pequenos ajustes que não mudam o resultado, só deixam o tipo explícito: contas com datas usam `getTime()`,
+  a ordenação de alertas usa `Number(...)` no verdadeiro/falso, a leitura do backup usa `String(...)`.
+- Nenhuma mudança visível no app.
+
 ## 5.0.13 — 19/10/2026 **Renda fixa com dia**
 
 - Renda fixa (bolsa, pensão, aluguel recebido) ganhou o campo "Cai no dia". Antes ela não tinha dia, e o calendário do mês e o resumo da semana a mostravam sempre no dia 1 (achado pela checagem de tipos da 5.0.12).

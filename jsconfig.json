@@ -4,9 +4,17 @@
     "allowJs": true,
     "noEmit": true,
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "strict": false,
     "skipLibCheck": true
   },
-  "include": ["app.js", "firebase-config.js"]
+  "include": [
+    "app.js",
+    "firebase-config.js",
+    "tipos.d.ts"
+  ]
 }

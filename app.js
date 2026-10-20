@@ -101,7 +101,7 @@
  * @property {Gasto[]} gastos      despesas lançadas à mão
  * @property {Gasto[]} caixinha
  * @property {Object<string,{pago?:boolean,valor?:number,pular?:boolean,pagoEm?:string}>} fixos
- * @property {Object<string,{valor?:number,pular?:boolean}>} rendas
+ * @property {Object<string,{valor?:number,pular?:boolean,pago?:boolean,pagoEm?:string}>} rendas
  * @property {Object<string,{pago?:boolean,pagoEm?:string}>} parcelas
  * @property {Object<string,boolean>} faturasPagas
  * @property {Gasto[]} transf
@@ -266,7 +266,7 @@
  * @property {string} [q]
  * @property {Array<any>} [itens]
  * @property {string} [pinModo]
- * @property {string} [cartaoArq]
+ * @property {boolean} [cartaoArq]   importação: o arquivo é fatura de cartão
  * @property {string} [cartaoImp]
  * @property {string} [contaImp]
  * @property {string} [dTipo]       dívida: "receber" | "pagar"
@@ -352,7 +352,7 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.13";
+const VERSAO="5.0.14";
 const NOVIDADES=[
   "Renda fixa agora tem o dia em que cai (ex.: bolsa no dia 10). O calendário e o resumo da semana mostram a renda no dia certo; rendas antigas ficam no dia 1 até você editar."
 ];
@@ -666,7 +666,7 @@ function usoCartao(c){
 /* Tudo que conta como despesa no mês k */
 function despesasDoMes(k){
   const m=state.months[k], manuais=(m?m.gastos:[]).filter(g=>!noCartao(g));
-  return manuais.concat(parcelasDoMes(k).filter(p=>!p.cartao), faturaDoMes(k), fixosDoMes(k).filter(f=>!f.pular));
+  return /** @type {ItemMes[]} */(manuais).concat(parcelasDoMes(k).filter(p=>!p.cartao), faturaDoMes(k), fixosDoMes(k).filter(f=>!f.pular));
 }
 /* ---------- contas (corrente, poupança, dinheiro…) ---------- */
 const temContas=()=>state.config.contas.length>0;
@@ -681,6 +681,7 @@ const saldoInicialTotal=()=>temContas()?soma(state.config.contas.map(c=>({valor:
  * @returns {Object<string,number>}
  */
 function saldosContas(k){
+  /** @type {Object<string,number>} */
   const S={}; state.config.contas.forEach(c=>S[c.id]=Number(c.saldoInicial)||0);
   if(!temContas()) return S;
   const add=(id,v)=>{ const c=contaOk(id); if(c) S[c]=(S[c]||0)+(Number(v)||0); };
@@ -717,7 +718,10 @@ function calc(k){
   let porDia=null, porDiaSub="";
   if(k===todayKey){ const rest=dim-today.getDate()+1; porDia=Math.max(0,saldo)/rest; porDiaSub=rest+(rest===1?" dia restante":" dias restantes, contando hoje"); }
   else if(k>todayKey){ porDia=Math.max(0,saldo)/dim; porDiaSub="dividido pelos "+dim+" dias do mês"; }
-  const porCat={}, porForma={};
+  /** @type {Object<string,number>} */
+  const porCat={};
+  /** @type {Object<string,number>} */
+  const porForma={};
   lista.forEach(g=>{ porCat[g.cat]=(porCat[g.cat]||0)+(Number(g.valor)||0); const f=g.forma||"?"; porForma[f]=(porForma[f]||0)+(Number(g.valor)||0); });
   return {salario,avulsos,rendas,despesas,receitas,saldo,guardado,retirado,porDia,porDiaSub,porCat,porForma,dim,fixosTotal,fixosPend,fatura,pct:receitas>0?despesas/receitas:0};
 }
@@ -775,7 +779,7 @@ function alertasOrcamento(k){
     let nivel=p>=1?"passou":p>=0.8?"80":"", proj=null, diaEstoura=null;
     if(pv&&pv.dia>=5&&p<1){ const r=pv.ritmoCat(ct.id); proj=Math.round((v+r*pv.rest)*100)/100;
       if(r>0&&proj>o){ diaEstoura=Math.min(pv.dim,pv.dia+Math.max(1,Math.ceil((o-v)/r))); if(!nivel) nivel="ritmo"; } }
-    return {id:ct.id,nome:ct.nome,v,o,p,nivel,proj,diaEstoura}; }).filter(x=>x.nivel).sort((a,b)=>(a.nivel==="ritmo")-(b.nivel==="ritmo")||b.p-a.p);
+    return {id:ct.id,nome:ct.nome,v,o,p,nivel,proj,diaEstoura}; }).filter(x=>x.nivel).sort((a,b)=>Number(a.nivel==="ritmo")-Number(b.nivel==="ritmo")||b.p-a.p);
 }
 function textoAlerta(a){ if(a.nivel==="ritmo") return "No ritmo de hoje, "+a.nome+" estoura o limite no dia "+a.diaEstoura+" ("+brl(a.v)+" de "+brl(a.o)+" até agora).";
   return a.nivel==="passou"?a.nome+" passou do limite: "+brl(a.v)+" de "+brl(a.o)+".":a.nome+" chegou a "+Math.round(a.p*100)+"% do limite ("+brl(a.v)+" de "+brl(a.o)+")"+(a.diaEstoura?"; no ritmo de hoje, estoura no dia "+a.diaEstoura:"")+"."; }
@@ -939,7 +943,9 @@ async function abrirEspaco(aviso){
     docIds.clear(); snap.docs.forEach(doc=>docIds.add(doc.id));
     snap.docs.forEach(doc=>{
       const valido=doc.id==="config"||(doc.id.startsWith("m-")&&mesValido(doc.id.slice(2))); if(!valido) return;
-      const d=doc.data(), norm=doc.id==="config"?normConfig(d):normMonth(d);
+      const d=doc.data();
+      /** @type {any} config ou mês, conforme o documento */
+      const norm=doc.id==="config"?normConfig(d):normMonth(d);
       if(dirty.has(doc.id)) return;
       base[doc.id]=clone(norm);
       if(doc.id==="config"){ if(J(norm)!==J(state.config)){ state.config=norm; buildMeses(); changed=true; } }
@@ -1219,7 +1225,7 @@ function pendencias(){
     parcelasDoMes(k).filter(p=>!p.cartao&&!p.pago).forEach(p=>out.push({tipo:"parc",id:p.id,k,nome:(p.desc||"Parcela")+" ("+p.idx+"/"+p.n+")",valor:p.valor,data:venc(p.dia)}));
     cartoesOk().forEach(cc=>{ const t=soma(faturaDoMes(k,cc.id)), m=state.months[k]; if(t>0&&!faturaPaga(m,cc.id)) out.push({tipo:"fat",id:cc.id,k,nome:"Fatura "+cc.nome,valor:t,data:venc(Math.min(cc.vence,diasMes(k)))}); });
   });
-  return out.map(x=>Object.assign(x,{dd:Math.round((x.data-agora)/86400000)})).filter(x=>x.dd<=1).sort((a,b)=>a.dd-b.dd);
+  return out.map(x=>Object.assign(x,{dd:Math.round((+x.data-+agora)/86400000)})).filter(x=>x.dd<=1).sort((a,b)=>a.dd-b.dd);
 }
 const fmtData=d=>pad2(d.getDate())+"/"+pad2(d.getMonth()+1);
 const estadoPend=x=>x.dd===1?{cls:"amanha",txt:"vence amanhã"}:x.dd===0?{cls:"hoje",txt:"vence hoje"}:{cls:"atraso",txt:"atrasada desde "+fmtData(x.data)};
@@ -1404,6 +1410,7 @@ function talvezTutorial(){
 /* ---------- central de notificações (sininho no topo) ---------- */
 function avisos(){
   if(mode==="login"||!state.loaded) return {itens:[],n:0};
+  /** @type {any[]} */
   const itens=[];
   Object.keys(pedidosG||{}).forEach(g=>(pedidosG[g]||[]).forEach(p=>itens.push({tipo:"pedido",g,p})));
   pendencias().forEach(x=>itens.push({tipo:"conta",x}));
@@ -1535,7 +1542,7 @@ function exportar(){
 function importar(file){
   if(mode==="cloud"&&aberto!=="pessoal"){ ui.importMsg="Para restaurar um backup, abra o controle Pessoal (botões no topo)."; render(); return; }
   const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.config||!d.months) throw 0;
+  r.onload=()=>{ try{ const d=JSON.parse(String(r.result)); if(!d.config||!d.months) throw 0;
     const t=state.config.termos; state.config=normConfig(d.config); if(!state.config.termos) state.config.termos=t; buildMeses(); save("config");
     for(const k in d.months){ if(!mesValido(k)) continue; state.months[k]=normMonth(d.months[k]); save(k); }
     ui.importMsg="Backup restaurado."; render(); }catch(e){ ui.importMsg="Arquivo inválido. Use um backup baixado pelo Monetra."; render(); } };
@@ -1544,6 +1551,7 @@ function importar(file){
 /* Planilha (abre no Excel e no Google Planilhas) */
 function exportarPlanilha(){
   const num=v=>(Number(v)||0).toFixed(2).replace(".",","), cel=s=>{ s=String(s??""); if(/^[=+\-@\t\r]/.test(s)&&!/^-?[\d.]+(,\d+)?$/.test(s)) s="'"+s; return '"'+s.replace(/"/g,'""')+'"'; };
+  /** @type {Array<Array<string|number>>} */
   const linhas=[["Mês","Dia","Tipo","Categoria","Descrição","Forma de pagamento","Valor (R$)","Situação","Conta / cartão"]];
   const onde=x=>x&&x.forma==="credito"?((cartaoDe(x)||{}).nome||"Crédito"):(temContas()?nomeConta(x&&x.contaId):"");
   MESES.forEach(k=>{
@@ -1759,7 +1767,7 @@ function checaConquistas(){
   if(_conqTimer) clearTimeout(_conqTimer);
   _conqTimer=setTimeout(()=>{ _conqTimer=null; if(mode==="login"||!state.loaded||precisaTermos()) return;
     try{ const chave="mb.conq."+(uid||"local")+"."+(aberto||"p"); const raw=localStorage.getItem(chave), visto=raw?JSON.parse(raw):null;
-      const {got,gs}=conquistas(), ds=(state.config.desafios||[]).map(d=>[d,estadoDesafio(d,gs).st]);
+      const {got,gs}=conquistas(), ds=(state.config.desafios||[]).map(d=>/** @type {[Desafio,string]} */([d,estadoDesafio(d,gs).st]));
       const agora={c:CONQ.filter(c=>got[c.id]).map(c=>c.id),d:Object.fromEntries(ds.map(([d,st])=>[d.id,st]))};
       if(visto){ const novas=CONQ.filter(c=>got[c.id]&&!(visto.c||[]).includes(c.id));
         const fins=ds.filter(([d,st])=>(st==="ok"||st==="quebrou")&&(visto.d||{})[d.id]!==st);
@@ -2166,6 +2174,7 @@ function viewMes(){
     <button type="button" class="btn ghost" data-novo="meta">+ Nova meta de economia</button></div>`;
   /* para onde foi */
   const alR={}; if(k===todayKey) alertasOrcamento(k).forEach(a=>{ if(a.diaEstoura) alR[a.id]=a; });
+  /** @type {Array<{id:string,nome:string,v:number,o:number,sb?:number,cor:string}>} */
   const itens=cats.map((ct,i)=>({id:ct.id,nome:ct.nome,v:c.porCat[ct.id]||0,o:limiteCat(ct,k),sb:sobraCat(ct,k),cor:catColor(ct.id)}));
   const semCat=Object.keys(c.porCat).filter(id=>catIndex(id)<0).reduce((a,id)=>a+c.porCat[id],0);
   if(semCat>0) itens.push({id:"",nome:"Sem categoria",v:semCat,o:0,cor:"var(--c8)"});
@@ -2309,8 +2318,8 @@ function resumoViagem(vg){
   const gs=gastosViagem(vg.id), total=Math.round(gs.reduce((a,g)=>a+(Number(g.valor)||0),0)*100)/100;
   const emMoeda=gs.reduce((a,g)=>a+(g.orig&&g.orig.moeda===vg.moeda?g.orig.valor:(vg.moeda==="BRL"?g.valor:0)),0);
   const porCat={}; gs.forEach(g=>porCat[g.cat]=(porCat[g.cat]||0)+(Number(g.valor)||0));
-  const dias=vg.inicio&&vg.fim?Math.max(1,Math.round((new Date(vg.fim+"T12:00")-new Date(vg.inicio+"T12:00"))/86400000)+1):1;
-  const hoje=hojeISO(), passados=vg.inicio&&hoje>=vg.inicio?Math.min(dias,Math.round((new Date((hoje<vg.fim?hoje:vg.fim)+"T12:00")-new Date(vg.inicio+"T12:00"))/86400000)+1):0;
+  const dias=vg.inicio&&vg.fim?Math.max(1,Math.round((new Date(vg.fim+"T12:00").getTime()-new Date(vg.inicio+"T12:00").getTime())/86400000)+1):1;
+  const hoje=hojeISO(), passados=vg.inicio&&hoje>=vg.inicio?Math.min(dias,Math.round((new Date((hoje<vg.fim?hoje:vg.fim)+"T12:00").getTime()-new Date(vg.inicio+"T12:00").getTime())/86400000)+1):0;
   return {gs,total,emMoeda,porCat,dias,passados,porDia:passados?total/passados:0,resta:vg.orcamento?vg.orcamento-total:null};
 }
 const estadoViagem=vg=>{ const h=hojeISO(); return !vg.inicio||!vg.fim?"":h<vg.inicio?"proxima":h>vg.fim?"encerrada":"ativa"; };
@@ -2370,7 +2379,7 @@ const dataCurta=iso=>iso?iso.slice(8,10)+"/"+iso.slice(5,7)+(iso.slice(0,4)!==St
 const pagoDiv=x=>Math.round(x.pags.reduce((a,p)=>a+p.valor,0)*100)/100;
 const restaDiv=x=>Math.max(0,Math.round((x.valor-pagoDiv(x))*100)/100);
 const quitada=x=>restaDiv(x)<0.005;
-function diasAte(iso){ if(!iso) return null; const a=new Date(); a.setHours(0,0,0,0); const [y,m,d]=iso.split("-").map(Number); return Math.round((new Date(y,m-1,d)-a)/86400000); }
+function diasAte(iso){ if(!iso) return null; const a=new Date(); a.setHours(0,0,0,0); const [y,m,d]=iso.split("-").map(Number); return Math.round((new Date(y,m-1,d).getTime()-a.getTime())/86400000); }
 function cardDividas(){
   const ds=state.config.dividas, abertas=ds.filter(x=>!quitada(x)), q=ds.filter(quitada);
   const rec=abertas.filter(x=>x.tipo==="receber").reduce((a,x)=>a+restaDiv(x),0), pag=abertas.filter(x=>x.tipo==="pagar").reduce((a,x)=>a+restaDiv(x),0);
@@ -2419,7 +2428,7 @@ function dadosRetro(ano){
   const comGasto=rows.filter(r=>r.c.despesas>0);
   const caro=comGasto.slice().sort((a,b)=>b.c.despesas-a.c.despesas)[0]||null, barato=comGasto.length>1?comGasto.slice().sort((a,b)=>a.c.despesas-b.c.despesas)[0]:null;
   const melhor=rows.slice().sort((a,b)=>b.c.saldo-a.c.saldo)[0];
-  const nLanc=ks.reduce((a,k)=>{ const m=state.months[k]||{}; return a+(m.gastos||[]).length+(m.avulsos||[]).length+(m.caixinha||[]).length; },0);
+  const nLanc=ks.reduce((a,k)=>{ const m=/** @type {Partial<Mes>} */(state.months[k]||{}); return a+(m.gastos||[]).length+(m.avulsos||[]).length+(m.caixinha||[]).length; },0);
   const ult=ks[ks.length-1], metasFeitas=state.config.metas.filter(mt=>{ try{ return infoMeta(mt,ult).feita; }catch(e){ return false; } });
   return {ano,ks,rows,t,cats,maior,diaTop,semN,caro,barato,melhor,nLanc,metasFeitas,taxa:t.rec>0?t.sal/t.rec:0,parcial:ks[ks.length-1]===todayKey||kY(todayKey)===ano};
 }
@@ -2558,7 +2567,7 @@ function viewPerfil(){
 const TERMOS_V="1.1", TERMOS_DATA="17/10/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
 const meusTermos=()=>mode==="cloud"?eu.termos:state.config.termos;
 const precisaTermos=()=>{ const t=meusTermos(); return mode!=="login"&&state.loaded&&!(t&&t.v===TERMOS_V); };
-const dataBR=iso=>{ const d=new Date(iso); return isNaN(d)?"":d.toLocaleDateString("pt-BR"); };
+const dataBR=iso=>{ const d=new Date(iso); return isNaN(d.getTime())?"":d.toLocaleDateString("pt-BR"); };
 function textoTermos(){
   return `<h3>1. O que é o Monetra</h3>
   <p>O Monetra é um aplicativo gratuito de controle de gastos pessoais, criado por Gustavo M. Barbosa. Ele serve para você anotar e acompanhar o seu próprio dinheiro. Não é banco, não movimenta dinheiro e não pede senha de banco.</p>
@@ -2726,6 +2735,11 @@ window.addEventListener("popstate",()=>{
 function closeSheet(){ const tinha=!!ui.sheet; if(tinha&&!_voltando&&history.state&&history.state.mb==="sheet"){ _ignoraPop++; try{ history.back(); }catch(e){ _ignoraPop--; } }
   ui.sheet=null; const r=document.getElementById("sheet"); if(r) r.innerHTML=""; document.body.classList.remove("sheet-open"); if(sheetVoltaFoco&&document.contains(sheetVoltaFoco)) try{sheetVoltaFoco.focus()}catch(e){} sheetVoltaFoco=null; }
 const mesSheet=()=>(ui.sheet&&ui.sheet.mes)||ui.month;
+/**
+ * Item que a folha aberta está editando. O tipo depende da folha (despesa, meta, cartão, dívida…),
+ * por isso devolve "qualquer item".
+ * @returns {any}
+ */
 function itemAtual(){
   const s=ui.sheet; if(!s||!s.id) return null; const k=mesSheet(), m=getMonth(k);
   switch(s.tipo){
@@ -3105,6 +3119,7 @@ function salvarSheet(outro){
     if(!cat&&!palavrasDes({palavras}).length) return erroSheet("Escolha uma categoria ou escreva pelo menos uma palavra.","s-dpal");
     const dias=Math.min(365,Math.max(1,Number(valSel("s-ddias"))||30)), ini=(document.getElementById("s-dini")||{}).value||hojeISO();
     if(!/^\d{4}-\d{2}-\d{2}$/.test(ini)) return erroSheet("Data de início inválida.","s-dini");
+    /** @type {any} */
     const d={nome,tipo,valor:valor||0,cat,palavras,dias,inicio:ini};
     if(!state.config.desafios) state.config.desafios=[];
     if(s.id) Object.assign(itemAtual(),d); else state.config.desafios.push(Object.assign({id:"d"+uidGen()},d));
@@ -3147,6 +3162,7 @@ function salvarSheet(outro){
     const nome=(val("s-nome")||"").trim(); if(!nome) return erroSheet(s.tipo==="fixo"?"Dê um nome para a conta, ex.: Aluguel":"Dê um nome, ex.: Bolsa","s-nome");
     if(!(v>0)) return erroSheet("Digite o valor por mês, ex.: 1.200,00","s-valor");
     const lista=s.tipo==="fixo"?"fixos":"rendas";
+    /** @type {any} conta fixa ou renda */
     const d=s.tipo==="fixo"?{nome,valor:v,dia:Math.min(31,Math.max(1,Math.round(Number(val("s-diafixo"))||1))),cat:radio("s-cat")||"",forma:radio("s-forma")||"boleto",desde:val("s-desde")||k}:{nome,valor:v,dia:Math.min(31,Math.max(1,Math.round(Number(val("s-diarenda"))||1))),desde:val("s-desde")||k};
     const ct=valSel("s-conta"); d.contaId=ct||null;
     if(s.id) Object.assign(itemAtual(),d); else state.config[lista].push(Object.assign({id:(s.tipo==="fixo"?"f":"r")+uidGen(),ate:null},d));
