@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.13 — 19/10/2026 **Renda fixa com dia**
+
+- Renda fixa (bolsa, pensão, aluguel recebido) ganhou o campo "Cai no dia". Antes ela não tinha dia, e o calendário do mês e o resumo da semana a mostravam sempre no dia 1 (achado pela checagem de tipos da 5.0.12).
+- Em meses mais curtos, um dia 31 vira o último dia do mês.
+- Rendas já cadastradas continuam no dia 1 até serem editadas; nada muda no saldo nem nos totais.
+- Receita avulsa marcada como "Recebo esse valor todo mês" cria a renda fixa no mesmo dia da receita.
+- Nas listas de receitas, a pílula mostra "dia 10" no lugar de "todo mês".
+
 ## 5.0.12 — 19/10/2026 **Checagem de tipos (só para desenvolvimento)**
 
 - `// @ts-check` no topo do `app.js` e tipos em JSDoc (comentários) para Config, Mes, Gasto, Parcela, Cartao, Conta,

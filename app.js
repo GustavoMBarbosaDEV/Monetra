@@ -161,6 +161,7 @@
  * @property {string} id
  * @property {string} nome
  * @property {number} valor
+ * @property {number} dia          dia em que cai (1 a 31; rendas antigas sem dia = 1)
  * @property {MesKey} desde
  * @property {MesKey|null} ate
  * @property {string|null} contaId
@@ -351,10 +352,9 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.12";
+const VERSAO="5.0.13";
 const NOVIDADES=[
-  "Corrigido o botão da calculadora Quanto guardar que saía para fora da tela; botões com texto grande agora quebram a linha.",
-  "Revisão de layout em todas as telas, inclusive com letra grande no celular: meses, gráfico e nomes longos não saem mais do lugar."
+  "Renda fixa agora tem o dia em que cai (ex.: bolsa no dia 10). O calendário e o resumo da semana mostram a renda no dia certo; rendas antigas ficam no dia 1 até você editar."
 ];
 
 /* ---------- utilidades ---------- */
@@ -548,7 +548,7 @@ function normConfig(d){
   const inicio=(typeof d?.inicio==="string"&&/^\d{4}-\d{2}$/.test(d.inicio))?d.inicio:null;
   const mk=x=>/^\d{4}-\d{2}$/.test(x||"");
   const parcelas=Array.isArray(d?.parcelas)?d.parcelas.filter(p=>p&&p.id).map(p=>({viagemId:p.viagemId?String(p.viagemId):null,orig:p.orig&&/^[A-Z]{3}$/.test(p.orig.moeda||"")?{moeda:p.orig.moeda,valor:Number(p.orig.valor)||0,cotacao:Number(p.orig.cotacao)||0,taxa:Number(p.orig.taxa)||0}:null,sub:p.sub?String(p.sub):null,tags:Array.isArray(p.tags)?p.tags.map(String).slice(0,10):[],id:String(p.id),desc:String(p.desc||""),cat:String(p.cat||""),forma:String(p.forma||"credito"),total:Number(p.total)||0,n:Math.min(48,Math.max(2,Math.round(Number(p.n)||2))),compra:mk(p.compra)?p.compra:INICIO,dia:Math.min(31,Math.max(1,Number(p.dia)||1)),venc:(Number(p.venc)>=1&&Number(p.venc)<=31)?Math.round(Number(p.venc)):null,contaId:p.contaId?String(p.contaId):null,cartaoId:p.cartaoId?String(p.cartaoId):null})):[];
-  const rendas=Array.isArray(d?.rendas)?d.rendas.filter(r=>r&&r.id).map(r=>({id:String(r.id),nome:String(r.nome||"Renda fixa"),valor:Number(r.valor)||0,desde:mk(r.desde)?r.desde:INICIO,ate:mk(r.ate)?r.ate:null,contaId:r.contaId?String(r.contaId):null})):[];
+  const rendas=Array.isArray(d?.rendas)?d.rendas.filter(r=>r&&r.id).map(r=>({id:String(r.id),nome:String(r.nome||"Renda fixa"),valor:Number(r.valor)||0,dia:Math.min(31,Math.max(1,Math.round(Number(r.dia))||1)),desde:mk(r.desde)?r.desde:INICIO,ate:mk(r.ate)?r.ate:null,contaId:r.contaId?String(r.contaId):null})):[];
   const dd=n=>{ n=Math.round(Number(n)); return n>=1&&n<=31?n:null; };
   /* vários cartões; o cartão único das versões antigas vira o primeiro da lista */
   let cartoes=Array.isArray(d?.cartoes)?d.cartoes.filter(c=>c&&c.id).map(c=>({id:String(c.id),nome:String(c.nome||"Cartão"),fecha:dd(c.fecha),vence:dd(c.vence),limite:Number(c.limite)||0,contaId:c.contaId?String(c.contaId):null})):[];
@@ -612,7 +612,8 @@ function fixosDoMes(k){
 function rendasDoMes(k){
   if(!ativo(k)) return [];
   const m=state.months[k], ov=(m&&m.rendas)||{};
-  return state.config.rendas.filter(r=>r.desde<=k&&(!r.ate||k<=r.ate)).map(r=>{ const o=ov[r.id]||{}; return {id:r.id,nome:r.nome,contaId:r.contaId||null,valor:(typeof o.valor==="number")?o.valor:r.valor,padrao:r.valor,pular:!!o.pular}; });
+  const dimR=diasMes(k);
+  return state.config.rendas.filter(r=>r.desde<=k&&(!r.ate||k<=r.ate)).map(r=>{ const o=ov[r.id]||{}; return {id:r.id,nome:r.nome,dia:Math.min(Number(r.dia)||1,dimR),contaId:r.contaId||null,valor:(typeof o.valor==="number")?o.valor:r.valor,padrao:r.valor,pular:!!o.pular}; });
 }
 /* Parcelas que caem no mês k (no cartão, a 1ª parcela vai na fatura da compra) */
 /**
@@ -2150,7 +2151,7 @@ function viewMes(){
   const receitas=`<div class="card"><div class="cardhead"><h2>Receitas</h2><span class="num muted">${brl(c.receitas)}</span></div>
     <label class="f money">Salário / renda fixa deste mês<input class="in num" id="salMes" inputmode="numeric" value="${esc(m.salario===0?"0,00":moneyInput(m.salario))}" placeholder="${esc(moneyInput(ativo(k)?state.config.salarioPadrao:0))}${ativo(k)?" (padrão)":""}"></label>
     <p class="hint">Em branco, usa o salário padrão definido no Perfil.</p>
-    ${rd.length?`<div>${rd.map(r=>`<button type="button" class="item ${r.pular?"skip":""}" data-edit="rendaMes" data-id="${esc(r.id)}" style="--dot:var(--good)"><span class="pill">todo mês</span><span class="desc"><b>${esc(r.nome)}</b>${r.pular?"<small>pulada neste mês</small>":""}</span><span class="v pos">${r.pular?"—":brl(r.valor)}</span></button>`).join("")}</div>`:""}
+    ${rd.length?`<div>${rd.map(r=>`<button type="button" class="item ${r.pular?"skip":""}" data-edit="rendaMes" data-id="${esc(r.id)}" style="--dot:var(--good)"><span class="pill">dia ${pad2(r.dia||1)}</span><span class="desc"><b>${esc(r.nome)}</b>${r.pular?"<small>pulada neste mês</small>":""}</span><span class="v pos">${r.pular?"—":brl(r.valor)}</span></button>`).join("")}</div>`:""}
     ${m.avulsos.length?(()=>{ const ord=m.avulsos.map((x,i)=>({x,i})).sort((p1,p2)=>(p2.x.dia-p1.x.dia)||(p2.i-p1.i)).map(o=>o.x), abertas=ui.verTodasRec===k, vis=abertas?ord:ord.slice(0,5);
       return `<div>${vis.map(x=>`<button type="button" class="item" data-edit="avulso" data-id="${esc(x.id)}" style="--dot:var(--good)"><span class="pill">dia ${pad2(x.dia)}</span><span class="desc"><b class="${x.desc?"":"empty"}">${esc(x.desc||"sem descrição")}</b></span><span class="v pos">${brl(x.valor)}</span></button>`).join("")}</div>
       ${ord.length>5?`<button type="button" class="btn ghost wide vermais" data-vertodasrec="${k}">${abertas?"Mostrar só as 5 mais recentes":"Ver todas as "+ord.length+" receitas avulsas"}</button>`:""}`; })():""}
@@ -2518,7 +2519,7 @@ function viewPerfil(){
     <label class="f money">Salário / renda fixa padrão (todo mês)<input class="in num" id="cfSal" inputmode="numeric" value="${esc(moneyInput(cf.salarioPadrao))}" placeholder="0,00"></label>
     <p class="hint">Entra automaticamente a partir do mês em que seu controle começa. Se um mês for diferente, ajuste na aba Mês.</p>
     <div class="f"><span>Outras rendas que se repetem todo mês</span>
-    ${rendas.length?`<div>${rendas.map(r=>`<button type="button" class="item" data-edit="renda" data-id="${esc(r.id)}" style="--dot:var(--good)"><span class="pill">todo mês</span><span class="desc"><b>${esc(r.nome)}</b>${r.desde>todayKey?`<small>começa em ${esc(abrMes(r.desde))}</small>`:""}</span><span class="v pos">${brl(r.valor)}</span></button>`).join("")}</div>`:`<p class="hint">Ex.: bolsa, pensão, aluguel que você recebe.</p>`}
+    ${rendas.length?`<div>${rendas.map(r=>`<button type="button" class="item" data-edit="renda" data-id="${esc(r.id)}" style="--dot:var(--good)"><span class="pill">dia ${pad2(r.dia||1)}</span><span class="desc"><b>${esc(r.nome)}</b>${r.desde>todayKey?`<small>começa em ${esc(abrMes(r.desde))}</small>`:""}</span><span class="v pos">${brl(r.valor)}</span></button>`).join("")}</div>`:`<p class="hint">Ex.: bolsa, pensão, aluguel que você recebe.</p>`}
     <button class="btn ghost" type="button" data-novo="renda">+ Renda fixa</button></div>
     <label class="f">Começar a contar em<select class="in" id="cfInicio"><option value="">Automático${ini&&!cf.inicio?" ("+esc(nomeMes(ini))+")":" (primeiro mês com renda)"}</option>${MESES.map(k=>`<option value="${k}" ${k===cf.inicio?"selected":""}>${esc(nomeMes(k))}</option>`).join("")}</select></label>
     <p class="hint">Antes desse mês, salário padrão, rendas e contas fixas não entram nas contas.</p>
@@ -2845,7 +2846,7 @@ function renderSheet(){
   }else if(s.tipo==="renda"){
     corpo=`<label class="f">Nome<input class="in" id="s-nome" maxlength="40" placeholder="ex.: Bolsa, Pensão, Aluguel recebido" value="${esc(it?it.nome:(s.nomeRasc||""))}" data-autofocus></label>
       ${valorCampo(it&&it.valor,"Valor por mês",false)}
-      <label class="f">Começa em${selMes("s-desde",it?it.desde:k)}</label>
+      <div class="row"><label class="f narrow">Cai no dia<input class="in num" id="s-diarenda" type="number" min="1" max="31" inputmode="numeric" value="${it?(it.dia||1):1}"></label><label class="f">Começa em${selMes("s-desde",it?it.desde:k)}</label></div>
       ${selConta(it?it.contaId:null,"Entra na conta")}
       <p class="hint">Entra sozinha nas receitas de todos os meses a partir do mês escolhido.</p>`;
     sub=""; botoes=novo?`<button class="btn" type="submit">Salvar</button>`:`<button class="btn danger" type="button" data-sencerrar="rendas">Encerrar renda</button><button class="btn" type="submit">Salvar</button>`;
@@ -3146,7 +3147,7 @@ function salvarSheet(outro){
     const nome=(val("s-nome")||"").trim(); if(!nome) return erroSheet(s.tipo==="fixo"?"Dê um nome para a conta, ex.: Aluguel":"Dê um nome, ex.: Bolsa","s-nome");
     if(!(v>0)) return erroSheet("Digite o valor por mês, ex.: 1.200,00","s-valor");
     const lista=s.tipo==="fixo"?"fixos":"rendas";
-    const d=s.tipo==="fixo"?{nome,valor:v,dia:Math.min(31,Math.max(1,Math.round(Number(val("s-diafixo"))||1))),cat:radio("s-cat")||"",forma:radio("s-forma")||"boleto",desde:val("s-desde")||k}:{nome,valor:v,desde:val("s-desde")||k};
+    const d=s.tipo==="fixo"?{nome,valor:v,dia:Math.min(31,Math.max(1,Math.round(Number(val("s-diafixo"))||1))),cat:radio("s-cat")||"",forma:radio("s-forma")||"boleto",desde:val("s-desde")||k}:{nome,valor:v,dia:Math.min(31,Math.max(1,Math.round(Number(val("s-diarenda"))||1))),desde:val("s-desde")||k};
     const ct=valSel("s-conta"); d.contaId=ct||null;
     if(s.id) Object.assign(itemAtual(),d); else state.config[lista].push(Object.assign({id:(s.tipo==="fixo"?"f":"r")+uidGen(),ate:null},d));
     save("config"); closeSheet(); render(); toast(s.id?"Atualizado.":(s.tipo==="fixo"?"Conta fixa criada. Ela entra sozinha todo mês.":"Renda fixa criada. Ela entra sozinha todo mês.")); return;
@@ -3200,7 +3201,7 @@ function salvarSheet(outro){
   if(s.tipo==="avulso"){
     const rep=document.getElementById("s-repete");
     const ctA=valSel("s-conta");
-    if(rep&&rep.checked){ state.config.rendas.push({id:"r"+uidGen(),nome:desc||"Renda fixa",valor:v,desde:k,ate:null,contaId:ctA}); save("config"); closeSheet(); render(); toast("Renda fixa criada a partir de "+abrMes(k)+"."); return; }
+    if(rep&&rep.checked){ state.config.rendas.push({id:"r"+uidGen(),nome:desc||"Renda fixa",valor:v,dia:Math.min(31,Math.max(1,dia||1)),desde:k,ate:null,contaId:ctA}); save("config"); closeSheet(); render(); toast("Renda fixa criada a partir de "+abrMes(k)+"."); return; }
     let av; if(s.id){ av=itemAtual(); Object.assign(av,{valor:v,dia,desc}); } else { av=marcaPor({id:uidGen(),dia,desc,valor:v}); m.avulsos.push(av); }
     if(ctA) av.contaId=ctA; else delete av.contaId;
     save(k); closeSheet(); render(); toast(s.id?"Receita atualizada.":"Receita de "+brl(v)+" lançada."); return;
