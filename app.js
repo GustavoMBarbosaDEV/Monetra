@@ -352,10 +352,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.15";
+const VERSAO="5.0.16";
 const NOVIDADES=[
-  "Ao abrir o app, trocar de aba ou de mês, o saldo e os totais contam até o valor, as barras de orçamento, metas e cartões enchem uma depois da outra e os gráficos se desenham.",
-  "Se o seu celular estiver com as animações reduzidas, tudo aparece pronto, sem movimento."
+  "Nova abertura: as barras do M sobem uma a uma e o nome Monetra aparece; depois os quadros do Início entram em cascata.",
+  "Ao trocar de aba, os quadros também entram em sequência. Com animações reduzidas no celular, a abertura é rápida e sem movimento."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1608,8 +1608,9 @@ function render(){
   const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?viewPerfil():viewAjustes();
   const rolY=window.scrollY;
   /* movimento só quando a tela muda (aba, mês, login, carregou), não a cada digitação */
-  const vista=[mode,state.loaded,ui.tab,ui.month,typeof aberto==="undefined"?"":aberto].join("|"), novaVista=vista!==ultimaVista; ultimaVista=vista;
-  app.classList.remove("anima");
+  const vista=[mode,state.loaded,ui.tab,ui.month,typeof aberto==="undefined"?"":aberto].join("|"), novaVista=vista!==ultimaVista;
+  const novaTela=vista.split("|").slice(0,3).join("|")!==ultimaVista.split("|").slice(0,3).join("|"); ultimaVista=vista;
+  app.classList.remove("anima","cascata");
   app.innerHTML='<div class="band" aria-hidden="true"></div>'+header()+corpo+bottomNav();
   posicionaBanda();
   if(state.loaded&&mode!=="login") checaConquistas();
@@ -1620,25 +1621,28 @@ function render(){
   if(state.loaded&&mode!=="login"&&!precisaTermos()){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); talvezTutorial(); }
   /* valores muito grandes diminuem de tamanho até caber, sem cortar o número */
   encolheValores(document.getElementById("app"));
-  if(novaVista&&state.loaded&&mode!=="login") animaEntrada(app);
+  if(novaVista&&state.loaded&&mode!=="login") animaEntrada(app,novaTela);
   if(ui.rolarPara&&state.loaded){ const _id=ui.rolarPara, _e=document.getElementById(_id), _s=_e&&_e.closest(".mais:not(.aberta)"); if(_s){ ui.abre[_s.id.slice(4)]=true; ui.rolarPara=null; render(); ui.rolarPara=null; setTimeout(()=>{ const e2=document.getElementById(_id); e2&&e2.scrollIntoView({block:"center",behavior:"smooth"}); },60); } const el=document.getElementById(ui.rolarPara||"__nada"); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 /* ---------- movimento: valores contam até o número, barras enchem e gráficos se desenham ----------
    Roda só quando a tela muda. Quem desativou animações no aparelho vê tudo pronto, sem movimento. */
 let ultimaVista="", timerAnima=0;
 const semMovimento=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
-/** @param {HTMLElement} raiz */
-function animaEntrada(raiz){
+/** @param {HTMLElement} raiz @param {boolean} cascata */
+function animaEntrada(raiz,cascata){
   if(semMovimento()) return;
   /* barras de cada quadro enchem uma depois da outra */
   const porCard=new Map();
   raiz.querySelectorAll(".track > *").forEach(el=>{ const c=el.closest(".card,.meta,.desafio,.viagemcard")||raiz, n=porCard.get(c)||0; porCard.set(c,n+1); el.style.setProperty("--i",String(Math.min(n,10))); });
   raiz.querySelectorAll(".hs-graf path[fill='none']").forEach(p=>p.setAttribute("pathLength","1"));
   /* na abertura, espera a tela do logo sair para o movimento não acontecer escondido atrás dela */
-  const boot=document.getElementById("boot"), atraso=boot?Math.max(0,700-performance.now())+250:0;
+  const boot=document.getElementById("boot"), atraso=boot?Math.max(0,BOOT_MIN-performance.now())+250:0;
   raiz.style.setProperty("--atraso",atraso+"ms");
+  /* quadros entram em cascata na abertura e ao trocar de aba (ao trocar de mês, só os números e barras) */
+  raiz.classList.toggle("cascata",cascata);
+  if(cascata){ let n=0; raiz.querySelectorAll(".saud, .months, .note, .heroSaldo, .qa, .faixa, .tiles > .tile, .pagetitle, .card").forEach(el=>{ if(el.parentElement&&el.parentElement.closest(".card")) return; el.style.setProperty("--c",String(Math.min(n++,12))); el.classList.add("entra"); }); }
   void raiz.offsetWidth; raiz.classList.add("anima");
-  clearTimeout(timerAnima); timerAnima=setTimeout(()=>raiz.classList.remove("anima"),1800+atraso);
+  clearTimeout(timerAnima); timerAnima=setTimeout(()=>raiz.classList.remove("anima","cascata"),1900+atraso);
   contaValores(raiz,atraso);
 }
 /* conta de zero até o valor nos números grandes; no fim volta exatamente o texto original */
@@ -2079,7 +2083,9 @@ function graficoSaldo(sr){
   return `<svg class="hs-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="${d} L${W},${H} L0,${H}Z" fill="url(#hsg)"/><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><circle cx="${u[0].toFixed(1)}" cy="${u[1].toFixed(1)}" r="3.5" fill="currentColor"/></svg>`;
 }
 /* tela de abertura (logo em tela cheia) some com um fade quando o app fica pronto */
-function tiraBoot(){ const b=document.getElementById("boot"); if(!b||b.dataset.saindo) return; b.dataset.saindo="1"; const espera=Math.max(0,700-performance.now()); setTimeout(()=>{ b.classList.add("sai"); setTimeout(()=>b.remove(),400); },espera); }
+/* a abertura fica pelo menos o tempo das barras do M subirem */
+const BOOT_MIN=1150;
+function tiraBoot(){ const b=document.getElementById("boot"); if(!b||b.dataset.saindo) return; b.dataset.saindo="1"; const espera=Math.max(0,(semMovimento()?500:BOOT_MIN)-performance.now()); setTimeout(()=>{ b.classList.add("sai"); setTimeout(()=>b.remove(),400); },espera); }
 const SECOES_RECOLHIVEIS=false;
 /* seção recolhível do Início (celular) */
 function secaoMes(id,titulo,resumo,icone,html){

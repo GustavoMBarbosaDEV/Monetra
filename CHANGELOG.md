@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.16 — 20/10/2026 **Abertura animada**
+
+- Tela de abertura com o logo desenhado em SVG: as pernas do M entram, as 3 barras sobem em sequência e o nome aparece.
+- A abertura fica no mínimo 1,15 s (tempo das barras subirem); com "reduzir movimento", 0,5 s e sem animação.
+- Quadros entram em cascata (60 ms entre cada um) na abertura e ao trocar de aba; ao trocar de mês, só números e barras se mexem.
+
 ## 5.0.15 — 20/10/2026 **Movimento: valores que contam e barras que enchem**
 
 - Valores grandes (saldo, receitas, despesas, quadros de Relatórios) contam de zero até o número ao trocar de tela.
