@@ -352,10 +352,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.18";
+const VERSAO="5.0.19";
 const NOVIDADES=[
-  "Ícones de categoria agora ficam num círculo com a cor da categoria, em todo o app.",
-  "Lista de lançamentos renovada: valores na fonte de destaque com centavos menores, sem linhas entre os itens e com destaque suave ao tocar."
+  "Calendário renovado: os dias com mais gasto ficam num verde mais forte, e os vencimentos têm forma além da cor (anel = vence, ponto = pago, triângulo = atrasado).",
+  "O gráfico de rosca mostra o nome e a porcentagem das 3 maiores categorias direto no desenho.",
+  "Barras de categoria mais grossas, com cantos redondos e um brilho leve."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1716,8 +1717,12 @@ function viewLogin(){
 function donut(itens,total,centro,sub){
   let acc=0;
   const arcs=total>0?itens.filter(x=>x.v>0).map(x=>{ const p=x.v/total*100; const s=`<circle r="15.915" cx="21" cy="21" fill="none" stroke="${x.cor}" stroke-width="5.2" stroke-dasharray="${p.toFixed(3)} ${(100-p).toFixed(3)}" stroke-dashoffset="${(25-acc).toFixed(3)}"><title>${esc(x.nome)}: ${brl(x.v)}</title></circle>`; acc+=p; return s; }).join(""):"";
-  return `<svg viewBox="0 0 42 42" class="donut" role="img" aria-label="Gastos por campo"><circle r="15.915" cx="21" cy="21" fill="none" stroke="var(--sunk)" stroke-width="5.2"/>${arcs}
-  <text x="21" y="20.2" text-anchor="middle" class="d1">${esc(centro)}</text><text x="21" y="25" text-anchor="middle" class="d2">${esc(sub)}</text></svg>`;
+  /* nome das 3 maiores fatias direto no gráfico (só as que têm pelo menos 6%) */
+  let a2=0; const marcas=[]; if(total>0) itens.filter(x=>x.v>0).forEach(x=>{ const p=x.v/total*100; marcas.push({x,p,m:a2+p/2}); a2+=p; });
+  const top=marcas.slice().sort((a,b)=>b.p-a.p).slice(0,3).filter(z=>z.p>=6);
+  const rot=top.map(z=>{ const ang=z.m/100*2*Math.PI, R=52; return `<span class="dlab" style="left:${(50+Math.sin(ang)*R).toFixed(1)}%;top:${(50-Math.cos(ang)*R).toFixed(1)}%;--dot:${z.x.cor}" aria-hidden="true">${esc((w=>w.length>11?w.slice(0,10)+"…":w)(String(z.x.nome).split(/[\s/]+/)[0]))} ${Math.round(z.p)}%</span>`; }).join("");
+  return `<div class="donutbox"><svg viewBox="0 0 42 42" class="donut" role="img" aria-label="Gastos por campo"><circle r="15.915" cx="21" cy="21" fill="none" stroke="var(--sunk)" stroke-width="5.2"/>${arcs}
+  <text x="21" y="20.2" text-anchor="middle" class="d1">${esc(centro)}</text><text x="21" y="25" text-anchor="middle" class="d2">${esc(sub)}</text></svg>${rot}</div>`;
 }
 
 /* ---------- aba Mês ---------- */

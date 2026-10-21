@@ -1163,3 +1163,28 @@ button.item .pill{white-space:nowrap}
 .gitem .v .vg-rs{font-size:.6em;vertical-align:.15em}
 .gitem .v .vg-cs{font-size:.66em}
 @media (prefers-reduced-motion:reduce){.day button.item.gitem{transition:none}.day button.item.gitem:active{transform:none}}
+
+/* ---------- 5.0.19 calendário com forma e cor, rosca com nomes e barras refinadas ---------- */
+/* calendário: calor em verde, sem bordas, marcadores com forma */
+.cd{border-color:transparent;background:color-mix(in srgb,var(--accent) calc(var(--h,0) * 55%),color-mix(in srgb,var(--fg) 4%,var(--surface)))}
+.cd.futuro{background:transparent;border-color:color-mix(in srgb,var(--fg) 7%,transparent)}
+.cd.pesada{border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.cd .cv{position:absolute;right:4px;bottom:4px;margin:0;gap:3px;align-items:center}
+.vd{width:7px;height:7px;flex:none}
+.vd.pend{background:transparent;box-shadow:inset 0 0 0 1.6px var(--warn)}
+.vd.ok{background:var(--accent)}
+.vd.atr{width:8px;height:7px;border-radius:0;background:var(--bad);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.item.calv .vd.atr{width:10px;height:9px}
+.calleg .sq{width:26px;height:8px;border-radius:99px;border:0;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 12%,var(--surface)),color-mix(in srgb,var(--accent) 60%,var(--surface)))}
+/* rosca com o nome das maiores fatias */
+.donutbox{position:relative;width:170px;height:170px;margin:22px 46px;flex:none}
+.donutbox .donut{width:100%;height:100%}
+.dlab{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;max-width:112px;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;font-weight:700;line-height:1;padding:4px 7px;border-radius:999px;
+  color:var(--dot);background:var(--surface);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 35%,transparent),0 4px 10px -6px rgba(0,0,0,.5)}
+.donutwrap{grid-template-columns:auto minmax(0,1fr)}
+@media (max-width:520px){.donutwrap{grid-template-columns:minmax(0,1fr);justify-items:center}}
+.anima .dlab{animation:mb-surge .5s ease calc(.7s + var(--atraso,0ms)) both}
+/* barras de categoria: mais grossas, cantos redondos e brilho leve */
+.bar .track{height:9px;border-radius:99px}
+.bar .track > div{border-radius:99px;box-shadow:0 0 12px -3px var(--dot)}
+.bar.over .track > div{box-shadow:0 0 12px -3px var(--bad)}

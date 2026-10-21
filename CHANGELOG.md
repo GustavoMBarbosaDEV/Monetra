@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.19 — 21/10/2026 **Calendário, rosca e barras de categoria**
+
+- Calendário: calor do dia em verde (antes cinza), dias sem bordas, marcadores de vencimento com forma: anel (vence), ponto (pago), triângulo (atrasado); legenda acompanha.
+- Rosca (Início e Relatórios): etiquetas com nome e % das 3 maiores fatias (a partir de 6%), em volta do gráfico; nomes longos são encurtados.
+- Barras de categoria com 9 px, cantos redondos e brilho na cor da categoria.
+
 ## 5.0.18 — 21/10/2026 **Ícones de categoria e lançamentos no novo estilo**
 
 - Ícones de categoria (lançamentos, categorias, orçamento) em círculo com contorno na cor da categoria.
