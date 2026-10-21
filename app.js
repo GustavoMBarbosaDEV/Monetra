@@ -352,11 +352,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.19";
+const VERSAO="5.0.20";
 const NOVIDADES=[
-  "Calendário renovado: os dias com mais gasto ficam num verde mais forte, e os vencimentos têm forma além da cor (anel = vence, ponto = pago, triângulo = atrasado).",
-  "O gráfico de rosca mostra o nome e a porcentagem das 3 maiores categorias direto no desenho.",
-  "Barras de categoria mais grossas, com cantos redondos e um brilho leve."
+  "A fatura de cada cartão agora fica num quadro com o nome do cartão, vencimento, fechamento, o valor em destaque e o limite disponível.",
+  "Ao marcar uma conta como paga, o check se desenha com um pequeno confete de barrinhas.",
+  "O botão Retirar da caixinha ficou vermelho, para não confundir com Guardar."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1625,6 +1625,7 @@ function render(){
   /* valores muito grandes diminuem de tamanho até caber, sem cortar o número */
   encolheValores(document.getElementById("app"));
   if(novaVista&&state.loaded&&mode!=="login") animaEntrada(app,novaTela);
+  festejaPago(app);
   if(ui.rolarPara&&state.loaded){ const _id=ui.rolarPara, _e=document.getElementById(_id), _s=_e&&_e.closest(".mais:not(.aberta)"); if(_s){ ui.abre[_s.id.slice(4)]=true; ui.rolarPara=null; render(); ui.rolarPara=null; setTimeout(()=>{ const e2=document.getElementById(_id); e2&&e2.scrollIntoView({block:"center",behavior:"smooth"}); },60); } const el=document.getElementById(ui.rolarPara||"__nada"); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 /* ---------- movimento: valores contam até o número, barras enchem e gráficos se desenham ----------
@@ -1648,10 +1649,21 @@ function animaEntrada(raiz,cascata){
   clearTimeout(timerAnima); timerAnima=setTimeout(()=>raiz.classList.remove("anima","cascata"),1900+atraso);
   contaValores(raiz,atraso);
 }
+/* ao marcar uma conta como paga: check que se desenha e um confete de barrinhas (sobrevive ao render) */
+let celebra="";
+document.addEventListener("click",e=>{ const t=/** @type {Element} */(e.target), b=t&&t.closest&&t.closest("button.check"); if(!b||b.classList.contains("on")||b.disabled||semMovimento()) return;
+  const at=[...b.attributes].filter(a=>a.name.startsWith("data-")).map(a=>`[${a.name}="${CSS.escape(a.value)}"]`).join(""); celebra=at?"button.check"+at:""; setTimeout(()=>{ celebra=""; },1200); },true);
+/** @param {HTMLElement} raiz */
+function festejaPago(raiz){ if(!celebra) return; const sel=celebra; celebra=""; let b; try{ b=raiz.querySelector(sel)||document.querySelector(sel); }catch(e){ return; } if(!b||!b.classList.contains("on")) return;
+  const p=b.querySelector("path"); if(p) p.setAttribute("pathLength","1");
+  b.classList.remove("pop"); void b.getBoundingClientRect(); b.classList.add("pop");
+  const fx=document.createElement("span"); fx.className="confete"; fx.setAttribute("aria-hidden","true");
+  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2+Math.random()*.4, d=22+Math.random()*16, q=document.createElement("i"); q.style.setProperty("--dx",(Math.cos(a)*d).toFixed(1)+"px"); q.style.setProperty("--dy",(Math.sin(a)*d).toFixed(1)+"px"); q.style.setProperty("--r",Math.round(Math.random()*360)+"deg"); q.style.height=(5+Math.random()*6).toFixed(1)+"px"; q.className="c"+(i%3); fx.appendChild(q); }
+  b.appendChild(fx); setTimeout(()=>{ fx.remove(); b.classList.remove("pop"); },900); }
 /* conta de zero até o valor nos números grandes; no fim volta exatamente o texto original */
 /** @param {HTMLElement} raiz @param {number} atraso */
 function contaValores(raiz,atraso){
-  const alvos=[...raiz.querySelectorAll(".hs-val, .hs-mini b, .tile .val")].map(el=>{
+  const alvos=[...raiz.querySelectorAll(".hs-val, .hs-mini b, .tile .val, .fb-v")].map(el=>{
     const h=el.innerHTML;
     if(el.dataset.v!==undefined){ const v=Number(el.dataset.v); return v?{el,h,v,rico:true}:null; }
     if(el.children.length) return null; const t=el.textContent, m=t.match(/R\$\s*([\d.]+,\d{2})/); if(!m) return null;
@@ -2170,9 +2182,8 @@ function viewMes(){
   const fatura=cartoesOk().map(cc=>{
     const fat=faturaDoMes(k,cc.id), tot=soma(fat), prox=soma(faturaDoMes(shiftKey(k,1),cc.id)), lim=usoCartao(cc), pg=faturaPaga(m,cc.id);
     if(!fat.length&&!prox) return `<div class="card fatmini"><span class="ico" style="--dot:var(--accent)">${svgCat("dinheiro",16)}</span><span class="t"><b>Fatura ${esc(cc.nome)}</b><small>Sem compras · vence dia ${pad2(Math.min(cc.vence,diasMes(k)))}${cc.limite>0?" · limite livre "+brl(lim.livre):""}</small></span><span class="v">${brl(0)}</span></div>`;
-    return `<div class="card"><div class="cardhead"><h2>Fatura ${esc(cc.nome)}</h2><span class="big">${brl(tot)}</span></div>
-      <p class="hint">Vence dia ${pad2(Math.min(cc.vence,diasMes(k)))} de ${esc(NOMES[kM(k)-1].toLowerCase())} · fecha dia ${pad2(cc.fecha)}${temContas()?" · paga pela conta "+esc(nomeConta(cc.contaId)):""}</p>
-      ${cc.limite>0?`<div class="bar ${lim.livre<0?"over":lim.livre<cc.limite*0.2?"warn":""}" style="--dot:var(--accent)"><div class="t"><b>Limite disponível</b><span class="num">${brl(lim.livre)} de ${brl(cc.limite)}</span></div><div class="track"><div style="width:${Math.max(0,Math.min(100,lim.livre/cc.limite*100)).toFixed(1)}%"></div></div></div>`:""}
+    return `<div class="card fatcard"><div class="fatbox"><div class="fb-top"><div class="fb-t"><h2>Fatura ${esc(cc.nome)}</h2><small>vence dia ${pad2(Math.min(cc.vence,diasMes(k)))} · fecha dia ${pad2(cc.fecha)}${temContas()?" · paga pela conta "+esc(nomeConta(cc.contaId)):""}</small></div><b class="fb-v" data-v="${tot}">${valorGrande(tot)}</b></div>
+      ${cc.limite>0?`<div class="bar ${lim.livre<0?"over":lim.livre<cc.limite*0.2?"warn":""}" style="--dot:var(--accent)"><div class="t"><b>Limite disponível</b><span class="num">${brl(lim.livre)} de ${brl(cc.limite)}</span></div><div class="track"><div style="width:${Math.max(0,Math.min(100,lim.livre/cc.limite*100)).toFixed(1)}%"></div></div></div>`:""}</div>
       ${fat.length?`<div>${fat.sort((a,b)=>(a.compraK+pad2(a.dia)).localeCompare(b.compraK+pad2(b.dia))).map(g=>`<button type="button" class="item" ${g.parcela?`data-edit="parcela" data-id="${esc(g.id)}"`:`data-edit="gasto" data-id="${esc(g.id)}" data-mes="${g.compraK}"`} style="--dot:${catColor(g.cat)}"><span class="pill">${esc(catName(g.cat))}</span><span class="desc"><b class="${g.desc?"":"empty"}">${esc(g.desc||"sem descrição")}</b><small>${g.parcela?"parcela "+g.idx+"/"+g.n:"compra em "+pad2(g.dia)+"/"+pad2(kM(g.compraK))}</small></span><span class="v">${brl(g.valor)}</span></button>`).join("")}</div>
         <label class="switch"><input type="checkbox" data-fatpaga="${esc(cc.id)}" ${pg?"checked":""}><span></span>Fatura paga</label>`:`<p class="hint">Nenhuma compra neste cartão para esta fatura.</p>`}
       ${prox>0?`<p class="hint">Já lançado para a fatura de ${esc(abrMes(shiftKey(k,1)))}: <b>${brl(prox)}</b></p>`:""}</div>`;
@@ -2224,7 +2235,7 @@ function viewMes(){
     <p class="hint">Guardar tira do saldo do mês; retirar devolve para ele.</p>
     ${metas.length?`<div class="metas">${metas.map(mt=>linhaMeta(mt,k)).join("")}<div class="metageral"><span>Geral (sem meta)</span><b class="num">${brl(geral)}</b></div></div>`:""}
     ${m.caixinha.length?`<div class="subhead">Movimentos de ${esc(NOMES[kM(k)-1].toLowerCase())}</div><div>${m.caixinha.slice().sort((a,b)=>a.dia-b.dia).map(x=>`<button type="button" class="item" data-edit="caixinha" data-id="${esc(x.id)}" style="--dot:${x.tipo==="guardar"?"var(--accent)":"var(--warn)"}"><span class="pill">dia ${pad2(x.dia)}</span><span class="desc"><b>${esc(x.desc||(x.tipo==="guardar"?"Guardou":"Retirou"))}</b><small>${x.desc?(x.tipo==="guardar"?"Guardou · ":"Retirou · "):""}${esc(nomeMeta(x.metaId))}</small></span><span class="v">${x.tipo==="guardar"?"+":"−"}${brl(x.valor)}</span></button>`).join("")}</div>`:""}
-    <div class="row2"><button type="button" class="btn ghost" data-novo="caixinha" data-cxtipo="guardar">+ Guardar</button><button type="button" class="btn ghost warnbtn" data-novo="caixinha" data-cxtipo="retirar">− Retirar</button></div>
+    <div class="row2"><button type="button" class="btn ghost" data-novo="caixinha" data-cxtipo="guardar">+ Guardar</button><button type="button" class="btn ghost badbtn" data-novo="caixinha" data-cxtipo="retirar">− Retirar</button></div>
     <button type="button" class="btn ghost" data-novo="meta">+ Nova meta de economia</button></div>`;
   /* para onde foi */
   const alR={}; if(k===todayKey) alertasOrcamento(k).forEach(a=>{ if(a.diaEstoura) alR[a.id]=a; });

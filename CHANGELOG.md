@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.20 — 21/10/2026 **Fatura em quadro, check com confete e Retirar vermelho**
+
+- Fatura: quadro neutro (sem cor do banco) com "Fatura <nome do cartão>", vence/fecha, valor em fonte Sora com centavos menores (conta até o valor) e barra de limite disponível.
+- Contas fixas e compras do cartão: ao marcar como paga, o check pula e se desenha, com confete de 12 barrinhas. Sem animação com "reduzir movimento".
+- Caixinha: botão Retirar com contorno e texto vermelhos.
+
 ## 5.0.19 — 21/10/2026 **Calendário, rosca e barras de categoria**
 
 - Calendário: calor do dia em verde (antes cinza), dias sem bordas, marcadores de vencimento com forma: anel (vence), ponto (pago), triângulo (atrasado); legenda acompanha.
