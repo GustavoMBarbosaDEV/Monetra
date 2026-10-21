@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.18 — 21/10/2026 **Ícones de categoria e lançamentos no novo estilo**
+
+- Ícones de categoria (lançamentos, categorias, orçamento) em círculo com contorno na cor da categoria.
+- Lançamentos do Início: valor em fonte Sora com "R$" e centavos menores, cabeçalho de dia mais discreto, sem divisórias entre itens, fundo suave ao passar o mouse e leve encolhida ao tocar.
+
 ## 5.0.17 — 21/10/2026 **Cartão de saldo novo**
 
 - Saldo, receitas e despesas do cartão do Início em fonte Sora, com "R$" e centavos menores (o texto lido continua o mesmo valor).

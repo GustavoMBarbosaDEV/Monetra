@@ -352,11 +352,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.17";
+const VERSAO="5.0.18";
 const NOVIDADES=[
-  "Cartão de saldo renovado: número em fonte de destaque, com R$ e centavos menores para ler o valor num olhar.",
-  "O cartão ganhou um brilho que muda de cor com o mês: verde quando está saudável, âmbar quando o saldo está apertado e vermelho quando fica negativo, com um selo dizendo isso.",
-  "A linha do saldo agora tem brilho e o ponto de hoje pulsa."
+  "Ícones de categoria agora ficam num círculo com a cor da categoria, em todo o app.",
+  "Lista de lançamentos renovada: valores na fonte de destaque com centavos menores, sem linhas entre os itens e com destaque suave ao tocar."
 ];
 
 /* ---------- utilidades ---------- */
@@ -2064,7 +2063,7 @@ function linhaLanc(g,k){
   return `<button type="button" class="item gitem" data-edit="gasto" data-id="${esc(g.id)}" style="--dot:${catColor(g.cat)}">
     ${icoCat(g.cat)}
     <span class="desc"><b class="${g.desc?"":"empty"}">${esc(g.desc||catName(g.cat))}</b><small>${esc(catName(g.cat))} · ${esc(formaNome(g.forma)+extraTxt(g)+nota+porTxt(g))}</small></span>
-    <span class="v">${brl(g.valor)}</span></button>`;
+    <span class="v">${valorGrande(g.valor)}</span></button>`;
 }
 function linhaMeta(mt,k){
   const i=infoMeta(mt,k);
