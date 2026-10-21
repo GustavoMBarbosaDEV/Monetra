@@ -1100,3 +1100,19 @@ button.item .pill{white-space:nowrap}
 .card.chart > .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted)}
 /* meses da barra: em tela estreita o ano vai para baixo do mês (cabe mesmo com letra grande) */
 @media (max-width:400px){ .months .chip{flex-direction:column;gap:0;line-height:1.1;padding-block:4px;white-space:normal} .months .chip small{display:block;font-size:11px} }
+
+/* ---------- 5.0.15 movimento: valores contam, barras enchem, gráficos se desenham (só ao trocar de tela) ---------- */
+@keyframes mb-enche{from{transform:scaleX(0)}}
+@keyframes mb-traco{from{stroke-dashoffset:1}}
+@keyframes mb-surge{from{opacity:0}}
+@keyframes mb-arco{from{stroke-dasharray:0 100}}
+@keyframes mb-sobe{from{transform:scaleY(0)}}
+.anima .track > *{transform-origin:left center;animation:mb-enche .9s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0) * 55ms + 120ms + var(--atraso,0ms))}
+.anima .hs-graf path[fill="none"]{stroke-dasharray:1;animation:mb-traco 1.2s cubic-bezier(.65,0,.35,1) calc(.2s + var(--atraso,0ms)) both}
+.anima .hs-graf path[fill^="url"],.anima .hs-graf circle{animation:mb-surge .6s ease calc(1.05s + var(--atraso,0ms)) both}
+.anima .donut circle + circle{animation:mb-arco .8s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--k,0s) + var(--atraso,0ms))}
+.anima .donut circle:nth-of-type(3){--k:.08s}.anima .donut circle:nth-of-type(4){--k:.16s}.anima .donut circle:nth-of-type(5){--k:.24s}
+.anima .donut circle:nth-of-type(6){--k:.32s}.anima .donut circle:nth-of-type(n+7){--k:.4s}
+.anima .grafmes rect{transform-box:fill-box;transform-origin:center bottom;animation:mb-sobe .8s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--k,0s) + var(--atraso,0ms))}
+.anima .grafmes rect:nth-of-type(2n){--k:.08s}
+@media (prefers-reduced-motion:reduce){.anima *{animation:none!important}}

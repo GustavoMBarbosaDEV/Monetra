@@ -352,9 +352,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.14";
+const VERSAO="5.0.15";
 const NOVIDADES=[
-  "Renda fixa agora tem o dia em que cai (ex.: bolsa no dia 10). O calendário e o resumo da semana mostram a renda no dia certo; rendas antigas ficam no dia 1 até você editar."
+  "Ao abrir o app, trocar de aba ou de mês, o saldo e os totais contam até o valor, as barras de orçamento, metas e cartões enchem uma depois da outra e os gráficos se desenham.",
+  "Se o seu celular estiver com as animações reduzidas, tudo aparece pronto, sem movimento."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1606,6 +1607,9 @@ function render(){
   const app=document.getElementById("app");
   const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?viewPerfil():viewAjustes();
   const rolY=window.scrollY;
+  /* movimento só quando a tela muda (aba, mês, login, carregou), não a cada digitação */
+  const vista=[mode,state.loaded,ui.tab,ui.month,typeof aberto==="undefined"?"":aberto].join("|"), novaVista=vista!==ultimaVista; ultimaVista=vista;
+  app.classList.remove("anima");
   app.innerHTML='<div class="band" aria-hidden="true"></div>'+header()+corpo+bottomNav();
   posicionaBanda();
   if(state.loaded&&mode!=="login") checaConquistas();
@@ -1616,7 +1620,39 @@ function render(){
   if(state.loaded&&mode!=="login"&&!precisaTermos()){ setTimeout(()=>verificaLembretes(false),500); trataAtalho(); talvezTutorial(); }
   /* valores muito grandes diminuem de tamanho até caber, sem cortar o número */
   encolheValores(document.getElementById("app"));
+  if(novaVista&&state.loaded&&mode!=="login") animaEntrada(app);
   if(ui.rolarPara&&state.loaded){ const _id=ui.rolarPara, _e=document.getElementById(_id), _s=_e&&_e.closest(".mais:not(.aberta)"); if(_s){ ui.abre[_s.id.slice(4)]=true; ui.rolarPara=null; render(); ui.rolarPara=null; setTimeout(()=>{ const e2=document.getElementById(_id); e2&&e2.scrollIntoView({block:"center",behavior:"smooth"}); },60); } const el=document.getElementById(ui.rolarPara||"__nada"); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
+}
+/* ---------- movimento: valores contam até o número, barras enchem e gráficos se desenham ----------
+   Roda só quando a tela muda. Quem desativou animações no aparelho vê tudo pronto, sem movimento. */
+let ultimaVista="", timerAnima=0;
+const semMovimento=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+/** @param {HTMLElement} raiz */
+function animaEntrada(raiz){
+  if(semMovimento()) return;
+  /* barras de cada quadro enchem uma depois da outra */
+  const porCard=new Map();
+  raiz.querySelectorAll(".track > *").forEach(el=>{ const c=el.closest(".card,.meta,.desafio,.viagemcard")||raiz, n=porCard.get(c)||0; porCard.set(c,n+1); el.style.setProperty("--i",String(Math.min(n,10))); });
+  raiz.querySelectorAll(".hs-graf path[fill='none']").forEach(p=>p.setAttribute("pathLength","1"));
+  /* na abertura, espera a tela do logo sair para o movimento não acontecer escondido atrás dela */
+  const boot=document.getElementById("boot"), atraso=boot?Math.max(0,700-performance.now())+250:0;
+  raiz.style.setProperty("--atraso",atraso+"ms");
+  void raiz.offsetWidth; raiz.classList.add("anima");
+  clearTimeout(timerAnima); timerAnima=setTimeout(()=>raiz.classList.remove("anima"),1800+atraso);
+  contaValores(raiz,atraso);
+}
+/* conta de zero até o valor nos números grandes; no fim volta exatamente o texto original */
+/** @param {HTMLElement} raiz @param {number} atraso */
+function contaValores(raiz,atraso){
+  const alvos=[...raiz.querySelectorAll(".hs-val, .hs-mini b, .tile .val")].map(el=>{
+    if(el.children.length) return null; const t=el.textContent, m=t.match(/R\$\s*([\d.]+,\d{2})/); if(!m) return null;
+    const v=parseFloat(m[1].replace(/\./g,"").replace(",","."))*(/^\s*-/.test(t)?-1:1); return v?{el,t,v}:null; }).filter(Boolean);
+  if(!alvos.length) return;
+  const ini=performance.now()+(atraso||0), dur=750, ease=x=>1-Math.pow(1-x,4);
+  const passo=agora=>{ const p=Math.max(0,Math.min(1,(agora-ini)/dur)), k=ease(p);
+    alvos.forEach(a=>{ if(!a.el.isConnected) return; a.el.textContent=p<1?brl(a.v*k):a.t; });
+    if(p<1) requestAnimationFrame(passo); };
+  alvos.forEach(a=>{ a.el.textContent=brl(0); }); requestAnimationFrame(passo);
 }
 /* valores muito grandes diminuem de tamanho até caber, sem cortar o número */
 function encolheValores(raiz){ if(!raiz) return; raiz.querySelectorAll(".tile .val, .hs-val, .assintot b, .rpar b, .vgnums b").forEach(el=>{ el.style.fontSize=""; let f=parseFloat(getComputedStyle(el).fontSize), n=0; while(el.scrollWidth>el.clientWidth+1&&f>12&&n<20){ f-=1; n++; el.style.fontSize=f+"px"; } }); }
@@ -2226,7 +2262,7 @@ function viewAno(){
   const nice=(()=>{const p=Math.pow(10,Math.floor(Math.log10(max)));const s=[1,2,2.5,5,10].find(s=>s*p>=max);return s*p;})();
   const W=Math.max(360,rows.length*64+70),H=230,L=58,B=28,top=12,gw=(W-L-8)/rows.length,bw=Math.min(18,gw/3);
   const y=v=>top+(H-top-B)*(1-v/nice);
-  let svg=`<svg viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W,560)}px" role="img" aria-label="Receitas e despesas por mês">`;
+  let svg=`<svg class="grafmes" viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W,560)}px" role="img" aria-label="Receitas e despesas por mês">`;
   [0,.5,1].forEach(f=>{const v=nice*f;svg+=`<line x1="${L}" x2="${W-8}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v>=1000?(v/1000).toLocaleString("pt-BR")+" mil":v.toLocaleString("pt-BR")}</text>`});
   rows.forEach((r,i)=>{const cx=L+gw*i+gw/2, cur=r.k===todayKey;
     svg+=`<rect x="${cx-bw-1}" y="${y(r.c.receitas)}" width="${bw}" height="${Math.max(0,H-B-y(r.c.receitas))}" rx="3" fill="var(--accent)"><title>${nomeMes(r.k)}: receitas ${brl(r.c.receitas)}</title></rect>`;

@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.15 — 20/10/2026 **Movimento: valores que contam e barras que enchem**
+
+- Valores grandes (saldo, receitas, despesas, quadros de Relatórios) contam de zero até o número ao trocar de tela.
+- Barras de categorias, formas de pagamento, limite do cartão, metas, desafios e viagens enchem em sequência.
+- Linha do saldo se desenha; rosca e gráfico de meses de Relatórios surgem animados.
+- Só anima quando a tela muda (aba, mês, abertura), nunca ao digitar. Respeita "reduzir movimento" do aparelho.
+- Na abertura, o movimento espera a tela do logo sair.
+
 ## 5.0.14 — 19/10/2026 **Checagem de tipos sem avisos**
 
 - `tsc -p jsconfig.json` agora passa com **0 avisos** (eram 416 na 5.0.12).
