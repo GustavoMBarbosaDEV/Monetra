@@ -352,10 +352,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.16";
+const VERSAO="5.0.17";
 const NOVIDADES=[
-  "Nova abertura: as barras do M sobem uma a uma e o nome Monetra aparece; depois os quadros do Início entram em cascata.",
-  "Ao trocar de aba, os quadros também entram em sequência. Com animações reduzidas no celular, a abertura é rápida e sem movimento."
+  "Cartão de saldo renovado: número em fonte de destaque, com R$ e centavos menores para ler o valor num olhar.",
+  "O cartão ganhou um brilho que muda de cor com o mês: verde quando está saudável, âmbar quando o saldo está apertado e vermelho quando fica negativo, com um selo dizendo isso.",
+  "A linha do saldo agora tem brilho e o ponto de hoje pulsa."
 ];
 
 /* ---------- utilidades ---------- */
@@ -367,6 +368,8 @@ const diasMes=k=>new Date(kY(k),kM(k),0).getDate();
 const nomeMes=k=>NOMES[kM(k)-1]+" "+kY(k);
 const abrMes=k=>ABR[kM(k)-1].toLowerCase()+"/"+String(kY(k)).slice(2);
 const brl=v=>(Number(v)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+/* valor de destaque: "R$" e centavos menores que o número inteiro (o texto lido é o mesmo de brl) */
+const valorGrande=v=>{ const t=brl(v), m=t.match(/^(-?)\s*R\$\s*([\d.]+)(,\d{2})$/); if(!m) return esc(t); return `${m[1]}<span class="vg-rs">R$</span>${m[2]}<span class="vg-cs">${m[3]}</span>`; };
 const brlT=v=>(Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); // tabela: sem "R$" para caber no celular
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -1649,14 +1652,16 @@ function animaEntrada(raiz,cascata){
 /** @param {HTMLElement} raiz @param {number} atraso */
 function contaValores(raiz,atraso){
   const alvos=[...raiz.querySelectorAll(".hs-val, .hs-mini b, .tile .val")].map(el=>{
+    const h=el.innerHTML;
+    if(el.dataset.v!==undefined){ const v=Number(el.dataset.v); return v?{el,h,v,rico:true}:null; }
     if(el.children.length) return null; const t=el.textContent, m=t.match(/R\$\s*([\d.]+,\d{2})/); if(!m) return null;
-    const v=parseFloat(m[1].replace(/\./g,"").replace(",","."))*(/^\s*-/.test(t)?-1:1); return v?{el,t,v}:null; }).filter(Boolean);
+    const v=parseFloat(m[1].replace(/\./g,"").replace(",","."))*(/^\s*-/.test(t)?-1:1); return v?{el,h,v,rico:false}:null; }).filter(Boolean);
   if(!alvos.length) return;
   const ini=performance.now()+(atraso||0), dur=750, ease=x=>1-Math.pow(1-x,4);
   const passo=agora=>{ const p=Math.max(0,Math.min(1,(agora-ini)/dur)), k=ease(p);
-    alvos.forEach(a=>{ if(!a.el.isConnected) return; a.el.textContent=p<1?brl(a.v*k):a.t; });
+    alvos.forEach(a=>{ if(!a.el.isConnected) return; if(p>=1) a.el.innerHTML=a.h; else if(a.rico) a.el.innerHTML=valorGrande(a.v*k); else a.el.textContent=brl(a.v*k); });
     if(p<1) requestAnimationFrame(passo); };
-  alvos.forEach(a=>{ a.el.textContent=brl(0); }); requestAnimationFrame(passo);
+  alvos.forEach(a=>{ if(a.rico) a.el.innerHTML=valorGrande(0); else a.el.textContent=brl(0); }); requestAnimationFrame(passo);
 }
 /* valores muito grandes diminuem de tamanho até caber, sem cortar o número */
 function encolheValores(raiz){ if(!raiz) return; raiz.querySelectorAll(".tile .val, .hs-val, .assintot b, .rpar b, .vgnums b").forEach(el=>{ el.style.fontSize=""; let f=parseFloat(getComputedStyle(el).fontSize), n=0; while(el.scrollWidth>el.clientWidth+1&&f>12&&n<20){ f-=1; n++; el.style.fontSize=f+"px"; } }); }
@@ -2080,7 +2085,7 @@ function graficoSaldo(sr){
   if(sr.length<2) return "";
   const W=360,H=70, mx=Math.max(...sr), mn=Math.min(...sr,0), rg=(mx-mn)||1;
   const P=sr.map((v,i)=>[i/(sr.length-1)*W,H-4-(v-mn)/rg*(H-8)]), d="M"+P.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" L"), u=P[P.length-1];
-  return `<svg class="hs-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="${d} L${W},${H} L0,${H}Z" fill="url(#hsg)"/><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><circle cx="${u[0].toFixed(1)}" cy="${u[1].toFixed(1)}" r="3.5" fill="currentColor"/></svg>`;
+  return `<svg class="hs-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="${d} L${W},${H} L0,${H}Z" fill="url(#hsg)"/><path class="hs-linha" d="${d}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/><circle cx="${u[0].toFixed(1)}" cy="${u[1].toFixed(1)}" r="3.5" fill="currentColor"/><circle class="hs-pulso" cx="${u[0].toFixed(1)}" cy="${u[1].toFixed(1)}" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
 }
 /* tela de abertura (logo em tela cheia) some com um fade quando o app fica pronto */
 /* a abertura fica pelo menos o tempo das barras do M subirem */
@@ -2114,12 +2119,15 @@ function viewMes(){
   const pv=c.receitas>0?previsaoMes(k,c):null, alTop=isCur?alertasOrcamento(k).find(a=>a.diaEstoura||a.nivel==="passou"):null;
   const notaTxt=pv?(pv.ritmo>0?`No ritmo atual, ${mesN} termina com <b class="nowrap">≈&nbsp;${brl(pv.saldo)}</b>.`:`Sem gastos do dia a dia até agora: ${mesN} termina com <b>${brl(pv.saldo)}</b> se continuar assim.`):c.porDia!==null&&c.receitas>0?`Você pode gastar <b>${brl(c.porDia)}</b> por dia ${isCur?"até o fim do mês":"neste mês"}.`:"";
   const notaAl=alTop?(alTop.nivel==="passou"?` ${esc(alTop.nome)} passou do limite.`:` ${esc(alTop.nome)} estoura o limite no dia ${alTop.diaEstoura}.`):"";
-  const tiles=`<div class="heroSaldo ${c.saldo<0?"neg":""}">
-    <span class="lab">Saldo de ${esc(mesN)}</span>
-    <b class="hs-val">${brl(c.saldo)}</b>
+  /* saúde do mês: muda a cor da "aura" do cartão e o selo */
+  const saude=c.saldo<0?"bad":(c.receitas>0&&c.saldo<c.receitas*0.05)?"warn":(c.receitas>0||c.despesas>0)?"ok":"";
+  const selo={ok:"mês saudável",warn:"mês apertado",bad:"mês no vermelho"}[saude];
+  const tiles=`<div class="heroSaldo ${c.saldo<0?"neg":""} ${saude?"sd-"+saude:""}"><i class="hs-aura" aria-hidden="true"></i><i class="hs-aura b2" aria-hidden="true"></i>
+    <div class="hs-top"><span class="lab">Saldo de ${esc(mesN)}</span>${selo?`<span class="hs-selo"><i></i>${selo}</span>`:""}</div>
+    <b class="hs-val" data-v="${c.saldo}">${valorGrande(c.saldo)}</b>
     <div class="hs-sub">${varS!==null?`<span class="${varS>=0?"hs-up":"hs-down"}">${varS>=0?"▲":"▼"} ${Math.round(Math.abs(varS)*100)}%</span> vs ${esc(NOMES[kM(prevK)-1].toLowerCase())} · `:""}acumulado <b>${brl(acum)}</b></div>
     ${graficoSaldo(serieSaldo(k))}
-    <div class="hs-duo"><div class="hs-mini"><span class="lab">Receitas</span><b>${brl(c.receitas)}</b></div><div class="hs-mini"><span class="lab">Despesas</span><b>${brl(c.despesas)}</b></div></div>
+    <div class="hs-duo"><div class="hs-mini"><span class="lab">Receitas</span><b data-v="${c.receitas}">${valorGrande(c.receitas)}</b></div><div class="hs-mini"><span class="lab">Despesas</span><b data-v="${c.despesas}">${valorGrande(c.despesas)}</b></div></div>
   </div>
   <div class="qa">
     <button type="button" class="q" data-novo="gasto"><span class="qi">${icq("seta-baixo")}</span>Despesa</button>

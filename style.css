@@ -1120,3 +1120,32 @@ button.item .pill{white-space:nowrap}
 /* ---------- 5.0.16 abertura: quadros entram em cascata ---------- */
 @keyframes mb-entra{from{opacity:0;transform:translateY(18px) scale(.985)}}
 .cascata .entra{animation:mb-entra .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--c,0) * 60ms + var(--atraso,0ms))}
+
+/* ---------- 5.0.17 cartão de saldo: fonte de destaque, centavos menores, aura e gráfico com brilho ---------- */
+:root{--num:"Sora","Inter","Segoe UI",system-ui,sans-serif}
+.heroSaldo{position:relative;overflow:hidden;isolation:isolate}
+.heroSaldo > *{position:relative}
+.heroSaldo .hs-val,.hs-mini b{font-family:var(--num);letter-spacing:-.02em}
+.heroSaldo .hs-val{font-size:44px;font-weight:700;letter-spacing:-.035em}
+@media (max-width:420px){.heroSaldo .hs-val{font-size:38px}}
+.vg-rs{font-size:.5em;font-weight:600;opacity:.62;margin-right:.18em;vertical-align:.32em;letter-spacing:0}
+.vg-cs{font-size:.52em;font-weight:600;opacity:.55;letter-spacing:0}
+.hs-mini b .vg-rs{font-size:.62em;vertical-align:.16em}
+.hs-mini b .vg-cs{font-size:.66em}
+/* aura: brilho suave que muda de cor com a saúde do mês */
+.heroSaldo .hs-aura{position:absolute;z-index:-1;pointer-events:none;border-radius:50%;width:300px;height:300px;top:-140px;right:-90px;
+  background:radial-gradient(circle,color-mix(in srgb,var(--aura,var(--accent)) 42%,transparent),transparent 66%);animation:mb-aura 10s ease-in-out infinite}
+.heroSaldo .hs-aura.b2{width:260px;height:260px;top:auto;bottom:-150px;right:auto;left:-70px;opacity:.5;animation-duration:13s;animation-direction:reverse}
+@keyframes mb-aura{50%{transform:translate(-22px,16px) scale(1.12)}}
+.heroSaldo.sd-ok{--aura:var(--accent)} .heroSaldo.sd-warn{--aura:var(--warn)} .heroSaldo.sd-bad{--aura:var(--bad)}
+.tema-claro .heroSaldo.sd-ok{--aura:#9CF5C8} .tema-claro .heroSaldo.sd-warn{--aura:#FFD27A} .tema-claro .heroSaldo.sd-bad{--aura:#FFB4B4}
+/* selo do mês */
+.hs-selo{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:999px;padding:4px 9px;
+  color:var(--aura,var(--accent));background:color-mix(in srgb,var(--aura,var(--accent)) 15%,transparent)}
+.hs-selo i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.tema-claro .hs-selo{background:rgba(255,255,255,.16)}
+/* linha do saldo com brilho e ponto final pulsando */
+.hs-graf .hs-linha{filter:drop-shadow(0 0 6px color-mix(in srgb,currentColor 55%,transparent))}
+.heroSaldo .hs-graf .hs-pulso{transform-box:fill-box;transform-origin:center;animation:mb-pulso 2.2s ease-out 1.8s infinite;opacity:0}
+@keyframes mb-pulso{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(3.4)}}
+@media (prefers-reduced-motion:reduce){.heroSaldo .hs-aura,.heroSaldo .hs-graf .hs-pulso{animation:none}}

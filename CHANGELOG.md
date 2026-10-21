@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.17 — 21/10/2026 **Cartão de saldo novo**
+
+- Saldo, receitas e despesas do cartão do Início em fonte Sora, com "R$" e centavos menores (o texto lido continua o mesmo valor).
+- Aura animada no fundo do cartão, colorida pela saúde do mês: saudável (verde), apertado (saldo abaixo de 5% das receitas, âmbar), no vermelho (negativo). Selo com o estado ao lado do título.
+- Linha do saldo com brilho e ponto final pulsando. Sem animação com "reduzir movimento".
+
 ## 5.0.16 — 20/10/2026 **Abertura animada**
 
 - Tela de abertura com o logo desenhado em SVG: as pernas do M entram, as 3 barras sobem em sequência e o nome aparece.
