@@ -1211,3 +1211,54 @@ button.check{position:relative;overflow:visible}
 /* Retirar da caixinha em vermelho */
 .btn.badbtn,.tema-claro .btn.badbtn,.tema-escuro .btn.badbtn{color:var(--bad);border:1.5px solid color-mix(in srgb,var(--bad) 75%,transparent);background:color-mix(in srgb,var(--bad) 8%,transparent)}
 @media (prefers-reduced-motion:reduce){.check.pop,.check.pop svg path,.confete i{animation:none}}
+
+/* ---------- 5.0.21 Relatórios: gráfico por mês, anel e Retrospectiva em stories ---------- */
+.grafmes rect.past{opacity:.5}
+.grafmes rect.cur{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--accent) 55%,transparent))}
+.card.anelcard{display:flex;flex-direction:row;align-items:center;gap:16px}
+.anel{position:relative;width:78px;height:78px;flex:none}
+.anel svg{width:100%;height:100%}
+.anel b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--num);font-size:17px;font-weight:700}
+.anel-t{min-width:0;display:flex;flex-direction:column;gap:3px}
+.anel-t > b{font-size:15px}
+.anel-t small{font-size:12.5px;color:var(--muted);line-height:1.45}
+.anel-t small b{color:var(--fg)}
+.anima .anel-v{animation:mb-arco 1.1s cubic-bezier(.16,1,.3,1) calc(.25s + var(--atraso,0ms)) both}
+/* stories: tela cheia, cor por tela, barras de progresso que andam */
+.sheet-wrap.stories{align-items:center;justify-content:center;background:rgba(0,0,0,.82)}
+.stories .sheet{--sg:linear-gradient(160deg,#04261A,#0A3F2B 58%,#12A672);position:relative;max-width:440px;width:100%;height:100vh;height:100dvh;max-height:100dvh;border-radius:0;padding:0;overflow:hidden;background:var(--sg);color:#fff;display:flex;flex-direction:column}
+.stories .sheet.st1{--sg:linear-gradient(160deg,#0B2540,#123E6B 58%,#2F7FD0)}
+.stories .sheet.st2{--sg:linear-gradient(160deg,#2A1240,#4B1F78 58%,#8D5AD9)}
+.stories .sheet.st3{--sg:linear-gradient(160deg,#3A2405,#7A4A08 58%,#E19A2C)}
+.stories .sheet.st4{--sg:linear-gradient(160deg,#3A0E1A,#7A1E37 58%,#D9546F)}
+.stories .sheet.st5{--sg:linear-gradient(160deg,#04261A,#0E5A3C 58%,#22D47A)}
+@media (min-width:520px){.stories .sheet{height:min(780px,92dvh);border-radius:28px;box-shadow:0 40px 80px -30px rgba(0,0,0,.8)}}
+.stories .sheethead{position:absolute;z-index:2;top:calc(env(safe-area-inset-top,0px) + 22px);left:0;right:0;padding:0 14px 0 20px;background:none;border:0}
+.stories .sheethead h2{color:#fff;font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.stories .sheethead .muted{color:rgba(255,255,255,.7)}
+.stories .sheethead .x{color:#fff;background:rgba(255,255,255,.14);border:0}
+.stories .rprog{position:absolute;z-index:2;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;right:12px;margin:0;gap:5px}
+.stories .rprog i{height:3px;border-radius:3px;background:rgba(255,255,255,.28);overflow:hidden;position:relative}
+.stories .rprog i.on{background:#fff}
+.stories .rprog i.cur{background:rgba(255,255,255,.28)}
+.stories .rprog i.cur::after{content:"";position:absolute;inset:0;background:#fff;transform-origin:left;animation:mb-enche 6.5s linear both}
+.stories .rslide{flex:1;min-height:0;background:none;color:#fff;border-radius:0;padding:84px 26px calc(env(safe-area-inset-bottom,0px) + 86px);justify-content:flex-end;font-size:18px;line-height:1.45;cursor:pointer;overflow:auto}
+.stories .rslide .rlab{color:rgba(255,255,255,.8);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+.stories .rslide .rbig{font-family:var(--num);font-size:84px;line-height:1;letter-spacing:-.04em}
+.stories .rslide .rbig2{font-family:var(--num);font-size:48px;letter-spacing:-.03em}
+.stories .rslide b{color:#fff}
+.stories .rslide .pos,.stories .rslide b.pos{color:#B8F0D8}
+.stories .rslide .neg,.stories .rslide b.neg{color:#FFC2C2}
+.stories .rslide .rsub,.stories .rslide small{color:rgba(255,255,255,.75)}
+.stories .rpar > div,.stories .rmeses > div,.stories .rcat{background:rgba(255,255,255,.12)!important;color:#fff}
+.stories .rpar b{font-family:var(--num)}
+.stories .rslide .btn,.tema-claro .stories .rslide .btn,.tema-escuro .stories .rslide .btn{background:#fff;color:#04261A;border-color:#fff}
+.stories .ranos button{color:#fff;border-color:rgba(255,255,255,.4);background:transparent}
+.stories .ranos button.on{background:#fff;color:#04261A}
+.stories .rslide > *{animation:mb-entra .5s cubic-bezier(.2,.8,.2,1) both}
+.stories .rslide > :nth-child(2){animation-delay:.08s}.stories .rslide > :nth-child(3){animation-delay:.16s}.stories .rslide > :nth-child(n+4){animation-delay:.24s}
+.stories .sheetbtns{position:absolute;z-index:2;left:0;right:0;bottom:0;padding:12px 18px calc(env(safe-area-inset-bottom,0px) + 16px);background:linear-gradient(transparent,rgba(0,0,0,.25));justify-content:space-between}
+.stories .sheetbtns .btn,.tema-claro .stories .sheetbtns .btn,.tema-escuro .stories .sheetbtns .btn{background:rgba(255,255,255,.16);color:#fff;border-color:transparent;box-shadow:none}
+.stories .sheetbtns .btn:not(.ghost),.tema-claro .stories .sheetbtns .btn:not(.ghost),.tema-escuro .stories .sheetbtns .btn:not(.ghost){background:#fff;color:#04261A}
+.stories .sheetbtns .btn:disabled{opacity:.35}
+@media (prefers-reduced-motion:reduce){.stories .rslide > *,.stories .rprog i.cur::after{animation:none}.stories .rprog i.cur{background:#fff}}

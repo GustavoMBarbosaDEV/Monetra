@@ -352,11 +352,12 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.20";
+const VERSAO="5.0.21";
 const NOVIDADES=[
-  "A fatura de cada cartão agora fica num quadro com o nome do cartão, vencimento, fechamento, o valor em destaque e o limite disponível.",
-  "Ao marcar uma conta como paga, o check se desenha com um pequeno confete de barrinhas.",
-  "O botão Retirar da caixinha ficou vermelho, para não confundir com Guardar."
+  "Retrospectiva agora em formato de stories: tela cheia, uma cor por tela, barrinhas de progresso no topo e avanço sozinho. Toque à direita para avançar e à esquerda para voltar.",
+  "Novo anel em Relatórios mostra quanto das receitas virou despesa no período.",
+  "No gráfico de receitas e despesas, o mês atual fica em destaque, com barras de cantos redondos.",
+  "O cartão da Retrospectiva desceu para depois dos números; em dezembro e janeiro ele volta para o topo."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1630,7 +1631,7 @@ function render(){
 }
 /* ---------- movimento: valores contam até o número, barras enchem e gráficos se desenham ----------
    Roda só quando a tela muda. Quem desativou animações no aparelho vê tudo pronto, sem movimento. */
-let ultimaVista="", timerAnima=0;
+let ultimaVista="", timerAnima=0, timerStory=0;
 const semMovimento=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
 /** @param {HTMLElement} raiz @param {boolean} cascata */
 function animaEntrada(raiz,cascata){
@@ -2294,15 +2295,21 @@ function viewAno(){
   let svg=`<svg class="grafmes" viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W,560)}px" role="img" aria-label="Receitas e despesas por mês">`;
   [0,.5,1].forEach(f=>{const v=nice*f;svg+=`<line x1="${L}" x2="${W-8}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v>=1000?(v/1000).toLocaleString("pt-BR")+" mil":v.toLocaleString("pt-BR")}</text>`});
   rows.forEach((r,i)=>{const cx=L+gw*i+gw/2, cur=r.k===todayKey;
-    svg+=`<rect x="${cx-bw-1}" y="${y(r.c.receitas)}" width="${bw}" height="${Math.max(0,H-B-y(r.c.receitas))}" rx="3" fill="var(--accent)"><title>${nomeMes(r.k)}: receitas ${brl(r.c.receitas)}</title></rect>`;
-    svg+=`<rect x="${cx+1}" y="${y(r.c.despesas)}" width="${bw}" height="${Math.max(0,H-B-y(r.c.despesas))}" rx="3" fill="var(--c2)"><title>${nomeMes(r.k)}: despesas ${brl(r.c.despesas)}</title></rect>`;
+    const rx=Math.min(6,bw/2).toFixed(1), cl=cur?"cur":"past";
+    svg+=`<rect class="${cl}" x="${cx-bw-1}" y="${y(r.c.receitas)}" width="${bw}" height="${Math.max(0,H-B-y(r.c.receitas))}" rx="${rx}" fill="var(--accent)"><title>${nomeMes(r.k)}: receitas ${brl(r.c.receitas)}</title></rect>`;
+    svg+=`<rect class="${cl}" x="${cx+1}" y="${y(r.c.despesas)}" width="${bw}" height="${Math.max(0,H-B-y(r.c.despesas))}" rx="${rx}" fill="var(--c2)"><title>${nomeMes(r.k)}: despesas ${brl(r.c.despesas)}</title></rect>`;
     svg+=`<text x="${cx}" y="${H-10}" text-anchor="middle" font-size="11" fill="${cur?"var(--fg)":"var(--muted)"}" font-weight="${cur?700:400}">${ABR[kM(r.k)-1]}${kM(r.k)===1||i===0?" "+String(kY(r.k)).slice(2):""}</text>`;});
   svg+="</svg>";
   /* campos e formas no período */
   const cats=state.config.categorias;
   const catTot=cats.map((ct,i)=>({ct,i,v:rows.reduce((a,r)=>a+(r.c.porCat[ct.id]||0),0)})).filter(z=>z.v>0).sort((a,b)=>b.v-a.v);
   const fTot=FORMAS.map(([id,n])=>({id,n,v:rows.reduce((a,r)=>a+(r.c.porForma[id]||0),0)})).filter(z=>z.v>0).sort((a,b)=>b.v-a.v);
-  return `${cardRetro()}<div class="tiles">
+  const retroTopo=kM(todayKey)===12||kM(todayKey)===1;
+  /* anel: quanto das receitas virou despesa no período */
+  const pr=T.rec>0?T.des/T.rec:0, crA=pr<0.8?"var(--accent)":pr<1?"var(--warn)":"var(--bad)";
+  const anel=T.rec>0?`<div class="card anelcard"><div class="anel"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--sunk)" stroke-width="5"/><circle class="anel-v" cx="22" cy="22" r="18" fill="none" stroke="${crA}" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="${Math.min(100,pr*100).toFixed(1)} 100" transform="rotate(-90 22 22)"/></svg><b style="color:${crA}">${Math.round(pr*100)}%</b></div>
+    <div class="anel-t"><b>Das receitas viraram despesa</b><small>${pr<0.8?"Abaixo de 80% é um bom sinal.":pr<1?"Perto do limite: acima de 80% sobra pouco.":"Saiu mais do que entrou no período."} Média de gasto/mês: <b>${brl(media)}</b>.</small></div></div>`:"";
+  return `${retroTopo?cardRetro():""}<div class="tiles">
     <div class="tile"><span class="lab">Receitas</span><span class="val">${brl(T.rec)}</span><span class="sub">${esc(periodo)}</span></div>
     <div class="tile"><span class="lab">Despesas</span><span class="val">${brl(T.des)}</span><span class="sub">${T.rec>0?Math.round(T.des/T.rec*100)+"% das receitas":"—"}</span></div>
     <div class="tile hero"><span class="lab">Saldo acumulado</span><span class="val ${ult.ac<0?"neg":"pos"}">${brl(ult.ac)}</span><span class="sub">até ${esc(abrMes(ult.k))}, com saldo inicial</span></div>
@@ -2311,6 +2318,7 @@ function viewAno(){
   </div>
   ${maior||melhor?`<div class="destaques">${maior?`<div><span class="lab">Mês que mais gastou</span><b>${esc(nomeMes(maior.k))}</b><span>${brl(maior.c.despesas)}</span></div>`:""}${melhor&&melhor.c.saldo>0?`<div><span class="lab">Melhor saldo</span><b>${esc(nomeMes(melhor.k))}</b><span class="pos">${brl(melhor.c.saldo)}</span></div>`:""}${catTot[0]?`<div><span class="lab">Categoria que mais pesou</span><b>${esc(catTot[0].ct.nome)}</b><span>${brl(catTot[0].v)} · ${Math.round(catTot[0].v/T.des*100)}%</span></div>`:""}</div>`:""}
   <div class="card chart"><div class="cardhead"><h2>Receitas x despesas</h2></div><div class="legend"><span><i style="background:var(--accent)"></i>Receitas</span><span><i style="background:var(--c2)"></i>Despesas</span></div><div class="tablewrap">${svg}</div></div>
+  ${anel}${retroTopo?"":cardRetro()}
   ${cardAssinaturas(rows.length?T.rec/rows.length:0)}
   ${cardEtiquetas()}
   <div class="grid"><div class="card"><div class="cardhead"><h2>Mês a mês</h2><span class="num muted">valores em R$ · toque para abrir</span></div><div class="tablewrap"><table>
@@ -3044,7 +3052,7 @@ function renderSheet(){
     sub=""; botoes=novo?`<button class="btn" type="submit">Salvar</button>`:`${apagar}<button class="btn" type="submit">Salvar</button>`;
   }else if(s.tipo==="retro"){
     const d=dadosRetro(s.ano), sl=d?slidesRetro(d):[]; s.slide=Math.max(0,Math.min(s.slide||0,sl.length-1));
-    corpo=d?`<div class="rprog">${sl.map((x,i)=>`<i class="${i<=s.slide?"on":""}"></i>`).join("")}</div><div class="rslide ${sl[s.slide].cls}" data-rtoque="1">${sl[s.slide].html}</div>`:`<p class="hint">Ainda não há dados para a retrospectiva.</p>`;
+    corpo=d?`<div class="rprog">${sl.map((x,i)=>`<i class="${i<s.slide?"on":i===s.slide?"on cur":""}"></i>`).join("")}</div><div class="rslide ${sl[s.slide].cls}" data-rtoque="1">${sl[s.slide].html}</div>`:`<p class="hint">Ainda não há dados para a retrospectiva.</p>`;
     sub=d?(s.slide+1)+" de "+sl.length:""; botoes=d?`<button class="btn ghost" type="button" data-rpasso="-1" ${s.slide===0?"disabled":""}>Anterior</button>${s.slide<sl.length-1?`<button class="btn" type="button" data-rpasso="1">Próximo</button>`:`<button class="btn" type="button" data-sfechar="1">Fechar</button>`}`:"";
   }else if(s.tipo==="pin"){
     const campo=(id,lab,auto)=>`<label class="f">${lab}<input class="in pinin" id="${id}" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="${PINLEN}" autocomplete="off" ${auto?"data-autofocus":""}></label>`;
@@ -3083,10 +3091,13 @@ function renderSheet(){
     corpo=`<label class="f"><span>Procure pela descrição, categoria, valor ou #etiqueta</span><input class="in" id="s-busca" type="search" placeholder="ex.: farmácia, aluguel, 89,90" value="${esc(s.q||"")}" data-autofocus autocomplete="off"></label><div id="s-result" class="busca"></div>`;
     sub="";
   }
-  r.innerHTML=`<div class="sheet-wrap" data-sfechar="1"><form class="sheet" id="sheetForm" role="dialog" aria-modal="true" aria-labelledby="sheetTit" autocomplete="off" novalidate>
+  r.innerHTML=`<div class="sheet-wrap ${s.tipo==="retro"?"stories":""}" data-sfechar="1"><form class="sheet${s.tipo==="retro"?" st"+((s.slide||0)%6):""}" id="sheetForm" role="dialog" aria-modal="true" aria-labelledby="sheetTit" autocomplete="off" novalidate>
     <div class="sheethead"><h2 id="sheetTit">${esc(titulos[s.tipo])}</h2><span class="muted small">${sub}</span><button type="button" class="x" data-sfechar="1" aria-label="Fechar">×</button></div>
     ${abas}${corpo}<p class="erro" id="s-erro" hidden></p>${botoes?`<div class="sheetbtns">${botoes}</div>`:""}</form></div>`;
   if(s.tipo==="busca") atualizaBusca();
+  /* retrospectiva em stories: avança sozinha a cada 6,5 s (não com "reduzir movimento") */
+  clearTimeout(timerStory);
+  if(s.tipo==="retro"&&!semMovimento()){ const fixo=s.slide; timerStory=setTimeout(()=>{ if(ui.sheet===s&&s.slide===fixo){ const nx=document.querySelector('#sheet [data-rpasso="1"]'); if(nx) nx.click(); } },6500); }
   if(s.tipo==="gasto") atualizaVg();
   setTimeout(()=>encolheValores(document.getElementById("sheet")),0);
   if(s.tipo==="conta"){ const ev=document.getElementById("s-valor"); if(ev) ev.dataset.neg="1"; }
@@ -3333,7 +3344,8 @@ function bindSheet(r){
     if(b.dataset.semnav){ const nf=somaDias(ui.sheet.fim||ultimoDomingo(),Number(b.dataset.semnav)); if(nf<=ultimoDomingo()){ ui.sheet.fim=nf; renderSheet(); } return; }
     if(b.dataset.avretro){ openSheet("retro",null,{ano:Number(b.dataset.avretro),slide:0}); return; }
     if(b.dataset.vgcot){ buscarCotacao(); return; }
-    if(b.dataset.rtoque){ const nx=document.querySelector('#sheet [data-rpasso="1"]'); if(nx) nx.click(); return; }
+    if(b.dataset.rtoque){ const rr=b.getBoundingClientRect(), esq=/** @type {MouseEvent} */(e).clientX&&(/** @type {MouseEvent} */(e).clientX-rr.left)<rr.width/3;
+      const nx=document.querySelector(esq?'#sheet [data-rpasso="-1"]':'#sheet [data-rpasso="1"]'); if(nx&&!/** @type {HTMLButtonElement} */(nx).disabled) /** @type {HTMLElement} */(nx).click(); else if(!esq){ const f=document.querySelector('#sheet .sheetbtns [data-sfechar]'); if(f) /** @type {HTMLElement} */(f).click(); } return; }
     if(b.dataset.rpasso){ s.slide=(s.slide||0)+Number(b.dataset.rpasso); renderSheet(); return; }
     if(b.dataset.rano){ s.ano=Number(b.dataset.rano); s.slide=0; renderSheet(); return; }
     if(b.dataset.rshare){ compartilharRetro(); return; }

@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.21 — 21/10/2026 **Relatórios: gráfico por mês, anel e Retrospectiva em stories**
+
+- Retrospectiva em stories: tela cheia (no computador, cartão de até 780 px), gradiente diferente por tela, barras de progresso que andam e avanço automático a cada 6,5 s; toque no terço esquerdo volta, no resto avança; na última tela o toque fecha. Com "reduzir movimento", sem avanço automático nem animação.
+- Anel "Das receitas viraram despesa" (verde abaixo de 80%, âmbar até 100%, vermelho acima), com a média de gasto/mês.
+- Gráfico Receitas x despesas: mês atual com brilho, meses anteriores mais apagados, cantos mais redondos.
+- Cartão da Retrospectiva vai para depois do gráfico; no topo só em dezembro e janeiro.
+
 ## 5.0.20 — 21/10/2026 **Fatura em quadro, check com confete e Retirar vermelho**
 
 - Fatura: quadro neutro (sem cor do banco) com "Fatura <nome do cartão>", vence/fecha, valor em fonte Sora com centavos menores (conta até o valor) e barra de limite disponível.
