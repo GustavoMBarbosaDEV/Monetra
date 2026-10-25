@@ -12,6 +12,18 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.28 — 25/10/2026 **Acessibilidade: base para leitor de tela e teclado**
+
+- Regiões da página marcadas (topo, conteúdo principal e menu) e botão "Pular para o conteúdo" no primeiro Tab.
+- Aviso falado (aria-live) com o nome da tela e o saldo ao trocar de aba ou de mês; o conteúdo principal tem o nome da aba.
+- Janelas: papel de diálogo no contêiner certo, fundo fica inacessível (inert) enquanto aberta, foco vai para o primeiro campo ou para o título; Esc fecha e o foco volta.
+- Valores com centavos menores agora têm o texto inteiro para o leitor de tela ("R$ 417,80").
+- Descrição em texto: linha do saldo (início, menor valor e hoje), rosca (total e maiores categorias) e gráfico de receitas x despesas (cada mês).
+- Tabelas e gráficos que rolam de lado agora recebem foco pelo teclado.
+- Contraste: etiquetas da rosca e pílulas de categoria no tema claro.
+- Grupos de opções (Entrar/Criar conta, tipo de lançamento) marcados como grupo de escolha; títulos da página de apresentação em ordem.
+- Verificação automática (axe, WCAG 2.2 AA) sem nenhum problema nas 4 abas, janelas, apresentação e login, nos dois temas.
+
 ## 5.0.27 — 25/10/2026 **Detalhes finais do visual**
 
 - Início: barrinhas do logo (sobem animadas) ao lado do nome/saudação.

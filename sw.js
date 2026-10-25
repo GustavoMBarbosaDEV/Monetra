@@ -1,5 +1,5 @@
 // Service worker: deixa o app abrir mesmo sem internet.
-const CACHE = "monetra-5.0.27"; // acompanhe a versão do app (VERSAO em app.js)
+const CACHE = "monetra-5.0.28"; // acompanhe a versão do app (VERSAO em app.js)
 const SHELL = ["./", "index.html", "style.css", "app.js", "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png"];
 self.addEventListener("install", e => {
