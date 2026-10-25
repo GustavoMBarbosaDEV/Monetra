@@ -18,7 +18,7 @@ Funciona no celular e no computador, com login Google e seus dados salvos na nuv
 - **Várias contas e cartões**, transferências e **importação de extrato** do banco (OFX/CSV).
 - **Controle compartilhado** com a família, separado do seu controle pessoal.
 - **Dívidas com pessoas:** quem te deve e para quem você deve.
-- **Visão geral e retrospectiva do ano**, planilha para Excel e backup.
+- **Relatórios e retrospectiva do ano**, planilha para Excel e backup.
 - **Bloqueio com PIN e digital**, modo escuro e tutorial de boas-vindas.
 
 ## Como instalar no celular

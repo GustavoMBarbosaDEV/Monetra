@@ -1,4 +1,4 @@
-/* Layout: app de uma coluna larga — barra de meses no topo, resumo em 4 números, lançamento rápido + listas em duas colunas que viram uma no celular */
+/* Estilos do Monetra. As seções seguem a ordem das versões: as mais novas ficam no fim e vencem as de cima. */
 :root{
   --bg:#F3F6F2; --surface:#FFFFFF; --sunk:#E8EEE8; --line:#D3DDD5;
   --fg:#16241D; --muted:#5C6E64; --accent:#0E6B55; --accent-ink:#FFFFFF; --accent-soft:#D5EDE4;
@@ -997,7 +997,6 @@ button.item .pill{white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.maishead .mc{transition:none}}
 
 /* ===== 5.0.7 — tom calmo: vermelho só para atraso e limite estourado ===== */
-/* calendário: intensidade em tom neutro (gasto não é erro) */
 /* variação do saldo no topo: informação, não alarme */
 .hs-down{color:inherit;font-weight:700}
 .tema-claro .hs-down{color:#fff}
