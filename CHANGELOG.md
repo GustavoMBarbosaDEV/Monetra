@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.22 — 25/10/2026 **Metas: anéis, barras com porcentagem e telas vazias**
+
+- Metas (aba Metas): anel de progresso com % no centro (verde; concluída em verde-sucesso; atrasada em vermelho), valor guardado em destaque e barra de 11 px com brilho.
+- Caixinha (Início): % de cada meta ao lado do nome.
+- Telas vazias de "Metas de economia" e "Desafios" com as 3 barrinhas do logo (sobem animadas) e texto explicativo.
+- Conquistas: ícone de sequência pulsa devagar, cartões sobem ao passar o mouse e as obtidas ganham brilho. Sem animação com "reduzir movimento".
+
 ## 5.0.21 — 21/10/2026 **Relatórios: gráfico por mês, anel e Retrospectiva em stories**
 
 - Retrospectiva em stories: tela cheia (no computador, cartão de até 780 px), gradiente diferente por tela, barras de progresso que andam e avanço automático a cada 6,5 s; toque no terço esquerdo volta, no resto avança; na última tela o toque fecha. Com "reduzir movimento", sem avanço automático nem animação.

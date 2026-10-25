@@ -352,12 +352,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.21";
+const VERSAO="5.0.22";
 const NOVIDADES=[
-  "Retrospectiva agora em formato de stories: tela cheia, uma cor por tela, barrinhas de progresso no topo e avanço sozinho. Toque à direita para avançar e à esquerda para voltar.",
-  "Novo anel em Relatórios mostra quanto das receitas virou despesa no período.",
-  "No gráfico de receitas e despesas, o mês atual fica em destaque, com barras de cantos redondos.",
-  "O cartão da Retrospectiva desceu para depois dos números; em dezembro e janeiro ele volta para o topo."
+  "Na aba Metas, cada meta ganhou um anel com a porcentagem guardada e uma barra mais grossa.",
+  "Na caixinha do Início, a porcentagem de cada meta aparece ao lado do nome.",
+  "Telas vazias de metas e desafios ilustradas com as barrinhas do logo; conquistas obtidas ganham brilho."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1804,7 +1803,7 @@ function viewMetas(){
   return `<div class="pagetitle"><h2>Metas e desafios</h2><p>Guardado na caixinha: <b>${brl(cx)}</b>${cf.metas.length?" · "+cf.metas.length+" meta"+(cf.metas.length===1?"":"s"):""}</p></div>
   <div class="grid"><div class="col">
     <div class="card"><div class="cardhead"><h2>Metas de economia</h2><span class="num muted">${state.config.metas.length||""}</span></div>
-    ${state.config.metas.length?`<div class="metas">${state.config.metas.map(mt=>linhaMeta(mt,null)).join("")}</div>`:`<p class="hint">Crie metas como "Viagem", "Reserva de emergência" ou "Celular novo", com valor e prazo. O app calcula quanto guardar por mês.</p>`}
+    ${state.config.metas.length?`<div class="metas">${state.config.metas.map(mt=>linhaMeta(mt,null,true)).join("")}</div>`:`<div class="vazio">${BARRINHAS}<b>Nenhuma meta ainda</b><p>Crie metas como "Viagem", "Reserva de emergência" ou "Celular novo", com valor e prazo. O app calcula quanto guardar por mês.</p></div>`}
     <button class="btn ghost" data-novo="meta" type="button">+ Nova meta</button></div>
   </div><div class="col">${cardConquistas()}</div></div>`;
 }
@@ -1817,7 +1816,7 @@ function cardConquistas(){
   return `<div class="card conq"><div class="cardhead"><h2>Conquistas e desafios</h2><span class="num muted">${nGot} de ${CONQ.length}</span></div>
     <div class="streaks"><div><span class="lab">Sequência lançando</span><b><span class="sti">${icq("chama",18)}</span>${sq.atual} dia${sq.atual===1?"":"s"}</b><small>recorde: ${sq.melhor}</small></div><div><span class="lab">Meses no azul seguidos</span><b><span class="sti">${icq("coracao",18)}</span>${sq.azulAtual}</b><small>recorde: ${sq.azulMelhor}</small></div></div>
     <h3>Desafios</h3>
-    ${ativos.length?ativos.map(linhaD).join(""):`<p class="hint">Desafie você mesmo: "30 dias sem delivery", "semana sem compras" ou um limite para o mercado. O app acompanha sozinho pelos seus lançamentos.</p>`}
+    ${ativos.length?ativos.map(linhaD).join(""):`<div class="vazio">${BARRINHAS}<b>Nenhum desafio ativo</b><p>Desafie você mesmo: "30 dias sem delivery", "semana sem compras" ou um limite para o mercado. O app acompanha sozinho pelos seus lançamentos.</p></div>`}
     ${antigos.length?`<details class="desant"><summary>Anteriores (${antigos.length})</summary>${antigos.map(linhaD).join("")}</details>`:""}
     <button type="button" class="btn ghost" data-novo="desafio">+ Novo desafio</button>
     <h3>Conquistas</h3>
@@ -2083,13 +2082,17 @@ function linhaLanc(g,k){
     <span class="desc"><b class="${g.desc?"":"empty"}">${esc(g.desc||catName(g.cat))}</b><small>${esc(catName(g.cat))} · ${esc(formaNome(g.forma)+extraTxt(g)+nota+porTxt(g))}</small></span>
     <span class="v">${valorGrande(g.valor)}</span></button>`;
 }
-function linhaMeta(mt,k){
-  const i=infoMeta(mt,k);
+/* motivo das barrinhas do logo, usado nas telas vazias */
+const BARRINHAS='<span class="mbars" aria-hidden="true"><i></i><i></i><i></i></span>';
+function linhaMeta(mt,k,anel){
+  const i=infoMeta(mt,k), pc=Math.round(Math.min(1,i.pct)*100);
   const sub=i.feita?"Meta atingida!":i.atrasada?"Prazo passou · faltam "+brl(i.falta):mt.prazo?"Faltam "+brl(i.falta)+" · guarde "+brl(i.porMes)+"/mês até "+abrMes(mt.prazo):"Faltam "+brl(i.falta);
-  return `<button type="button" class="meta ${i.feita?"feita":""} ${i.atrasada?"atrasada":""}" data-edit="meta" data-id="${esc(mt.id)}">
-    <span class="mt"><b>${esc(mt.nome)}</b><span class="num">${brl(i.saldo)} <small>de ${brl(mt.alvo)}</small></span></span>
+  const ring=anel?`<span class="manel" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--sunk)" stroke-width="5"/><circle class="anel-v" cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="${pc} 100" transform="rotate(-90 22 22)"/></svg><b>${pc}%</b></span>`:"";
+  return `<button type="button" class="meta ${anel?"comanel":""} ${i.feita?"feita":""} ${i.atrasada?"atrasada":""}" data-edit="meta" data-id="${esc(mt.id)}">${ring}<span class="mcorpo">
+    <span class="mt"><b>${esc(mt.nome)}</b>${anel?"":`<em class="mpct">${pc}%</em>`}</span>
+    <span class="mval num">${brl(i.saldo)} <small>de ${brl(mt.alvo)}</small></span>
     <span class="track"><span style="width:${(i.pct*100).toFixed(1)}%"></span></span>
-    <small>${esc(sub)}</small></button>`;
+    <small>${esc(sub)}</small></span></button>`;
 }
 function serieSaldo(k){
   const dim=diasMes(k), mov=new Array(dim+2).fill(0), m=normMonth(state.months[k]||{}), c=calc(k), dd=x=>Math.min(dim,Math.max(1,Number(x)||1));
