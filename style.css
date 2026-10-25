@@ -1726,3 +1726,18 @@ html,body{overscroll-behavior-x:none}
 .notadet li small{color:var(--muted);font-size:12.5px}
 .notadet li em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .item.aumento{grid-template-columns:minmax(0,1fr) auto}
+
+/* 5.1.0 — divisão no compartilhado e patrimônio */
+.item.divp,.item.divsug{grid-template-columns:minmax(0,1fr) auto}
+.item.divp .v{font-weight:700;white-space:nowrap}
+.item.divp .v.pos{color:var(--good)}
+.item.divp .v.neg{color:var(--bad)}
+.item.divsug .btn.mini{min-height:40px}
+.ptlista{display:flex;flex-direction:column}
+.ptlin{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border:0;border-bottom:1px dashed var(--line);background:none;color:var(--fg);font:inherit;text-align:left;width:100%}
+.ptlin > span:first-child{display:flex;flex-direction:column;min-width:0}
+.ptlin small{color:var(--muted);font-size:12.5px}
+.ptlin .num{font-weight:700;white-space:nowrap}
+.ptlin .num.neg{color:var(--bad)}
+button.ptlin{cursor:pointer;min-height:48px}
+button.ptlin:hover b{color:var(--accent)}
