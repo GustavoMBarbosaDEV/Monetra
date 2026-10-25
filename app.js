@@ -357,10 +357,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.38";
+const VERSAO="5.0.39";
 const NOVIDADES=[
-  "Novo olho no topo: toque nele para esconder todos os valores, bom para abrir o app em público.",
-  "O app lembra a escolha neste aparelho. Toque de novo no olho para mostrar os valores."
+  "No celular, puxe a tela para baixo no topo da página e solte para atualizar os dados.",
+  "Útil quando você lançou algo em outro aparelho e quer ver aqui na hora."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1374,7 +1374,7 @@ function passosTutorial(){
     {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o anel mostra quanto já guardou e o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
     {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico (toque ou arraste nele para ver cada dia), a <b>previsão do fim do mês</b> e o orçamento por categoria. Toque em <b>Ouvir</b> no saldo para escutar o resumo do mês.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b> (toque numa fatia para ver os lançamentos dela), <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no quadradinho e toque na conta para editar). No calendário: <b>anel</b> = vence, <b>ponto</b> = pago, <b>triângulo</b> = atrasado.","<b>Relatórios</b>: meses lado a lado, quanto das receitas virou despesa, assinaturas, etiquetas e a retrospectiva do ano em formato de stories.")},
-    {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
+    {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","No celular, <b>puxe a tela para baixo</b> no topo para atualizar os dados.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
     {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup. O <b>olho</b> no topo esconde os valores para usar o app em público.","<b>Acessibilidade</b> (em Perfil): texto maior, alto contraste, cores para daltonismo, modo calmo, modo foco, fonte de leitura fácil e botões maiores.","<b>Regras automáticas</b>: ensine suas palavras (ex.: “petz” → Pets) e a categoria vem certa.","Não achou algo? Use a <b>busca</b> no topo: “cartões”, “13º” ou “backup” levam direto à tela.")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
   ];
@@ -3966,6 +3966,28 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="ArrowLeft") passo(-1);
   else if(e.key==="ArrowRight") passo(1);
 });
+/* ---------- puxar para atualizar (celular, 5.0.39): no topo da página, puxar para baixo e soltar.
+   Na nuvem salva o que falta e recarrega os dados; no modo local, relê o aparelho e redesenha. ---------- */
+const PUXA_LIM=80;
+let puxa=null, atualizando=false;
+function indPuxa(){ let el=document.getElementById("puxa"); if(!el){ el=document.createElement("div"); el.id="puxa"; el.className="puxa"; el.setAttribute("aria-hidden","true");
+  el.innerHTML=`<span class="puxa-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span><span class="puxa-t"></span>`; document.body.appendChild(el); } return el; }
+function mostraPuxa(dy,txt,cls){ const el=indPuxa(); el.className="puxa on"+(cls?" "+cls:""); el.style.transform="translate(-50%,"+Math.round(Math.min(dy,PUXA_LIM*1.4)*.6-56)+"px)";
+  el.style.setProperty("--giro",Math.min(1,dy/PUXA_LIM)*180+"deg"); const t=el.querySelector(".puxa-t"); if(t) t.textContent=txt; }
+function somePuxa(){ const el=document.getElementById("puxa"); if(!el) return; el.className="puxa"; el.style.transform=""; }
+async function atualizaDados(){
+  if(atualizando) return; atualizando=true; mostraPuxa(PUXA_LIM,"Atualizando…","gira"); vibra(14);
+  try{ if(mode==="cloud"&&fb){ await salvaPendentes(); await abrirEspaco(); } else { if(mode==="local") loadLocal(); render(); } anunciar("Dados atualizados."); }
+  catch(e){ console.error(e); toast("Não foi possível atualizar agora."); }
+  finally{ setTimeout(()=>{ atualizando=false; somePuxa(); },semMovimento()?0:450); }
+}
+app.addEventListener("touchstart",e=>{ puxa=null; if(atualizando||ui.sheet||tutAberto||mode==="login"||!state.loaded||e.touches.length!==1||window.scrollY>0) return;
+  if(e.target.closest("input,select,textarea,.tablewrap,.chips")) return; puxa={y0:e.touches[0].clientY,x0:e.touches[0].clientX,dy:0,ativo:false,pronto:false}; },{passive:true});
+app.addEventListener("touchmove",e=>{ const p=puxa; if(!p) return; const dy=e.touches[0].clientY-p.y0, dx=e.touches[0].clientX-p.x0;
+  if(!p.ativo){ if(Math.abs(dx)>Math.abs(dy)||dy<0||(desl&&desl.ativo)||window.scrollY>0){ if(Math.abs(dx)>8||dy<-8) puxa=null; return; } if(dy<12) return; p.ativo=true; }
+  p.dy=dy; const pronto=dy>=PUXA_LIM; if(pronto&&!p.pronto) vibra(10); p.pronto=pronto; mostraPuxa(dy,pronto?"Solte para atualizar":"Puxe para atualizar",pronto?"pronto":""); },{passive:true});
+const soltaPuxa=()=>{ const p=puxa; puxa=null; if(!p||!p.ativo) return; if(p.pronto) atualizaDados(); else somePuxa(); };
+app.addEventListener("touchend",soltaPuxa,{passive:true}); app.addEventListener("touchcancel",soltaPuxa,{passive:true});
 /* deslizar para os lados troca o mês (celular) */
 let tx=null, ty=null;
 app.addEventListener("touchstart",e=>{ if(ui.tab!=="mes"||ui.sheet||e.touches.length!==1||e.target.closest(".chips,.tablewrap,input,select,.cats,[data-desliza],.hs-grafwrap")){ tx=null; return; } tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
