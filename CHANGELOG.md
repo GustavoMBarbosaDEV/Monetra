@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.41 — 25/10/2026 **Transição entre abas**
+
+- Ao trocar de aba, o conteúdo novo entra deslizando na direção da aba: indo para a direita na barra (Início → Relatórios → Metas → Perfil → Ajustes) vem da direita; voltando, vem da esquerda.
+- Vale para a barra de baixo, as abas do topo, o botão Voltar do celular e a busca que navega. Sem barra de rolagem lateral durante o movimento.
+- Com Reduzir movimento ou Modo calmo, a troca continua instantânea.
+
 ## 5.0.40 — 25/10/2026 **Esqueleto de carregamento**
 
 - No lugar do texto “Carregando…”, a tela mostra blocos cinza no formato do Início (saldo, atalhos e lista de lançamentos) enquanto os dados chegam, com um brilho suave passando.
