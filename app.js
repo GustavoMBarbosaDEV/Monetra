@@ -356,10 +356,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.34";
+const VERSAO="5.0.35";
 const NOVIDADES=[
-  "A busca agora leva para as telas do app: digite “cartões”, “13º”, “backup” ou “letra grande” e toque em “Ir para” para abrir o lugar certo.",
-  "Os lançamentos continuam aparecendo logo abaixo, como antes."
+  "No celular, deslize um lançamento para a esquerda para apagar (com Desfazer).",
+  "Deslize para a direita para repetir o gasto hoje. No cartão de crédito, isso marca a despesa como paga.",
+  "Um toque normal continua abrindo a edição."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1367,7 +1368,7 @@ function passosTutorial(){
   return [
     {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle financeiro, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
     {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, role até o card <b>Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> em Perfil → Ajustes → Contas.")},
-    {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter. Prefere falar? Toque no <b>microfone</b> do campo.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.","No celular, a janela fecha no <b>X</b> ou arrastando o topo dela para baixo.")},
+    {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter. Prefere falar? Toque no <b>microfone</b> do campo.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.","No celular, deslize o lançamento: para a <b>esquerda</b> apaga; para a <b>direita</b> repete hoje (no crédito, marca como paga).","No celular, a janela fecha no <b>X</b> ou arrastando o topo dela para baixo.")},
     {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o anel mostra quanto já guardou e o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
     {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria. Toque em <b>Ouvir</b> no saldo para escutar o resumo do mês.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b>, <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no quadradinho e toque na conta para editar). No calendário: <b>anel</b> = vence, <b>ponto</b> = pago, <b>triângulo</b> = atrasado.","<b>Relatórios</b>: meses lado a lado, quanto das receitas virou despesa, assinaturas, etiquetas e a retrospectiva do ano em formato de stories.")},
@@ -2307,11 +2308,11 @@ function linhaLanc(g,k){
     <button type="button" class="fixinfo" data-edit="parcela" data-id="${esc(g.id)}"><b>${esc(g.desc||"Compra parcelada")}</b><small>parcela ${g.idx}/${g.n}${esc(extraTxt(g))} · vence dia ${pad2(g.dia)}${g.pago?" · paga"+(g.pagoEm?" em "+g.pagoEm.slice(8,10)+"/"+g.pagoEm.slice(5,7):""):""}</small></button>
     <span class="v">${brl(g.valor)}</span></div>`;
   const nota=noCartao(g)?" · fatura de "+abrMes(faturaMes(k,g.dia,cartaoDe(g))):"";
-  if(g.forma==="credito") return `<div class="item fixrow parcrow" style="--dot:${catColor(g.cat)}">
+  if(g.forma==="credito") return `<div class="item fixrow parcrow" style="--dot:${catColor(g.cat)}" data-desliza="${esc(g.id)}" data-lmes="${k}">
     <button type="button" class="check ${g.pago?"on":""}" data-gpago="${esc(g.id)}" data-mes="${k}" aria-pressed="${!!g.pago}" aria-label="${g.pago?"Marcar como não paga":"Marcar como paga"}">${ICON.check}</button>
     <button type="button" class="fixinfo" data-edit="gasto" data-id="${esc(g.id)}" data-mes="${k}"><b class="${g.desc?"":"empty"}">${esc(g.desc||"sem descrição")}</b><small>${esc(catName(g.cat)+extraTxt(g))} · Crédito${esc(nota+porTxt(g))} · ${g.pago?"paga"+(g.pagoEm?" em "+g.pagoEm.slice(8,10)+"/"+g.pagoEm.slice(5,7):""):"não paga"}</small></button>
     <span class="v">${brl(g.valor)}</span></div>`;
-  return `<button type="button" class="item gitem" data-edit="gasto" data-id="${esc(g.id)}" style="--dot:${catColor(g.cat)}">
+  return `<button type="button" class="item gitem" data-edit="gasto" data-id="${esc(g.id)}" style="--dot:${catColor(g.cat)}" data-desliza="${esc(g.id)}" data-lmes="${k}">
     ${icoCat(g.cat)}
     <span class="desc"><b class="${g.desc?"":"empty"}">${esc(g.desc||catName(g.cat))}</b><small>${esc(catName(g.cat))} · ${esc(formaNome(g.forma)+extraTxt(g)+nota+porTxt(g))}</small></span>
     <span class="v">${valorGrande(g.valor)}</span></button>`;
@@ -2415,7 +2416,7 @@ function viewMes(){
       return `<div class="day"><div class="dayhead"><span>${esc(lab)}${isCur&&d===today.getDate()?" · hoje":""}</span><span class="num">${brl(tot)}</span></div>${its.map(g=>linhaLanc(g,k)).join("")}</div>`; }).join("")
     :`<div class="empty-state">${ui.filtro?"Nenhuma despesa nessa categoria em "+NOMES[kM(k)-1].toLowerCase()+".":"Nenhuma despesa em "+NOMES[kM(k)-1].toLowerCase()+" ainda.<br>Toque em <b>+</b> para lançar a primeira."}</div>`}
     ${gastos.length>LIM?`<button type="button" class="btn ghost wide vermais" data-vertodas="${k}">${todasAbertas?"Mostrar só as 5 mais recentes":"Ver todas as "+gastos.length+" despesas"}</button>`:""}
-    <p class="hint">Toque num lançamento para editar ou apagar. Compras no cartão de crédito ficam em Contas fixas.</p></div>`;
+    <p class="hint">Toque num lançamento para editar ou apagar. No celular, deslize: para a esquerda apaga, para a direita repete hoje (no crédito, marca como paga). Compras no cartão de crédito ficam em Contas fixas.</p></div>`;
   /* faturas dos cartões (uma por cartão configurado) */
   const fatura=cartoesOk().map(cc=>{
     const fat=faturaDoMes(k,cc.id), tot=soma(fat), prox=soma(faturaDoMes(shiftKey(k,1),cc.id)), lim=usoCartao(cc), pg=faturaPaga(m,cc.id);
@@ -3743,6 +3744,55 @@ const app=document.getElementById("app");
 function goMonth(k){ if(!mesesVisiveis().includes(k)) return; ui.month=k; render(); }
 function passo(n){ const V=mesesVisiveis(), i=V.indexOf(ui.month)+n; if(V[i]){ goMonth(V[i]); return true; } return false; }
 function setTab(t){ if(t!=="mes"&&ui.tab==="mes") marcaHist("tab"); else if(t==="mes"&&ui.tab!=="mes"&&history.state&&history.state.mb==="tab"){ ui.tab=t; _ignoraPop++; try{ history.back(); }catch(e){ _ignoraPop--; } render(); window.scrollTo({top:0}); return; } ui.tab=t; render(); window.scrollTo({top:0}); }
+/* ---------- deslizar o lançamento (só no toque; Início e dia do calendário) ----------
+   esquerda: apaga (com Desfazer) · direita: crédito não pago vira pago; os outros são repetidos hoje */
+let desl=null, semCliqueAte=0;
+function repeteHoje(k,id){
+  const g=getMonth(k).gastos.find(x=>x.id===id); if(!g) return;
+  const novo=Object.assign(clone(g),{id:uidGen(),dia:today.getDate()}); delete novo.pago; delete novo.pagoEm; delete novo.imp;
+  getMonth(todayKey).gastos.push(novo); save(todayKey); render();
+  toast("“"+(g.desc||catName(g.cat))+"” repetido hoje ("+brl(g.valor)+").","Desfazer",()=>apagarItem(todayKey,"gastos",novo.id,"Repetição desfeita."));
+}
+function soltaDesl(acao){
+  const s=desl; desl=null; if(!s||!s.ativo) return;
+  semCliqueAte=Date.now()+450;
+  const row=s.row, volta=()=>{ row.classList.remove("arrastando"); if(row.parentElement) row.parentElement.classList.remove("desl-pai"); row.style.transform=""; row.style.transition=""; row.style.opacity=""; if(s.fundo) s.fundo.remove(); };
+  const fazer=()=>{ volta(); if(acao==="apagar") apagarItem(s.mes,"gastos",s.id,"Lançamento apagado."); else if(s.pagar) marcaGastoPago(s.mes,s.id,true); else repeteHoje(s.mes,s.id);
+    /* na folha do dia do calendário: redesenha a folha agora e também depois do Desfazer */
+    if(ui.sheet&&ui.sheet.tipo==="dia"){ renderSheet(); const f=toastAcao; if(f) toastAcao=()=>{ f(); if(ui.sheet&&ui.sheet.tipo==="dia") renderSheet(); }; } };
+  if(!acao){ if(semMovimento()){ volta(); return; } row.style.transition="transform .18s ease"; row.style.transform=""; setTimeout(volta,190); return; }
+  if(semMovimento()||acao!=="apagar"){ fazer(); return; }
+  row.style.transition="transform .18s ease, opacity .18s ease"; row.style.transform="translateX("+(-row.offsetWidth)+"px)"; row.style.opacity="0"; setTimeout(fazer,180);
+}
+document.addEventListener("pointerdown",e=>{
+  if(e.pointerType!=="touch"||desl) return;
+  const t=/** @type {Element} */(e.target), row=/** @type {HTMLElement|null} */(t.closest&&t.closest("#app [data-desliza], #sheet .caldia [data-desliza]")); if(!row) return;
+  const k=row.dataset.lmes||ui.month, g=getMonth(k).gastos.find(x=>x.id===row.dataset.desliza); if(!g) return;
+  desl={row,id:g.id,mes:k,pagar:g.forma==="credito"&&!g.pago,x0:e.clientX,y0:e.clientY,dx:0,ativo:false,pronto:false,pid:e.pointerId,fundo:null};
+});
+document.addEventListener("pointermove",e=>{
+  const s=desl; if(!s||e.pointerId!==s.pid) return;
+  const dx=e.clientX-s.x0, dy=e.clientY-s.y0, row=s.row;
+  if(!s.ativo){
+    if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){ desl=null; return; }
+    if(Math.abs(dx)<14||Math.abs(dx)<Math.abs(dy)*1.5) return;
+    const pai=row.parentElement; if(!pai){ desl=null; return; }
+    s.ativo=true; pai.classList.add("desl-pai");
+    const f=document.createElement("div"); f.className="desl-fundo"; f.setAttribute("aria-hidden","true");
+    f.style.top=row.offsetTop+"px"; f.style.left=row.offsetLeft+"px"; f.style.width=row.offsetWidth+"px"; f.style.height=row.offsetHeight+"px";
+    f.innerHTML=`<span class="dir">${s.pagar?ICON.check+" Paga":ICON.repete+" Repetir hoje"}</span><span class="esq">Apagar ${ICON.lixo}</span>`;
+    pai.insertBefore(f,row); s.fundo=f; row.classList.add("arrastando"); try{ row.setPointerCapture(e.pointerId); }catch(er){}
+  }
+  e.preventDefault();
+  const w=row.offsetWidth, x=Math.max(-w,Math.min(w,dx)), pronto=Math.abs(x)>=Math.min(90,w*.35); s.dx=x;
+  row.style.transform="translateX("+x+"px)";
+  if(s.fundo) s.fundo.className="desl-fundo "+(x<0?"apaga":s.pagar?"paga":"repete")+(pronto?" pronto":"");
+  if(pronto!==s.pronto){ s.pronto=pronto; if(pronto) vibra(12); }
+});
+document.addEventListener("pointerup",e=>{ const s=desl; if(!s||e.pointerId!==s.pid) return; if(!s.ativo){ desl=null; return; } soltaDesl(s.pronto?(s.dx<0?"apagar":"direita"):null); });
+document.addEventListener("pointercancel",e=>{ const s=desl; if(!s||e.pointerId!==s.pid) return; if(s.ativo) soltaDesl(null); else desl=null; });
+/* depois de deslizar, o toque não abre a edição */
+document.addEventListener("click",e=>{ if(Date.now()<semCliqueAte){ semCliqueAte=0; e.stopPropagation(); e.preventDefault(); } },true);
 app.addEventListener("click",e=>{
   const b=e.target.closest("button,tr[data-open]"); if(!b) return;
   const d=b.dataset;
@@ -3844,7 +3894,7 @@ document.addEventListener("keydown",e=>{
 });
 /* deslizar para os lados troca o mês (celular) */
 let tx=null, ty=null;
-app.addEventListener("touchstart",e=>{ if(ui.tab!=="mes"||ui.sheet||e.touches.length!==1||e.target.closest(".chips,.tablewrap,input,select,.cats")){ tx=null; return; } tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+app.addEventListener("touchstart",e=>{ if(ui.tab!=="mes"||ui.sheet||e.touches.length!==1||e.target.closest(".chips,.tablewrap,input,select,.cats,[data-desliza]")){ tx=null; return; } tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
 app.addEventListener("touchend",e=>{ if(tx===null) return; const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty; tx=null;
   if(Math.abs(dx)>70&&Math.abs(dy)<45){ if(passo(dx<0?1:-1)){ app.classList.remove("slide-l","slide-r"); void app.offsetWidth; app.classList.add(dx<0?"slide-l":"slide-r"); } } },{passive:true});
 

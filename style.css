@@ -1596,3 +1596,16 @@ button.check{position:relative;overflow:visible}
 .a11y-semmov .realce,.a11y-calmo .realce{animation:none;outline:3px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.realce{animation:none;outline:3px solid var(--accent);outline-offset:2px}}
 #conteudo .card,#conteudo h2{scroll-margin-top:84px}
+
+/* 5.0.35 — deslizar o lançamento (só no toque) */
+[data-desliza]{touch-action:pan-y}
+.desl-pai{position:relative;overflow:hidden}
+/* !important: vence o fundo do :hover das linhas, que fica preso no toque */
+.arrastando{position:relative;z-index:1;background:var(--surface)!important;transition:none;user-select:none;-webkit-user-select:none}
+.desl-fundo{position:absolute;z-index:0;border-radius:16px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-weight:600;font-size:14px;color:var(--accent-ink);background:var(--muted);pointer-events:none}
+.desl-fundo span{display:inline-flex;align-items:center;gap:6px;opacity:.7}
+.desl-fundo.pronto span{opacity:1}
+.desl-fundo.apaga{background:var(--bad)}
+.desl-fundo.paga{background:var(--good)}
+.desl-fundo.repete{background:var(--accent)}
+.desl-fundo.apaga .dir,.desl-fundo.paga .esq,.desl-fundo.repete .esq{visibility:hidden}
