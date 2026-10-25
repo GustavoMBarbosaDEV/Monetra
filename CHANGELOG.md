@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.36 — 25/10/2026 **Gráfico do saldo tocável**
+
+- Início: tocar ou arrastar no gráfico do saldo mostra o dia escolhido com marcador (linha + ponto) e balão com o saldo e quanto entrou ou saiu naquele dia. No toque, o balão some sozinho pouco depois de soltar.
+- No computador, passar o mouse faz o mesmo. Pelo teclado, o gráfico recebe foco e as setas, Home/End e PageUp/PageDown andam pelos dias; o leitor de tela lê a data e o valor.
+- Arrastar no gráfico não troca mais o mês por engano. Tutorial cita o gráfico tocável.
+
 ## 5.0.35 — 25/10/2026 **Deslizar o lançamento**
 
 - Lançamentos do Início e do dia no calendário: no toque, deslizar para a esquerda apaga (com Desfazer); para a direita, a despesa de crédito não paga é marcada como paga e as outras são repetidas hoje (com Desfazer).
