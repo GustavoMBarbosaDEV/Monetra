@@ -352,10 +352,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.23";
+const VERSAO="5.0.24";
 const NOVIDADES=[
-  "No Perfil, cada seção ganhou um ícone no título (Renda e saldos, Aparência, PIN, Lembretes, Backup, Novidades, Tutorial, Privacidade e Recomeçar do zero).",
-  "O cartão da sua conta no Perfil ganhou um brilho suave e destaque na foto."
+  "No celular, as janelas de lançamento e edição agora fecham ao arrastar o topo para baixo (tem uma alcinha indicando).",
+  "A barra de baixo ganhou um indicador que desliza até a aba aberta, e o botão + ficou com brilho e gira ao abrir a janela."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1625,6 +1625,7 @@ function render(){
   encolheValores(document.getElementById("app"));
   if(novaVista&&state.loaded&&mode!=="login") animaEntrada(app,novaTela);
   festejaPago(app);
+  moveIndicadorNav(app);
   if(ui.rolarPara&&state.loaded){ const _id=ui.rolarPara, _e=document.getElementById(_id), _s=_e&&_e.closest(".mais:not(.aberta)"); if(_s){ ui.abre[_s.id.slice(4)]=true; ui.rolarPara=null; render(); ui.rolarPara=null; setTimeout(()=>{ const e2=document.getElementById(_id); e2&&e2.scrollIntoView({block:"center",behavior:"smooth"}); },60); } const el=document.getElementById(ui.rolarPara||"__nada"); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 /* ---------- movimento: valores contam até o número, barras enchem e gráficos se desenham ----------
@@ -1659,6 +1660,28 @@ function festejaPago(raiz){ if(!celebra) return; const sel=celebra; celebra=""; 
   const fx=document.createElement("span"); fx.className="confete"; fx.setAttribute("aria-hidden","true");
   for(let i=0;i<12;i++){ const a=i/12*Math.PI*2+Math.random()*.4, d=22+Math.random()*16, q=document.createElement("i"); q.style.setProperty("--dx",(Math.cos(a)*d).toFixed(1)+"px"); q.style.setProperty("--dy",(Math.sin(a)*d).toFixed(1)+"px"); q.style.setProperty("--r",Math.round(Math.random()*360)+"deg"); q.style.height=(5+Math.random()*6).toFixed(1)+"px"; q.className="c"+(i%3); fx.appendChild(q); }
   b.appendChild(fx); setTimeout(()=>{ fx.remove(); b.classList.remove("pop"); },900); }
+/* barra inferior: indicador que desliza até a aba aberta (parte da posição anterior) */
+let navPos=-1;
+/** @param {HTMLElement} raiz */
+function moveIndicadorNav(raiz){ const ind=/** @type {HTMLElement|null} */(raiz.querySelector(".bottomnav .navind")); if(!ind) return;
+  const ord=["mes","ano","","metas","perfil"], p=ord.indexOf(ui.tab); if(p<0){ ind.style.opacity="0"; return; }
+  const poe=i=>ind.style.setProperty("--pos",String(i));
+  if(navPos<0||navPos===p||semMovimento()){ poe(p); navPos=p; return; }
+  ind.style.transition="none"; poe(navPos); void ind.offsetWidth; ind.style.transition=""; requestAnimationFrame(()=>poe(p)); navPos=p; }
+/* janelas (lançamento, edição…): arrastar para baixo pelo topo fecha, no celular */
+/** @type {{sh:HTMLElement,y0:number,t0:number,dy:number,id:number}|null} */
+let arrasto=null;
+document.addEventListener("pointerdown",e=>{ const t=e.target; if(!(t instanceof Element)||innerWidth>760) return; const sh=/** @type {HTMLElement|null} */(t.closest("#sheet .sheet"));
+  if(!sh||sh.closest(".stories")||!t.closest(".sheethead")||t.closest("button,input,select,textarea,a,label")) return;
+  arrasto={sh,y0:e.clientY,t0:performance.now(),dy:0,id:e.pointerId}; sh.style.transition="none"; });
+document.addEventListener("pointermove",e=>{ if(!arrasto||e.pointerId!==arrasto.id) return; const dy=Math.max(0,e.clientY-arrasto.y0); arrasto.dy=dy;
+  arrasto.sh.style.transform=`translateY(${dy}px)`; const w=arrasto.sh.parentElement; if(w) w.style.backgroundColor=`rgba(8,14,11,${Math.max(0,.5-dy/700).toFixed(3)})`; },{passive:true});
+/** @param {PointerEvent} e */
+const soltaArrasto=e=>{ if(!arrasto||e.pointerId!==arrasto.id) return; const a=arrasto; arrasto=null; const v=a.dy/Math.max(1,performance.now()-a.t0);
+  a.sh.style.transition="transform .22s ease";
+  if(a.dy>110||(a.dy>40&&v>0.6)){ a.sh.style.transform="translateY(110%)"; setTimeout(()=>{ if(ui.sheet) closeSheet(); },200); }
+  else { a.sh.style.transform=""; const w=a.sh.parentElement; if(w) w.style.backgroundColor=""; } };
+document.addEventListener("pointerup",soltaArrasto); document.addEventListener("pointercancel",soltaArrasto);
 /* conta de zero até o valor nos números grandes; no fim volta exatamente o texto original */
 /** @param {HTMLElement} raiz @param {number} atraso */
 function contaValores(raiz,atraso){
@@ -1708,7 +1731,7 @@ function bottomNav(){
   const np=pendencias().length;
   const ICN={mes:ICON.inicio,ano:ICON.relat,metas:ICON.metas,perfil:ICON.perfil};
   const b=(id,l)=>`<button type="button" data-tab="${id}" class="${ui.tab===id?"on":""}" aria-current="${ui.tab===id?"page":"false"}">${ICN[id]}${id==="mes"&&np?`<i class="badge">${np}</i>`:""}<span>${l}</span></button>`;
-  return `<nav class="bottomnav" aria-label="Navegação">${b("mes","Início")}${b("ano","Relatórios")}<span class="navfab"><button class="fab" type="button" data-novo="gasto" aria-label="Novo lançamento">${ICON.mais}</button></span>${b("metas","Metas")}${b("perfil","Perfil")}</nav>`;
+  return `<nav class="bottomnav" aria-label="Navegação"><i class="navind" aria-hidden="true"></i>${b("mes","Início")}${b("ano","Relatórios")}<span class="navfab"><button class="fab" type="button" data-novo="gasto" aria-label="Novo lançamento">${ICON.mais}</button></span>${b("metas","Metas")}${b("perfil","Perfil")}</nav>`;
 }
 function viewLogin(){
   const novo=ui.loginModo==="criar";

@@ -1310,3 +1310,19 @@ button.check{position:relative;overflow:visible}
 .ajlink:active{transform:scale(.985)}
 .btn.danger{border-radius:14px}
 @media (prefers-reduced-motion:reduce){.perfilhead::before{animation:none}.ajlink{transition:none}}
+
+/* ---------- 5.0.24 janela que fecha ao arrastar, indicador na barra inferior e botão + com brilho ---------- */
+@media (max-width:760px){
+  .sheet:not(.st0):not(.st1):not(.st2):not(.st3):not(.st4):not(.st5){position:relative;padding-top:26px}
+  .sheet:not(.st0):not(.st1):not(.st2):not(.st3):not(.st4):not(.st5)::before{content:"";position:absolute;top:9px;left:50%;width:42px;height:5px;margin-left:-21px;border-radius:99px;background:color-mix(in srgb,var(--fg) 22%,transparent)}
+  .sheethead{touch-action:none;cursor:grab}
+  .bottomnav{position:fixed}
+  .bottomnav .navind{position:absolute;top:0;left:calc(max(8px,env(safe-area-inset-left,0px)) + (100% - max(8px,env(safe-area-inset-left,0px)) - max(8px,env(safe-area-inset-right,0px))) / 5 * (var(--pos,0) + .5) - 16px);
+    width:32px;height:3px;border-radius:0 0 3px 3px;background:var(--accent);box-shadow:0 0 12px var(--accent);transition:left .42s cubic-bezier(.34,1.3,.64,1)}
+  .bottomnav .navfab .fab{box-shadow:0 12px 28px -8px color-mix(in srgb,var(--accent) 75%,transparent),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .2s ease}
+  .bottomnav .navfab .fab:active{transform:scale(.92)}
+  .bottomnav .navfab .fab svg{transition:transform .25s ease}
+  body.sheet-open .bottomnav .navfab .fab svg{transform:rotate(45deg)}
+}
+@media (min-width:761px){.bottomnav .navind{display:none}}
+@media (prefers-reduced-motion:reduce){.bottomnav .navind,.bottomnav .navfab .fab,.bottomnav .navfab .fab svg{transition:none}}

@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.24 — 25/10/2026 **Janela que fecha ao arrastar e barra inferior com indicador**
+
+- Janelas (sheets) no celular: alça no topo; arrastar o cabeçalho para baixo acompanha o dedo e fecha se passar de 110 px ou se o gesto for rápido; senão volta. Não vale para a Retrospectiva.
+- Barra inferior: indicador verde que desliza da aba anterior para a aba aberta.
+- Botão +: brilho na cor do app, encolhe ao tocar e o + gira 45° enquanto a janela está aberta. Sem animação com "reduzir movimento".
+
 ## 5.0.23 — 25/10/2026 **Perfil com ícones nas seções**
 
 - Perfil: ícone em quadradinho colorido antes do título de cada seção; "Recomeçar do zero" em vermelho.
