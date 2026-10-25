@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.39 — 25/10/2026 **Puxar para atualizar**
+
+- No celular, no topo da página, puxar para baixo mostra o aviso “Puxe para atualizar”; passando do ponto vira “Solte para atualizar” (com vibração). Ao soltar: na nuvem, salva o que estiver pendente e recarrega os dados; no modo local, relê o aparelho e redesenha a tela.
+- O “puxar para recarregar” do navegador foi desligado no app (`overscroll-behavior-y`), para não recarregar a página inteira por engano.
+- Não atrapalha a rolagem, o deslizar de lançamentos nem a troca de mês. Leitor de tela avisa “Dados atualizados”. Tutorial cita o gesto.
+
 ## 5.0.38 — 25/10/2026 **Modo privacidade**
 
 - Botão de olho no topo esconde todos os valores (borrados) em qualquer tela, janela ou aviso: saldo, listas, gráficos, balões e tabelas. Toque de novo para mostrar.
