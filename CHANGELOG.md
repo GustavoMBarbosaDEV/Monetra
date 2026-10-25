@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.25 — 25/10/2026 **Página de apresentação animada**
+
+- Nova tela antes do login (só no navegador; no app instalado/APK vai direto ao login): topo escuro com aurora e grade, logo com barras subindo, título "Controle seu dinheiro. Viva seus planos." entrando palavra por palavra (degradê na palavra "dinheiro"), botões "Entrar com Google" e "Criar conta grátis", celular de demonstração que flutua e acompanha a rolagem sem invadir a seção de baixo.
+- Faixa de números que contam, 5 seções (saldo, contas e cartões, metas, previsão, privacidade) que aparecem ao rolar, chamada final e rodapé.
+- Em navegadores de outros apps (Instagram, Facebook…), o botão de entrar abre o login com o aviso de sempre. Com "reduzir movimento", tudo aparece pronto e sem animação.
+
 ## 5.0.24 — 25/10/2026 **Janela que fecha ao arrastar e barra inferior com indicador**
 
 - Janelas (sheets) no celular: alça no topo; arrastar o cabeçalho para baixo acompanha o dedo e fecha se passar de 110 px ou se o gesto for rápido; senão volta. Não vale para a Retrospectiva.
