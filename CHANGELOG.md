@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.23 — 25/10/2026 **Perfil com ícones nas seções**
+
+- Perfil: ícone em quadradinho colorido antes do título de cada seção; "Recomeçar do zero" em vermelho.
+- Cartão da conta com brilho animado no fundo, contorno verde na foto/avatar e nome na fonte de destaque.
+- Atalho de Ajustes encolhe de leve ao tocar. Sem animação com "reduzir movimento".
+
 ## 5.0.22 — 25/10/2026 **Metas: anéis, barras com porcentagem e telas vazias**
 
 - Metas (aba Metas): anel de progresso com % no centro (verde; concluída em verde-sucesso; atrasada em vermelho), valor guardado em destaque e barra de 11 px com brilho.

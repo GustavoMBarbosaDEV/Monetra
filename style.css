@@ -1294,3 +1294,19 @@ button.check{position:relative;overflow:visible}
 .anima .mbars i{animation:mb-sobe .6s cubic-bezier(.34,1.56,.64,1) both;animation-delay:calc(.2s + var(--atraso,0ms))}
 .anima .mbars i:nth-child(2){animation-delay:calc(.32s + var(--atraso,0ms))} .anima .mbars i:nth-child(3){animation-delay:calc(.44s + var(--atraso,0ms))}
 @media (prefers-reduced-motion:reduce){.streaks .sti{animation:none}.conqb{transition:none}.conqb:hover{transform:none}}
+
+/* ---------- 5.0.23 Perfil: ícone no título das seções e cartão da conta com brilho ---------- */
+.card h2.hico{display:flex;align-items:center;justify-content:flex-start;gap:10px;text-align:left}
+.cardhead h2.hico{display:flex}
+.hic{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;flex:none;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.hic svg{width:17px;height:17px}
+.hico.perigo .hic{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.perfilhead{position:relative;overflow:hidden;isolation:isolate}
+.perfilhead::before{content:"";position:absolute;z-index:-1;width:300px;height:300px;top:-150px;right:-110px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 30%,transparent),transparent 66%);animation:mb-aura 12s ease-in-out infinite}
+.perfilhead .avatar{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent),0 0 24px -6px color-mix(in srgb,var(--accent) 70%,transparent)}
+.perfilhead .pinfo h2{font-family:var(--num);letter-spacing:-.02em}
+.ajlink{transition:transform .15s ease}
+.ajlink:active{transform:scale(.985)}
+.btn.danger{border-radius:14px}
+@media (prefers-reduced-motion:reduce){.perfilhead::before{animation:none}.ajlink{transition:none}}

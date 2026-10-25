@@ -352,11 +352,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.22";
+const VERSAO="5.0.23";
 const NOVIDADES=[
-  "Na aba Metas, cada meta ganhou um anel com a porcentagem guardada e uma barra mais grossa.",
-  "Na caixinha do Início, a porcentagem de cada meta aparece ao lado do nome.",
-  "Telas vazias de metas e desafios ilustradas com as barrinhas do logo; conquistas obtidas ganham brilho."
+  "No Perfil, cada seção ganhou um ícone no título (Renda e saldos, Aparência, PIN, Lembretes, Backup, Novidades, Tutorial, Privacidade e Recomeçar do zero).",
+  "O cartão da sua conta no Perfil ganhou um brilho suave e destaque na foto."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1608,7 +1607,7 @@ function render(){
   const a=document.activeElement, inApp=a&&document.getElementById("app").contains(a);
   const fid=inApp&&a.id, sel=(fid&&"selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const app=document.getElementById("app");
-  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?viewPerfil():viewAjustes();
+  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?perfilComIcones():viewAjustes();
   const rolY=window.scrollY;
   /* movimento só quando a tela muda (aba, mês, login, carregou), não a cada digitação */
   const vista=[mode,state.loaded,ui.tab,ui.month,typeof aberto==="undefined"?"":aberto].join("|"), novaVista=vista!==ultimaVista;
@@ -2589,6 +2588,11 @@ function viewAjustes(){
 }
 
 /* ---------- aba Perfil ---------- */
+/* Perfil: ícone no título de cada seção (mesmo conteúdo, visual novo) */
+function perfilComIcones(){
+  const I={"Renda e saldos":ICON.dinheiro,"Aparência":icq("sol"),"Bloqueio com PIN":ICON.cadeado,"Lembretes":ICON.sino,"Exportar e backup":icq("nuvem"),"Novidades":icq("estrela"),"Tutorial":svgCat("livro"),"Privacidade":ICON.digital,"Recomeçar do zero":ICON.lixo};
+  return viewPerfil().replace(/<h2>([^<]+)<\/h2>/g,(m,t)=>I[t]?`<h2 class="hico${t==="Recomeçar do zero"?" perigo":""}"><span class="hic" aria-hidden="true">${I[t]}</span>${t}</h2>`:m);
+}
 function viewPerfil(){
   const cf=state.config, u=authUser, ini=inicioKey();
   const criado=u&&u.metadata&&u.metadata.creationTime?new Date(u.metadata.creationTime).toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"}):"";
