@@ -12,6 +12,21 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.29 — 25/10/2026 **Painel de Acessibilidade**
+
+- Perfil → Acessibilidade (preferências por aparelho, aplicadas antes de desenhar a tela para não piscar):
+  - Tamanho do texto: 100%, 115%, 130% ou 150% (o app inteiro cresce e se reorganiza; topo quebra em duas linhas, meses e menu não picotam palavras).
+  - Alto contraste: fundo puro, texto branco/preto, bordas visíveis, sem brilhos, foco mais grosso.
+  - Cores para daltonismo: paleta Okabe-Ito nas categorias; positivo azul, negativo laranja; listras nas barras acima/perto do limite.
+  - Sem animações: tudo aparece pronto (também desliga o avanço automático da Retrospectiva).
+  - Modo calmo: sem animações e sem auras, brilhos, confete e efeitos da apresentação.
+  - Fonte de leitura fácil: Atkinson Hyperlegible com mais espaço entre letras, palavras e linhas.
+  - Botões maiores: alvos de toque de no mínimo 48 px e mais espaço entre itens.
+  - Sublinhar links.
+- Leitor de tela avisa quando uma opção é ligada/desligada. Tutorial cita o painel.
+- Contraste: hoje no calendário com texto na cor principal do tema; etiquetas da rosca no tema escuro.
+- axe (WCAG 2.2 AA) sem problemas em todas as abas, nos dois temas, em cada modo e com todos ligados juntos.
+
 ## 5.0.28 — 25/10/2026 **Acessibilidade: base para leitor de tela e teclado**
 
 - Regiões da página marcadas (topo, conteúdo principal e menu) e botão "Pular para o conteúdo" no primeiro Tab.

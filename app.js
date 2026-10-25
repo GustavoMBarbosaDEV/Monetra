@@ -353,11 +353,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.28";
+const VERSAO="5.0.29";
 const NOVIDADES=[
-  "Acessibilidade: o app ficou melhor para quem usa leitor de tela (TalkBack, VoiceOver, NVDA) e para quem navega só pelo teclado.",
-  "Novo atalho “Pular para o conteúdo” (aparece ao apertar Tab), e o leitor de tela agora avisa a tela aberta e o saldo ao trocar de aba ou de mês.",
-  "Gráficos ganharam descrição em texto, valores são lidos por inteiro e as cores pequenas do tema claro ficaram mais legíveis."
+  "Novo painel Acessibilidade no Perfil, salvo neste aparelho: tamanho do texto (até 150%), alto contraste, cores para daltonismo, sem animações, modo calmo, fonte de leitura fácil, botões maiores e links sublinhados.",
+  "Com cores para daltonismo, positivo fica azul e negativo laranja, e barras acima do limite ganham listras, sem depender só da cor.",
+  "O modo calmo tira brilhos, auras, confete e efeitos, para quem se incomoda com estímulos visuais."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1369,7 +1369,7 @@ function passosTutorial(){
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o anel mostra quanto já guardou e o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
     {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b>, <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no quadradinho e toque na conta para editar). No calendário: <b>anel</b> = vence, <b>ponto</b> = pago, <b>triângulo</b> = atrasado.","<b>Relatórios</b>: meses lado a lado, quanto das receitas virou despesa, assinaturas, etiquetas e a retrospectiva do ano em formato de stories.")},
     {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
-    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.")},
+    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.","<b>Acessibilidade</b> (em Perfil): texto maior, alto contraste, cores para daltonismo, modo calmo, fonte de leitura fácil e botões maiores.")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
   ];
 }
@@ -1647,7 +1647,35 @@ function ajustaAcessivel(raiz,novaTela,novaVista){
 /* ---------- movimento: valores contam até o número, barras enchem e gráficos se desenham ----------
    Roda só quando a tela muda. Quem desativou animações no aparelho vê tudo pronto, sem movimento. */
 let ultimaVista="", timerAnima=0, timerStory=0;
-const semMovimento=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+/* ---------- acessibilidade: preferências deste aparelho ---------- */
+/** @typedef {{texto:number,contraste:boolean,daltonismo:boolean,semMov:boolean,calmo:boolean,dislexia:boolean,alvos:boolean,sublinhar:boolean}} A11y */
+/** @type {A11y} */
+const a11y=(()=>{ const pad={texto:1,contraste:false,daltonismo:false,semMov:false,calmo:false,dislexia:false,alvos:false,sublinhar:false};
+  try{ const x=JSON.parse(localStorage.getItem("mb.a11y")||"{}"); if(x&&typeof x==="object"){ for(const k in pad){ if(typeof x[k]===typeof pad[k]) pad[k]=x[k]; } } }catch(e){}
+  if(![1,1.15,1.3,1.5].includes(pad.texto)) pad.texto=1; return pad; })();
+function aplicaA11y(){ const r=document.documentElement;
+  r.style.setProperty("--escala",String(a11y.texto));
+  [["contraste","a11y-contraste"],["daltonismo","a11y-dalt"],["semMov","a11y-semmov"],["calmo","a11y-calmo"],["dislexia","a11y-dislexia"],["alvos","a11y-alvos"],["sublinhar","a11y-sublinhar"]].forEach(([k,c])=>r.classList.toggle(c,!!a11y[k]));
+  r.classList.toggle("a11y-texto",a11y.texto!==1);
+  if(a11y.dislexia&&!document.getElementById("fonte-dislexia")){ const l=document.createElement("link"); l.id="fonte-dislexia"; l.rel="stylesheet"; l.href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap"; document.head.appendChild(l); } }
+function salvaA11y(){ try{ localStorage.setItem("mb.a11y",JSON.stringify(a11y)); }catch(e){} aplicaA11y(); }
+aplicaA11y();
+const semMovimento=()=>{ if(a11y.semMov||a11y.calmo) return true; try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+function cardA11y(){
+  const sw=(k,t,d)=>`<label class="switch a11ysw"><input type="checkbox" data-a11y="${k}" ${a11y[k]?"checked":""}><span></span><em class="a11yt"><b>${t}</b><small>${d}</small></em></label>`;
+  return `<div class="card" id="acessibilidade"><h2>Acessibilidade</h2>
+    <p class="hint">Ajustes deste aparelho para deixar o Monetra mais fácil de ver, ler e tocar.</p>
+    <div class="f"><span id="a11y-txt-lab">Tamanho do texto</span><div class="seg" role="radiogroup" aria-labelledby="a11y-txt-lab">${[[1,"A","Normal"],[1.15,"A+","Maior"],[1.3,"A++","Grande"],[1.5,"A+++","Muito grande"]].map(([v,l,n],i)=>`<input type="radio" name="a11ytexto" id="a11yt${i}" value="${v}" ${a11y.texto===v?"checked":""}><label for="a11yt${i}" aria-label="${n}">${l}</label>`).join("")}</div></div>
+    <div class="a11ylista">
+    ${sw("contraste","Alto contraste","Cores mais fortes, bordas visíveis e fundo sem brilho. Bom para baixa visão.")}
+    ${sw("daltonismo","Cores para daltonismo","Paleta que funciona para os três tipos de daltonismo; positivo em azul e negativo em laranja, sempre com sinal ou texto junto.")}
+    ${sw("semMov","Sem animações","Nada se mexe: valores, gráficos e janelas aparecem prontos.")}
+    ${sw("calmo","Modo calmo","Sem brilhos, auras, confete e efeitos. Visual mais tranquilo para quem se incomoda com estímulos (autismo, enxaqueca, sensibilidade visual).")}
+    ${sw("dislexia","Fonte de leitura fácil","Letra Atkinson Hyperlegible, com mais espaço entre letras e linhas. Ajuda com dislexia e baixa visão.")}
+    ${sw("alvos","Botões maiores","Áreas de toque maiores e mais espaço entre elas. Ajuda quem tem tremor ou dificuldade motora.")}
+    ${sw("sublinhar","Sublinhar links","Links e botões de texto sempre sublinhados.")}
+    </div></div>`;
+}
 /** @param {HTMLElement} raiz @param {boolean} cascata */
 function animaEntrada(raiz,cascata){
   if(semMovimento()) return;
@@ -2722,7 +2750,7 @@ function viewAjustes(){
 /* ---------- aba Perfil ---------- */
 /* Perfil: ícone no título de cada seção (mesmo conteúdo, visual novo) */
 function perfilComIcones(){
-  const I={"Renda e saldos":ICON.dinheiro,"Aparência":icq("sol"),"Bloqueio com PIN":ICON.cadeado,"Lembretes":ICON.sino,"Exportar e backup":icq("nuvem"),"Novidades":icq("estrela"),"Tutorial":svgCat("livro"),"Privacidade":ICON.digital,"Recomeçar do zero":ICON.lixo};
+  const I={"Renda e saldos":ICON.dinheiro,"Aparência":icq("sol"),"Bloqueio com PIN":ICON.cadeado,"Lembretes":ICON.sino,"Exportar e backup":icq("nuvem"),"Novidades":icq("estrela"),"Tutorial":svgCat("livro"),"Privacidade":ICON.digital,"Acessibilidade":icq("coracao"),"Recomeçar do zero":ICON.lixo};
   return viewPerfil().replace(/<h2>([^<]+)<\/h2>/g,(m,t)=>I[t]?`<h2 class="hico${t==="Recomeçar do zero"?" perigo":""}"><span class="hic" aria-hidden="true">${I[t]}</span>${t}</h2>`:m);
 }
 function viewPerfil(){
@@ -2749,6 +2777,7 @@ function viewPerfil(){
   <div class="col"><div class="card"><h2>Aparência</h2>
     <div class="seg" role="radiogroup" aria-label="Tema">${[["auto","Automático"],["claro","Claro"],["escuro","Escuro"]].map(([v,l])=>`<input type="radio" name="ptema" id="pt-${v}" value="${v}" ${tema===v?"checked":""}><label for="pt-${v}">${l}</label>`).join("")}</div>
     <p class="hint">Automático segue o tema do seu celular ou computador.</p></div>
+    ${cardA11y()}
     ${cardPin()}
     <div class="card" id="lembretes"><h2>Lembretes</h2>
     <p class="hint">Avisa um dia antes do vencimento, no dia e, se não marcar como paga, no dia seguinte (atraso). Vale para contas fixas, parcelas e fatura do cartão.</p>
@@ -3616,6 +3645,8 @@ app.addEventListener("click",e=>{
 });
 app.addEventListener("change",e=>{
   const t=e.target, money=()=>t.value.trim()===""?0:parseMoney(t.value);
+  if(t.name==="a11ytexto"){ a11y.texto=Number(t.value)||1; salvaA11y(); render(); anunciar("Tamanho do texto alterado."); return; }
+  if(t.dataset&&t.dataset.a11y){ const k=t.dataset.a11y; if(k in a11y&&typeof a11y[k]==="boolean"){ a11y[k]=!!t.checked; salvaA11y(); render(); anunciar((t.checked?"Ligado: ":"Desligado: ")+((t.closest("label")||{}).querySelector?t.closest("label").querySelector("b").textContent:"")); } return; }
   if(t.name==="ptema"){ tema=t.value; try{localStorage.setItem("meucaixa.tema",tema)}catch(e){} aplicaTema(); render(); return; }
   if(t.name==="lmodo"){ ui.loginModo=t.value; render(); return; }
   if(t.id==="pinBio"){ if(t.checked) ligarBio(); else desligarBio(); return; }

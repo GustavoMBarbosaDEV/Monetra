@@ -1495,3 +1495,58 @@ button.check{position:relative;overflow:visible}
 .tema-claro .dlab{color:color-mix(in srgb,var(--dot) 55%,#0B1A13)}
 .tema-claro .pill{color:color-mix(in srgb,var(--dot) 55%,#0B1A13)}
 .alvo-pulo:focus{outline:3px solid var(--accent);outline-offset:4px;border-radius:12px}
+
+/* ---------- 5.0.29 painel de Acessibilidade (preferências deste aparelho) ---------- */
+.a11ylista{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.switch.a11ysw{align-items:flex-start}
+.switch.a11ysw > span:first-of-type{margin-top:2px}
+.a11yt{display:flex;flex-direction:column;gap:2px;min-width:0;font-weight:400;font-style:normal}
+.a11yt b{font-weight:700} .a11yt small{font-size:12.5px;color:var(--muted);line-height:1.4}
+/* tamanho do texto: o app inteiro cresce e se reorganiza, como o zoom do navegador */
+.a11y-texto body{zoom:var(--escala,1)}
+/* alto contraste */
+:root.a11y-contraste.tema-escuro{--bg:#000;--surface:#0B0B0B;--sunk:#1C1C1C;--line:#9A9A9A;--fg:#FFFFFF;--muted:#DADADA;--accent:#3DFF9A;--accent-ink:#000;--accent-soft:#0D2A1C;--good:#3DFF9A;--bad:#FF8A8A;--bad-soft:#2A0000;--warn:#FFD24D;--warn-soft:#2A2000;--vidro:#0B0B0B;--vidrob:#FFFFFF;--band:none;--sombra:0 0 0 1.5px #9A9A9A}
+:root.a11y-contraste.tema-claro{--bg:#FFFFFF;--surface:#FFFFFF;--sunk:#EDEDED;--line:#3F3F3F;--fg:#000000;--muted:#1E1E1E;--accent:#00573A;--accent-ink:#FFFFFF;--accent-soft:#DDF2E7;--good:#00573A;--bad:#A3001B;--bad-soft:#FFE5E8;--warn:#6B3B00;--warn-soft:#FFF0D6;--vidro:#00402A;--vidrob:#000;--band:#00402A;--sombra:0 0 0 1.5px #3F3F3F}
+.a11y-contraste .card,.a11y-contraste .q,.a11y-contraste .hs-mini,.a11y-contraste .fatbox,.a11y-contraste .meta,.a11y-contraste .conqb,.a11y-contraste .ajlink,.a11y-contraste .chip,.a11y-contraste .in{box-shadow:none!important;border:1.5px solid var(--line)!important}
+.a11y-contraste .hs-aura,.a11y-contraste .perfilhead::before{display:none}
+.a11y-contraste *{text-shadow:none!important}
+.a11y-contraste :focus-visible{outline:3px solid var(--fg)!important;outline-offset:3px}
+.a11y-contraste .muted,.a11y-contraste .hint,.a11y-contraste small{color:var(--muted)}
+/* cores para daltonismo (paleta Okabe-Ito): positivo azul, negativo laranja-avermelhado */
+:root.a11y-dalt.tema-escuro{--c0:#56B4E9;--c1:#E69F00;--c2:#F0E442;--c3:#009E73;--c4:#CC79A7;--c5:#0072B2;--c6:#D55E00;--c7:#BBBBBB;--c8:#999999;--c9:#F5C76B;--c10:#9AD3F2;--c11:#E5A9C9;--good:#56B4E9;--bad:#FF8F45;--warn:#F0E442}
+:root.a11y-dalt.tema-claro{--c0:#0072B2;--c1:#E69F00;--c2:#B8A100;--c3:#009E73;--c4:#CC79A7;--c5:#56B4E9;--c6:#D55E00;--c7:#555555;--c8:#888888;--c9:#9E6B00;--c10:#2F8FC7;--c11:#A85A88;--good:#0072B2;--bad:#C24A00;--warn:#8A6D00}
+.a11y-dalt .hs-up{color:var(--good)!important}
+.a11y-dalt .bar.over .track > div,.a11y-dalt .bar.warn .track > div,.a11y-dalt .orow.over .track i,.a11y-dalt .orow.warn .track i{background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.38) 0 4px,transparent 4px 8px)}
+.a11y-dalt .cd{background:color-mix(in srgb,var(--c0) calc(var(--h,0) * 60%),color-mix(in srgb,var(--fg) 4%,var(--surface)))}
+/* sem animações e modo calmo */
+.a11y-semmov *,.a11y-semmov *::before,.a11y-semmov *::after,.a11y-calmo *,.a11y-calmo *::before,.a11y-calmo *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.a11y-calmo .hs-aura,.a11y-calmo .perfilhead::before,.a11y-calmo .confete,.a11y-calmo .ap-aurora,.a11y-calmo .ap-grade{display:none!important}
+.a11y-calmo .bar .track > div,.a11y-calmo .meta .track span,.a11y-calmo .navind,.a11y-calmo .chipind,.a11y-calmo .ap .track > div,.a11y-calmo .dlab,.a11y-calmo .conqb.on .bi,.a11y-calmo .perfilhead .avatar,.a11y-calmo .bottomnav .navfab .fab,.a11y-calmo .ap-btn.pri,.a11y-calmo .tema-escuro .heroSaldo{box-shadow:none!important}
+.a11y-calmo .hs-graf .hs-linha,.a11y-calmo .grafmes rect.cur,.a11y-calmo .ap-spark path{filter:none!important}
+.a11y-calmo.tema-escuro .heroSaldo{box-shadow:none}
+.a11y-calmo .stories .sheet{background:#0A3F2B!important}
+/* fonte de leitura fácil */
+:root.a11y-dislexia{--body:"Atkinson Hyperlegible","Verdana",system-ui,sans-serif;--display:"Atkinson Hyperlegible","Verdana",system-ui,sans-serif;--num:"Atkinson Hyperlegible","Verdana",system-ui,sans-serif}
+.a11y-dislexia body{letter-spacing:.02em;word-spacing:.1em;line-height:1.65}
+.a11y-dislexia .hint,.a11y-dislexia p,.a11y-dislexia small{line-height:1.6}
+/* botões maiores */
+.a11y-alvos .btn,.a11y-alvos .chip,.a11y-alvos .q,.a11y-alvos .iconbtn,.a11y-alvos .avatarbtn,.a11y-alvos .seg label,.a11y-alvos .x{min-height:48px;min-width:48px}
+.a11y-alvos .check{width:36px;height:36px}
+.a11y-alvos .in{min-height:52px}
+.a11y-alvos .item,.a11y-alvos button.item,.a11y-alvos .fixrow{padding-block:14px}
+.a11y-alvos .bottomnav button{min-height:58px}
+.a11y-alvos .metas,.a11y-alvos .a11ylista,.a11y-alvos .bars{gap:16px}
+/* sublinhar links */
+.a11y-sublinhar a,.a11y-sublinhar .link,.a11y-sublinhar button.link{text-decoration:underline!important;text-underline-offset:3px}
+/* ajustes de contraste encontrados nos testes dos modos */
+.a11y-contraste.tema-escuro .chip.on,.a11y-contraste.tema-escuro .chip.on small{color:var(--accent-ink)!important}
+.a11y-contraste.tema-claro .months .chip.on,.a11y-contraste.tema-claro .months .chip.on small{color:#00402A!important;background:#fff!important}
+.tema-escuro .dlab{color:color-mix(in srgb,var(--dot) 62%,#fff)}
+:root.a11y-dalt.tema-claro{--good:#005A8C;--bad:#A33E00}
+.cd.hoje b{color:var(--fg)}
+
+/* texto grande: o topo quebra em duas linhas, meses e menu não picotam palavras */
+.a11y-texto .top{flex-wrap:wrap;row-gap:8px}
+.a11y-texto .top .brand{min-width:0}
+.a11y-texto .months .chip{padding-inline:2px;overflow-wrap:normal;word-break:normal}
+.a11y-texto .bottomnav button span{font-size:calc(11px / var(--escala,1) * 1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;overflow-wrap:normal}
