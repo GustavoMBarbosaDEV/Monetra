@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.1.0 — 25/10/2026 **Compartilhar comprovante, divisão de despesas e patrimônio**
+
+- **Lançar compartilhando (Share Target):** com o app instalado, “Compartilhar” um texto de outro app (comprovante de Pix, banco, loja) abre a nova despesa com o texto no campo rápido. O valor em R$ vai para a frente; links, ano e hora saem. O formulário já vem preenchido para conferir e salvar. Manifest com `share_target` (GET, parâmetros `st`, `sx`, `su`).
+- **Divisão de despesas no compartilhado:** a despesa ganhou o campo “Quem pagou” (`pagou`; sem ele vale quem lançou). O Início do controle compartilhado mostra a **Divisão do mês** em partes iguais: quanto cada um pagou, a parte de cada um, quem recebe e quem deve. Também sugere os acertos, com o botão “Registrar acerto” (e Desfazer). Os acertos ficam nas transferências do mês com `tipo:"acerto"` e não mexem no saldo das contas nem na planilha. Contas fixas entram quando alguém marca como paga (guarda `por`). Compras parceladas agora guardam quem lançou e quem pagou.
+- **Patrimônio (Relatórios):** contas (ou saldo acumulado), caixinha, imóveis, veículos e outros bens, valores a receber, menos dívidas e parcelas a vencer, com a variação desde o mês passado. Bens ficam em `config.contas` com tipo `bem-imovel`, `bem-veiculo` ou `bem-outro`, fora das listas de conta para lançar e transferir. Contas ganharam o tipo “Investimento”.
+- Tutorial e novidades atualizados. Sem mudança no `firestore.rules`.
+
 ## 5.0.42 — 25/10/2026 **Gestos, dicas e novos quadros financeiros**
 
 - **Deslizar para trocar de aba:** no celular, fora do Início, deslizar a tela para os lados troca de aba na ordem da barra de baixo (Início → Relatórios → Metas → Perfil → Ajustes). No Início, deslizar continua trocando o mês. Não vale em tabelas, gráficos, barras de meses, campos e lançamentos deslizáveis.
