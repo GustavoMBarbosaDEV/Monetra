@@ -16,7 +16,7 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 - Textos com nomes antigos das abas: Relatórios sem dados dizia “A visão geral aparece…” e “Vá na aba Mês”; Perfil → Renda e saldos dizia “ajuste na aba Mês”. Agora falam em Relatórios e Início. A descrição da página (index.html) também.
 - Limpeza sem mudança de comportamento: código sem uso (`irNome`, `domingoDe`, `nomeViagem`, `comDesfazer` e variáveis locais), verificações repetidas em `openSheet` e `render`, regras CSS de classes que o app não gera mais e regras sempre redeclaradas depois. Conferido com o HTML e o estilo calculado de 12 telas, nos temas claro e escuro, iguais aos de antes.
-- Comentários e documentação revisados: comentários desatualizados ou repetidos corrigidos ou removidos; nos tipos (JSDoc) do topo do `app.js`, ficam só o nome e o tipo de cada campo, sem descrição ao lado.
+- Código sem comentários descritivos: saíram de `app.js`, `sw.js`, `firebase-config.js`, `index.html`, `style.css` e `firestore.rules`. No `app.js` ficam só o `// @ts-check` e as marcações de tipo (JSDoc: `@typedef`, `@property`, `@type`, `@param`, `@returns`), sem texto explicativo, porque a checagem de tipos depende delas. Documentação revisada.
 - `jsconfig.json` com `"module": "ES2022"`: a checagem de tipos (`tsc`) não mostra mais o TS1323 e termina sem nenhum erro. Não muda o app (o jsconfig não é carregado).
 
 ## 5.1.1 — 25/10/2026 **Correções da revisão**
