@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.26 — 25/10/2026 **Tutorial revisado**
+
+- Tutorial: passo 2 explica fechar a janela no X ou arrastando o topo; passo 4 cita o anel das metas; passo 5 corrige "círculo" para "quadradinho" ao marcar conta paga, explica os marcadores do calendário (anel, ponto, triângulo) e cita o anel de Relatórios e a Retrospectiva em stories.
+- Revisão geral das telas (8 cenários, formulários, renda fixa por dia, tutorial em 360 px e 390 px): sem problemas novos.
+
 ## 5.0.25 — 25/10/2026 **Página de apresentação animada**
 
 - Nova tela antes do login (só no navegador; no app instalado/APK vai direto ao login): topo escuro com aurora e grade, logo com barras subindo, título "Controle seu dinheiro. Viva seus planos." entrando palavra por palavra (degradê na palavra "dinheiro"), botões "Entrar com Google" e "Criar conta grátis", celular de demonstração que flutua e acompanha a rolagem sem invadir a seção de baixo.
