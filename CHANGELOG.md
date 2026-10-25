@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.31 — 25/10/2026 **Modo foco, menos texto e Retrospectiva sem pressa**
+
+- Perfil → Acessibilidade → Modo foco: Início reduzido (saldo, atalhos, avisos, orçamento, lançamentos, fatura, contas fixas e receitas) com botão "Mostrar tudo do Início" e "Voltar ao modo foco"; o leitor de tela avisa a troca.
+- Menos texto: esconde dicas e explicações dos quadros (o painel de Acessibilidade e as janelas continuam com texto).
+- Retrospectiva: sem avanço automático por padrão; botão "Avançar sozinha"/"Pausar" no topo dos stories (a escolha fica salva). Barra de progresso só anda quando o avanço automático está ligado.
+- Tutorial cita o modo foco.
+
 ## 5.0.30 — 25/10/2026 **Voz: ouvir o resumo e lançar falando**
 
 - Botão "Ouvir" no cartão de saldo (navegadores com síntese de voz): lê em português o resumo do mês com valores por extenso ("417 reais e 80 centavos"), contas fixas a pagar, atrasadas, vencendo hoje/amanhã e limites estourados ou estourando; tocar de novo para.

@@ -289,6 +289,7 @@
  * @property {Folha|null} sheet
  * @property {string} importMsg
  * @property {string} loginModo
+ * @property {boolean} [verTudo]    modo foco: mostrar tudo do Início nesta sessão
  * @property {boolean} [verLogin]   pulou a página de apresentação e quer ver o cartão de login
  * @property {string|null} gCat              última categoria usada
  * @property {Forma} gForma                  última forma de pagamento usada
@@ -353,11 +354,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.30";
+const VERSAO="5.0.31";
 const NOVIDADES=[
-  "Novo botão Ouvir no cartão de saldo: o app lê em voz alta o resumo do mês (saldo, o que entrou e saiu, contas a pagar, atrasos e limites).",
-  "Lance gastos falando: toque no microfone do campo rápido e diga, por exemplo, “45 ifood pix”. Confira e toque em Salvar.",
-  "O celular vibra de leve quando algo é salvo ou marcado como pago (dá para desligar em Perfil → Acessibilidade)."
+  "Novo Modo foco (Perfil → Acessibilidade): o Início mostra só o essencial — saldo, atalhos, avisos, lançamentos, fatura, contas fixas e receitas. O resto fica a um toque em “Mostrar tudo”.",
+  "Nova opção Menos texto, que esconde as explicações longas dos quadros.",
+  "A Retrospectiva não avança mais sozinha: você passa no seu ritmo, ou toca em “Avançar sozinha” se preferir."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1370,7 +1371,7 @@ function passosTutorial(){
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o anel mostra quanto já guardou e o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
     {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria. Toque em <b>Ouvir</b> no saldo para escutar o resumo do mês.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b>, <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no quadradinho e toque na conta para editar). No calendário: <b>anel</b> = vence, <b>ponto</b> = pago, <b>triângulo</b> = atrasado.","<b>Relatórios</b>: meses lado a lado, quanto das receitas virou despesa, assinaturas, etiquetas e a retrospectiva do ano em formato de stories.")},
     {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
-    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.","<b>Acessibilidade</b> (em Perfil): texto maior, alto contraste, cores para daltonismo, modo calmo, fonte de leitura fácil e botões maiores.")},
+    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.","<b>Acessibilidade</b> (em Perfil): texto maior, alto contraste, cores para daltonismo, modo calmo, modo foco, fonte de leitura fácil e botões maiores.")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
   ];
 }
@@ -1649,14 +1650,14 @@ function ajustaAcessivel(raiz,novaTela,novaVista){
    Roda só quando a tela muda. Quem desativou animações no aparelho vê tudo pronto, sem movimento. */
 let ultimaVista="", timerAnima=0, timerStory=0;
 /* ---------- acessibilidade: preferências deste aparelho ---------- */
-/** @typedef {{texto:number,contraste:boolean,daltonismo:boolean,semMov:boolean,calmo:boolean,dislexia:boolean,alvos:boolean,sublinhar:boolean,vibrar:boolean}} A11y */
+/** @typedef {{texto:number,contraste:boolean,daltonismo:boolean,semMov:boolean,calmo:boolean,dislexia:boolean,alvos:boolean,sublinhar:boolean,vibrar:boolean,foco:boolean,menosTexto:boolean,retroAuto:boolean}} A11y */
 /** @type {A11y} */
-const a11y=(()=>{ const pad={texto:1,contraste:false,daltonismo:false,semMov:false,calmo:false,dislexia:false,alvos:false,sublinhar:false,vibrar:true};
+const a11y=(()=>{ const pad={texto:1,contraste:false,daltonismo:false,semMov:false,calmo:false,dislexia:false,alvos:false,sublinhar:false,vibrar:true,foco:false,menosTexto:false,retroAuto:false};
   try{ const x=JSON.parse(localStorage.getItem("mb.a11y")||"{}"); if(x&&typeof x==="object"){ for(const k in pad){ if(typeof x[k]===typeof pad[k]) pad[k]=x[k]; } } }catch(e){}
   if(![1,1.15,1.3,1.5].includes(pad.texto)) pad.texto=1; return pad; })();
 function aplicaA11y(){ const r=document.documentElement;
   r.style.setProperty("--escala",String(a11y.texto));
-  [["contraste","a11y-contraste"],["daltonismo","a11y-dalt"],["semMov","a11y-semmov"],["calmo","a11y-calmo"],["dislexia","a11y-dislexia"],["alvos","a11y-alvos"],["sublinhar","a11y-sublinhar"]].forEach(([k,c])=>r.classList.toggle(c,!!a11y[k]));
+  [["contraste","a11y-contraste"],["daltonismo","a11y-dalt"],["semMov","a11y-semmov"],["calmo","a11y-calmo"],["dislexia","a11y-dislexia"],["alvos","a11y-alvos"],["sublinhar","a11y-sublinhar"],["menosTexto","a11y-menostexto"]].forEach(([k,c])=>r.classList.toggle(c,!!a11y[k]));
   r.classList.toggle("a11y-texto",a11y.texto!==1);
   if(a11y.dislexia&&!document.getElementById("fonte-dislexia")){ const l=document.createElement("link"); l.id="fonte-dislexia"; l.rel="stylesheet"; l.href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap"; document.head.appendChild(l); } }
 function salvaA11y(){ try{ localStorage.setItem("mb.a11y",JSON.stringify(a11y)); }catch(e){} aplicaA11y(); }
@@ -1711,6 +1712,8 @@ function cardA11y(){
     ${sw("calmo","Modo calmo","Sem brilhos, auras, confete e efeitos. Visual mais tranquilo para quem se incomoda com estímulos (autismo, enxaqueca, sensibilidade visual).")}
     ${sw("dislexia","Fonte de leitura fácil","Letra Atkinson Hyperlegible, com mais espaço entre letras e linhas. Ajuda com dislexia e baixa visão.")}
     ${sw("alvos","Botões maiores","Áreas de toque maiores e mais espaço entre elas. Ajuda quem tem tremor ou dificuldade motora.")}
+    ${sw("foco","Modo foco no Início","Mostra só o essencial: saldo, atalhos, avisos, lançamentos, receitas, fatura e contas fixas. O resto fica a um toque.")}
+    ${sw("menosTexto","Menos texto","Esconde as explicações longas dos quadros, deixando só números e botões.")}
     ${sw("sublinhar","Sublinhar links","Links e botões de texto sempre sublinhados.")}
     ${"vibrate" in navigator?sw("vibrar","Vibrar ao confirmar","Uma vibração curta quando algo é salvo, apagado ou marcado como pago. Ajuda quem não ouve ou não enxerga bem a tela."):""}
     </div></div>`;
@@ -2472,7 +2475,10 @@ function viewMes(){
     +secaoMes("receitas","Receitas",brl(c.receitas),icq("seta-cima",18),receitas)
     +secaoMes("caixa","Caixinha",brl(cx),icq("cofre",18),caixa)
     +secaoMes("pag","Forma de pagamento","como você pagou",svgCat("dinheiro",18),pag);
-  return aviso+(k===todayKey?cardViagemMes():"")+tiles.replace('<!--LEMB-->',cardLembretes())+`<div class="grid"><div class="col">${lista}${SECOES_RECOLHIVEIS?`<h2 class="maistit">Mais de ${esc(mesN)}</h2>`:""}${secs1}</div><div class="col">${secs2}</div></div>`;
+  if(a11y.foco&&!ui.verTudo){ /* modo foco: só o essencial, o resto a um toque */
+    const essenciais=secaoMes("faturas",nCart>1?"Faturas dos cartões":"Fatura do cartão",nCart?brl(totFat):"",ICON.cartao,fatHtml)+secaoMes("fixas","Contas fixas",(fx.length||cc.length)?brl(totalFix):"",ICON.repete,fixas)+secaoMes("receitas","Receitas",brl(c.receitas),icq("seta-cima",18),receitas);
+    return aviso+tiles.replace('<!--LEMB-->',cardLembretes())+`<div class="grid"><div class="col">${lista}</div><div class="col">${essenciais}</div></div><button type="button" class="btn ghost wide vertudo" data-vertudo="1">Mostrar tudo do Início (calendário, gráficos, caixinha…)</button>`; }
+  return aviso+(k===todayKey?cardViagemMes():"")+tiles.replace('<!--LEMB-->',cardLembretes())+`<div class="grid"><div class="col">${lista}${SECOES_RECOLHIVEIS?`<h2 class="maistit">Mais de ${esc(mesN)}</h2>`:""}${secs1}</div><div class="col">${secs2}</div></div>${a11y.foco?`<button type="button" class="btn ghost wide vertudo" data-vertudo="0">Voltar ao modo foco</button>`:""}`;
 }
 
 /* ---------- aba Visão geral (só meses que já passaram + o atual) ---------- */
@@ -3261,7 +3267,7 @@ function renderSheet(){
   }else if(s.tipo==="retro"){
     const d=dadosRetro(s.ano), sl=d?slidesRetro(d):[]; s.slide=Math.max(0,Math.min(s.slide||0,sl.length-1));
     corpo=d?`<div class="rprog">${sl.map((x,i)=>`<i class="${i<s.slide?"on":i===s.slide?"on cur":""}"></i>`).join("")}</div><div class="rslide ${sl[s.slide].cls}" data-rtoque="1">${sl[s.slide].html}</div>`:`<p class="hint">Ainda não há dados para a retrospectiva.</p>`;
-    sub=d?(s.slide+1)+" de "+sl.length:""; botoes=d?`<button class="btn ghost" type="button" data-rpasso="-1" ${s.slide===0?"disabled":""}>Anterior</button>${s.slide<sl.length-1?`<button class="btn" type="button" data-rpasso="1">Próximo</button>`:`<button class="btn" type="button" data-sfechar="1">Fechar</button>`}`:"";
+    sub=d?(s.slide+1)+" de "+sl.length+` <button type="button" class="rauto" data-rauto="1" aria-pressed="${a11y.retroAuto}">${a11y.retroAuto?"Pausar":"Avançar sozinha"}</button>`:""; botoes=d?`<button class="btn ghost" type="button" data-rpasso="-1" ${s.slide===0?"disabled":""}>Anterior</button>${s.slide<sl.length-1?`<button class="btn" type="button" data-rpasso="1">Próximo</button>`:`<button class="btn" type="button" data-sfechar="1">Fechar</button>`}`:"";
   }else if(s.tipo==="pin"){
     const campo=(id,lab,auto)=>`<label class="f">${lab}<input class="in pinin" id="${id}" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="${PINLEN}" autocomplete="off" ${auto?"data-autofocus":""}></label>`;
     corpo=(s.pinModo!=="criar"?campo("s-pinatual","PIN atual",true):"")+(s.pinModo!=="desligar"?campo("s-pinnovo","Novo PIN ("+PINLEN+" números)",s.pinModo==="criar")+campo("s-pinrep","Repita o novo PIN"):"")
@@ -3299,13 +3305,13 @@ function renderSheet(){
     corpo=`<label class="f"><span>Procure pela descrição, categoria, valor ou #etiqueta</span><input class="in" id="s-busca" type="search" placeholder="ex.: farmácia, aluguel, 89,90" value="${esc(s.q||"")}" data-autofocus autocomplete="off"></label><div id="s-result" class="busca"></div>`;
     sub="";
   }
-  r.innerHTML=`<div class="sheet-wrap ${s.tipo==="retro"?"stories":""}" data-sfechar="1" role="dialog" aria-modal="true" aria-labelledby="sheetTit"><form class="sheet${s.tipo==="retro"?" st"+((s.slide||0)%6):""}" id="sheetForm" autocomplete="off" novalidate>
+  r.innerHTML=`<div class="sheet-wrap ${s.tipo==="retro"?"stories"+(a11y.retroAuto?" auto":""):""}" data-sfechar="1" role="dialog" aria-modal="true" aria-labelledby="sheetTit"><form class="sheet${s.tipo==="retro"?" st"+((s.slide||0)%6):""}" id="sheetForm" autocomplete="off" novalidate>
     <div class="sheethead"><h2 id="sheetTit">${esc(titulos[s.tipo])}</h2><span class="muted small">${sub}</span><button type="button" class="x" data-sfechar="1" aria-label="Fechar">×</button></div>
     ${abas}${corpo}<p class="erro" id="s-erro" hidden></p>${botoes?`<div class="sheetbtns">${botoes}</div>`:""}</form></div>`;
   if(s.tipo==="busca") atualizaBusca();
   /* retrospectiva em stories: avança sozinha a cada 6,5 s (não com "reduzir movimento") */
   clearTimeout(timerStory);
-  if(s.tipo==="retro"&&!semMovimento()){ const fixo=s.slide; timerStory=setTimeout(()=>{ if(ui.sheet===s&&s.slide===fixo){ const nx=document.querySelector('#sheet [data-rpasso="1"]'); if(nx) nx.click(); } },6500); }
+  if(s.tipo==="retro"&&a11y.retroAuto&&!semMovimento()){ const fixo=s.slide; timerStory=setTimeout(()=>{ if(ui.sheet===s&&s.slide===fixo){ const nx=document.querySelector('#sheet [data-rpasso="1"]'); if(nx) nx.click(); } },6500); }
   if(s.tipo==="gasto") atualizaVg();
   setTimeout(()=>encolheValores(document.getElementById("sheet")),0);
   if(s.tipo==="conta"){ const ev=document.getElementById("s-valor"); if(ev) ev.dataset.neg="1"; }
@@ -3524,7 +3530,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-falar],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -3553,6 +3559,7 @@ function bindSheet(r){
     if(b.dataset.avretro){ openSheet("retro",null,{ano:Number(b.dataset.avretro),slide:0}); return; }
     if(b.dataset.vgcot){ buscarCotacao(); return; }
     if(b.dataset.falar){ lancarPorVoz(); return; }
+    if(b.dataset.rauto){ a11y.retroAuto=!a11y.retroAuto; salvaA11y(); renderSheet(); return; }
     if(b.dataset.rtoque){ const rr=b.getBoundingClientRect(), esq=/** @type {MouseEvent} */(e).clientX&&(/** @type {MouseEvent} */(e).clientX-rr.left)<rr.width/3;
       const nx=document.querySelector(esq?'#sheet [data-rpasso="-1"]':'#sheet [data-rpasso="1"]'); if(nx&&!/** @type {HTMLButtonElement} */(nx).disabled) /** @type {HTMLElement} */(nx).click(); else if(!esq){ const f=document.querySelector('#sheet .sheetbtns [data-sfechar]'); if(f) /** @type {HTMLElement} */(f).click(); } return; }
     if(b.dataset.rpasso){ s.slide=(s.slide||0)+Number(b.dataset.rpasso); renderSheet(); return; }
@@ -3641,6 +3648,7 @@ app.addEventListener("click",e=>{
   if(d.abre){ ui.abre[d.abre]=!ui.abre[d.abre]; try{ localStorage.setItem("mb.abre",JSON.stringify(ui.abre)); }catch(e){} render(); if(ui.abre[d.abre]){ const sc=document.getElementById("sec-"+d.abre); if(sc) setTimeout(()=>sc.scrollIntoView({block:"nearest",behavior:"smooth"}),40); } return; }
   if(d.rolar){ const el=garanteVisivel(d.rolar); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); return; }
   if(d.irajustes){ setTab("ajustes"); return; }
+  if(d.vertudo){ ui.verTudo=d.vertudo==="1"; render(); anunciar(ui.verTudo?"Mostrando tudo do Início.":"Modo foco: só o essencial."); return; }
   if(d.ouvir){ ouvirResumo(); return; }
   if(d.pular){ const m=document.getElementById("conteudo"), alvo=/** @type {HTMLElement|null} */(m&&(m.querySelector(".pagetitle h2, .heroSaldo, h2, h1")||m.firstElementChild));
     if(alvo){ if(!alvo.hasAttribute("tabindex")) alvo.setAttribute("tabindex","-1"); alvo.classList.add("alvo-pulo"); alvo.focus({preventScroll:true}); alvo.scrollIntoView({block:"start"}); } return; }

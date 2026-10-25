@@ -1564,3 +1564,12 @@ button.check{position:relative;overflow:visible}
 .falar.on{background:var(--bad);color:#fff;animation:mb-respira 1s ease-in-out infinite}
 .rapido #s-rapido{padding-right:54px}
 @media (prefers-reduced-motion:reduce){.ouvir.on svg,.falar.on{animation:none}}
+
+/* ---------- 5.0.31 cognitivo: modo foco, menos texto e Retrospectiva sem pressa ---------- */
+.vertudo{margin-top:4px}
+.a11y-menostexto #conteudo .card .hint:not(#acessibilidade .hint),.a11y-menostexto #conteudo .card .sobraln,.a11y-menostexto #conteudo .pagetitle p{display:none}
+.stories:not(.auto) .rprog i.cur{background:#fff}
+.stories:not(.auto) .rprog i.cur::after{animation:none;display:none}
+.stories .sheethead .muted{display:inline-flex;align-items:center;gap:8px}
+.rauto{font:inherit;font-size:12px;font-weight:700;border:0;border-radius:999px;padding:5px 10px;cursor:pointer;color:#fff;background:rgba(255,255,255,.18)}
+.rauto[aria-pressed="true"]{background:#fff;color:#04261A}
