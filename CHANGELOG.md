@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.32 — 25/10/2026 **Comemorações**
+
+- Cartão de comemoração (confete de barrinhas, vibração curta, botão "Valeu!" com foco; fecha ao tocar, com Esc ou sozinho em 6 s) para meta atingida, desafio concluído, conquista nova e mês anterior fechado com saldo positivo.
+- "Mês no azul" é avisado uma vez por mês, na primeira abertura do mês seguinte; se outra comemoração aparecer antes, ele fica para a próxima abertura.
+- Respeita Reduzir movimento/Modo calmo (sem confete) e é lido pelo leitor de tela.
+
 ## 5.0.31 — 25/10/2026 **Modo foco, menos texto e Retrospectiva sem pressa**
 
 - Perfil → Acessibilidade → Modo foco: Início reduzido (saldo, atalhos, avisos, orçamento, lançamentos, fatura, contas fixas e receitas) com botão "Mostrar tudo do Início" e "Voltar ao modo foco"; o leitor de tela avisa a troca.

@@ -1573,3 +1573,16 @@ button.check{position:relative;overflow:visible}
 .stories .sheethead .muted{display:inline-flex;align-items:center;gap:8px}
 .rauto{font:inherit;font-size:12px;font-weight:700;border:0;border-radius:999px;padding:5px 10px;cursor:pointer;color:#fff;background:rgba(255,255,255,.18)}
 .rauto[aria-pressed="true"]{background:#fff;color:#04261A}
+
+/* ---------- 5.0.32 comemoração (meta, desafio, conquista, mês no azul) ---------- */
+#festa{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:24px;background:rgba(4,10,7,.68);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:mb-surge .25s ease both}
+#festa.sai{opacity:0;transition:opacity .28s ease}
+.festa-box{position:relative;max-width:320px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 22px 20px;border-radius:26px;background:var(--surface);color:var(--fg);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent),0 30px 80px -20px rgba(0,0,0,.7);animation:mb-pop .45s cubic-bezier(.34,1.56,.64,1) both}
+.festa-box b{font-family:var(--num);font-size:24px;letter-spacing:-.02em}
+.festa-box p{margin:0 0 6px;color:var(--muted);font-size:14.5px;line-height:1.45}
+.festa-box .mbars{height:40px}
+.festa-box .mbars i{animation:mb-sobe .6s cubic-bezier(.34,1.56,.64,1) both} .festa-box .mbars i:nth-child(2){animation-delay:.12s} .festa-box .mbars i:nth-child(3){animation-delay:.24s}
+.festa-conf{position:absolute;left:50%;top:40%;width:0;height:0;pointer-events:none}
+.festa-conf i{position:absolute;left:-3px;top:-5px;width:6px;border-radius:2px;background:var(--accent);animation:mb-confete var(--t,1.2s) cubic-bezier(.15,.8,.3,1) both}
+.festa-conf i.c1{background:var(--good)} .festa-conf i.c2{background:var(--warn)} .festa-conf i.c3{background:var(--c3)}

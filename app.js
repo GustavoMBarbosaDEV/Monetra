@@ -354,11 +354,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.31";
+const VERSAO="5.0.32";
 const NOVIDADES=[
-  "Novo Modo foco (Perfil → Acessibilidade): o Início mostra só o essencial — saldo, atalhos, avisos, lançamentos, fatura, contas fixas e receitas. O resto fica a um toque em “Mostrar tudo”.",
-  "Nova opção Menos texto, que esconde as explicações longas dos quadros.",
-  "A Retrospectiva não avança mais sozinha: você passa no seu ritmo, ou toca em “Avançar sozinha” se preferir."
+  "Agora o app comemora com você: ao bater uma meta, concluir um desafio, desbloquear uma conquista ou fechar o mês no azul aparece um cartão de parabéns com confete.",
+  "Com Reduzir movimento ou Modo calmo ligados, a comemoração aparece sem animação."
 ];
 
 /* ---------- utilidades ---------- */
@@ -2029,12 +2028,34 @@ function checaConquistas(){
   _conqTimer=setTimeout(()=>{ _conqTimer=null; if(mode==="login"||!state.loaded||precisaTermos()) return;
     try{ const chave="mb.conq."+(uid||"local")+"."+(aberto||"p"); const raw=localStorage.getItem(chave), visto=raw?JSON.parse(raw):null;
       const {got,gs}=conquistas(), ds=(state.config.desafios||[]).map(d=>/** @type {[Desafio,string]} */([d,estadoDesafio(d,gs).st]));
-      const agora={c:CONQ.filter(c=>got[c.id]).map(c=>c.id),d:Object.fromEntries(ds.map(([d,st])=>[d.id,st]))};
+      const metasF=state.config.metas.filter(mt=>{ try{ return infoMeta(mt,null).feita; }catch(e){ return false; } });
+      const ant=shiftKey(todayKey,-1), ini=inicioKey(), cAnt=ini&&ant>=ini?calc(ant):null;
+      const agora={c:CONQ.filter(c=>got[c.id]).map(c=>c.id),d:Object.fromEntries(ds.map(([d,st])=>[d.id,st])),m:metasF.map(mt=>mt.id),azul:visto&&visto.azul||""};
       if(visto){ const novas=CONQ.filter(c=>got[c.id]&&!(visto.c||[]).includes(c.id));
         const fins=ds.filter(([d,st])=>(st==="ok"||st==="quebrou")&&(visto.d||{})[d.id]!==st);
-        if(novas.length) toast("Conquista desbloqueada: "+novas[0].nome+(novas.length>1?" (+"+(novas.length-1)+")":""));
-        else if(fins.length){ const [d,st]=fins[0]; toast(st==="ok"?"Desafio concluído: "+d.nome:"Desafio “"+d.nome+"” não deu desta vez. Bora de novo?"); } }
+        const metaNova=visto.m?metasF.find(mt=>!visto.m.includes(mt.id)):null;
+        const azul=cAnt&&cAnt.receitas>0&&cAnt.saldo>0&&visto.azul!==ant;
+        if(metaNova) comemora("Meta atingida!","Você completou “"+metaNova.nome+"”. Parabéns!");
+        else if(fins.length&&fins[0][1]==="ok") comemora("Desafio concluído!",fins[0][0].nome);
+        else if(novas.length) comemora("Conquista desbloqueada!",novas[0].nome+(novas.length>1?" (+"+(novas.length-1)+")":""));
+        else if(azul){ comemora("Mês fechado no azul!",nomeMes(ant)+" terminou com sobra de "+brl(cAnt.saldo)+"."); agora.azul=ant; }
+        else if(fins.length){ toast("Desafio “"+fins[0][0].nome+"” não deu desta vez. Bora de novo?"); }
+        if(cAnt&&!azul) agora.azul=ant; }
+      else if(cAnt) agora.azul=ant;
       localStorage.setItem(chave,JSON.stringify(agora)); }catch(e){} },900);
+}
+/* comemoração: cartão no centro com confete de barrinhas; some sozinho ou ao tocar */
+/** @param {string} titulo @param {string} texto */
+function comemora(titulo,texto){
+  let el=document.getElementById("festa"); if(el) el.remove();
+  el=document.createElement("div"); el.id="festa"; el.setAttribute("role","status"); el.setAttribute("aria-live","assertive");
+  const pecas=semMovimento()?"":Array.from({length:36},(_,i)=>{ const a=-Math.PI/2+(Math.random()-.5)*Math.PI*1.3, d=120+Math.random()*170; return `<i class="c${i%4}" style="--dx:${(Math.cos(a)*d).toFixed(0)}px;--dy:${(Math.sin(a)*d).toFixed(0)}px;--r:${Math.round(Math.random()*540)}deg;--t:${(.9+Math.random()*.6).toFixed(2)}s;height:${(6+Math.random()*9).toFixed(0)}px"></i>`; }).join("");
+  el.innerHTML=`<div class="festa-box"><span class="festa-conf" aria-hidden="true">${pecas}</span><span class="mbars" aria-hidden="true"><i></i><i></i><i></i></span><b>${esc(titulo)}</b><p>${esc(texto)}</p><button type="button" class="btn" data-festaok="1">Valeu!</button></div>`;
+  document.body.appendChild(el); vibra(30);
+  const fecha=()=>{ el.classList.add("sai"); setTimeout(()=>el.remove(),300); };
+  const t=setTimeout(fecha,6000), tecla=(/** @type {KeyboardEvent} */e)=>{ if(e.key==="Escape"){ fecha(); } };
+  el.addEventListener("click",()=>{ clearTimeout(t); fecha(); document.removeEventListener("keydown",tecla); }); document.addEventListener("keydown",tecla,{once:true});
+  setTimeout(()=>{ const b=/** @type {HTMLElement|null} */(el.querySelector("[data-festaok]")); if(b) b.focus({preventScroll:true}); },60);
 }
 /* ---------- resumo da semana (segunda a domingo) ---------- */
 function domingoDe(iso){ const [y,m,d]=iso.split("-").map(Number), wd=new Date(y,m-1,d).getDay(); return somaDias(iso,wd===0?0:7-wd); }
