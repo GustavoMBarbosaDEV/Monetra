@@ -1,7 +1,3 @@
-// =====================================================================
-//  CONFIGURAÇÃO DO FIREBASE — projeto mb-controle
-//  Estes valores NÃO são senha: a segurança vem das regras do Firestore.
-// =====================================================================
 window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyAdFnTBQv-baQ-HK1irBbFNjLoBKVtJMOs",
   authDomain: "mb-controle-f70b6.firebaseapp.com",
