@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.35 — 25/10/2026 **Deslizar o lançamento**
+
+- Lançamentos do Início e do dia no calendário: no toque, deslizar para a esquerda apaga (com Desfazer); para a direita, a despesa de crédito não paga é marcada como paga e as outras são repetidas hoje (com Desfazer).
+- Fundo colorido por trás da linha enquanto arrasta (vermelho para apagar, verde para paga, cor do app para repetir), com vibração ao passar do ponto. Um toque normal continua abrindo a edição; mouse e teclado não mudam.
+- Respeita Reduzir movimento e Modo calmo (sem animação de saída). Dica da lista e tutorial explicam o gesto.
+
 ## 5.0.34 — 25/10/2026 **Busca que navega**
 
 - Busca: bloco "Ir para" com até 4 telas/quadros/ferramentas que combinam com o que foi digitado (nomes e apelidos, sem acento; "13" já acha o 13º).
