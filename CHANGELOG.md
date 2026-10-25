@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.33 — 25/10/2026 **Regras automáticas**
+
+- Ajustes → Regras automáticas: criar regra (palavra + categoria), lista das regras por categoria e atalho para editar.
+- Cada categoria ganhou o campo "Regras automáticas" (palavras separadas por vírgula); uma palavra fica em uma categoria só.
+- As regras têm prioridade sobre o histórico e as palavras conhecidas no lançamento rápido, preenchem a categoria ao digitar a descrição de uma despesa nova e são usadas na importação de extrato.
+
 ## 5.0.32 — 25/10/2026 **Comemorações**
 
 - Cartão de comemoração (confete de barrinhas, vibração curta, botão "Valeu!" com foco; fecha ao tocar, com Esc ou sozinho em 6 s) para meta atingida, desafio concluído, conquista nova e mês anterior fechado com saldo positivo.
