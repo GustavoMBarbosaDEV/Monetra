@@ -12,6 +12,19 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.42 — 25/10/2026 **Gestos, dicas e novos quadros financeiros**
+
+- **Deslizar para trocar de aba:** no celular, fora do Início, deslizar a tela para os lados troca de aba na ordem da barra de baixo (Início → Relatórios → Metas → Perfil → Ajustes). No Início, deslizar continua trocando o mês. Não vale em tabelas, gráficos, barras de meses, campos e lançamentos deslizáveis.
+- **Menu do +:** segurar o + (ou botão direito, tecla Menu ou Shift+F10) abre Despesa, Receita, Transferência (com 2 contas ou mais) e Por voz (abre a despesa já ouvindo). Toque normal continua abrindo a despesa. Setas e Esc funcionam no menu.
+- **Barrinha fixa ao rolar:** passando do saldo (Início) ou do topo (outras abas), aparece uma barra fixa com o saldo do mês ou o nome da tela; tocar nela volta ao topo.
+- **Dicas pontuais:** na primeira vez que cada aba abre, um balão com uma dica e o botão “Entendi” (fica guardado no aparelho em `mb.dicas`). Não aparece antes do tutorial.
+- **Imposto de Renda:** na despesa, o campo “Imposto de Renda” marca o tipo de dedução (saúde, educação, PGBL, pensão, doações, outra), guardado em `ir` no gasto ou na compra parcelada. Relatórios ganhou o resumo anual por tipo, com os lançamentos de cada um e troca de ano.
+- **Sua inflação x IPCA:** Relatórios compara o gasto por categoria com os mesmos meses do ano anterior e mostra a diferença para o IPCA de referência (editável, guardado no aparelho em `mb.taxas`).
+- **Quanto renderia:** Metas mostra quanto a caixinha renderia em 1 e 12 meses no CDI e na poupança, e para cada meta com prazo quanto o rendimento ajuda (e quanto bastaria guardar por mês). CDI editável; poupança pela regra atual.
+- **Nota de saúde financeira:** Início ganhou a nota do mês de 0 a 100 (sobra, contas em dia, limites, caixinha e peso das contas fixas), com cada critério explicado.
+- **Assinatura mais cara:** contas fixas e gastos que se repetem com valor maior que no mês anterior aparecem em “Ficou mais caro” (Relatórios) e no sininho.
+- Tutorial e novidades atualizados.
+
 ## 5.0.41 — 25/10/2026 **Transição entre abas**
 
 - Ao trocar de aba, o conteúdo novo entra deslizando na direção da aba: indo para a direita na barra (Início → Relatórios → Metas → Perfil → Ajustes) vem da direita; voltando, vem da esquerda.
