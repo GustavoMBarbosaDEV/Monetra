@@ -1650,3 +1650,19 @@ html,body{overscroll-behavior-y:contain}
 @keyframes mb-giro{to{transform:rotate(360deg)}}
 .a11y-semmov .puxa.gira .puxa-ic svg,.a11y-calmo .puxa.gira .puxa-ic svg{animation:none}
 @media (prefers-reduced-motion:reduce){.puxa.gira .puxa-ic svg{animation:none}}
+
+/* 5.0.40 — esqueleto de carregamento */
+.skel{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+.skel .card{gap:10px}
+.sk{display:block;border-radius:10px;background:var(--sunk);background-image:linear-gradient(90deg,transparent 0,color-mix(in srgb,var(--surface) 70%,transparent) 50%,transparent 100%);background-size:200% 100%;background-repeat:no-repeat;animation:mb-brilho 1.4s ease-in-out infinite}
+.sk-gap{margin-top:6px}
+.sk-hero{background:var(--surface)}
+.sk-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.sk-qa{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sk-qa .sk{height:76px;border-radius:20px}
+.sk-row{display:flex;align-items:center;gap:12px;padding:6px 0}
+.sk-col{flex:1;display:flex;flex-direction:column;gap:6px}
+.sk-circ{width:40px;height:40px;border-radius:50%;flex:none}
+@keyframes mb-brilho{from{background-position:150% 0}to{background-position:-50% 0}}
+.a11y-semmov .sk,.a11y-calmo .sk{animation:none;background-image:none}
+@media (prefers-reduced-motion:reduce){.sk{animation:none;background-image:none}}
