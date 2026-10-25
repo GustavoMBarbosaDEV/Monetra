@@ -388,7 +388,6 @@ const uidGen=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).
 const formaNome=f=>(FORMAS.find(x=>x[0]===f)||[null,"Não informado"])[1];
 /* 5.0.42: despesas dedutíveis no Imposto de Renda (campo "ir" do gasto ou da compra parcelada) */
 const IR_TIPOS=[["saude","Saúde"],["educacao","Educação"],["previdencia","Previdência privada (PGBL)"],["pensao","Pensão alimentícia"],["doacao","Doações incentivadas"],["outro","Outra dedução"]], IR_IDS=IR_TIPOS.map(x=>x[0]);
-const irNome=t=>(IR_TIPOS.find(x=>x[0]===t)||[null,"Outra dedução"])[1];
 /* Aceita "1.200", "1.200,50", "1200", "25,9", "R$ 2.800,00". Ponto seguido de 3 dígitos = milhar. */
 /* valor de cada parcela em centavos inteiros: a diferença de centavos fica na última */
 /**
@@ -1648,7 +1647,7 @@ function render(){
   const a=document.activeElement, inApp=a&&document.getElementById("app").contains(a);
   const fid=inApp&&a.id, sel=(fid&&"selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const app=document.getElementById("app");
-  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):mostraApresentacao()?viewApresentacao():viewLogin()):!state.loaded?esqueleto():precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?esqueleto():ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?perfilComIcones():viewAjustes();
+  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):mostraApresentacao()?viewApresentacao():viewLogin()):!state.loaded?esqueleto():precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?perfilComIcones():viewAjustes();
   const rolY=window.scrollY;
   /* movimento só quando a tela muda (aba, mês, login, carregou), não a cada digitação */
   const vista=[mode,state.loaded,ui.tab,ui.month,typeof aberto==="undefined"?"":aberto].join("|"), novaVista=vista!==ultimaVista;
@@ -2128,7 +2127,6 @@ function comemora(titulo,texto){
   setTimeout(()=>{ const b=/** @type {HTMLElement|null} */(el.querySelector("[data-festaok]")); if(b) b.focus({preventScroll:true}); },60);
 }
 /* ---------- resumo da semana (segunda a domingo) ---------- */
-function domingoDe(iso){ const [y,m,d]=iso.split("-").map(Number), wd=new Date(y,m-1,d).getDay(); return somaDias(iso,wd===0?0:7-wd); }
 const ultimoDomingo=()=>{ const hj=hojeISO(), [y,m,d]=hj.split("-").map(Number), wd=new Date(y,m-1,d).getDay(); return wd===0?hj:somaDias(hj,-wd); };
 function resumoSemana(fim,gs){
   gs=gs||todosGastos(); const ini=somaDias(fim,-6), iniA=somaDias(fim,-13), fimA=somaDias(fim,-7);
@@ -2359,7 +2357,7 @@ function cardCalendario(k){
     <div class="calleg"><span><i class="sq"></i>quanto mais forte, mais gasto no dia</span><span><i class="vd pend"></i>vence</span><span><i class="vd ok"></i>pago</span><span><i class="vd atr"></i>atrasado</span></div></div>`;
 }
 function corpoDia(k,d){
-  const dias=dadosCalendario(k), x=dias[d], dt=new Date(kY(k),kM(k)-1,d), hoje=k===todayKey?today.getDate():0;
+  const dias=dadosCalendario(k), x=dias[d], hoje=k===todayKey?today.getDate():0;
   const gs=((state.months[k]||{}).gastos||[]).filter(g=>Math.min(diasMes(k),Math.max(1,Number(g.dia)||1))===d);
   const linhasG=gs.map(g=>linhaLanc(Object.assign({},g),k).replace(/data-edit="gasto" data-id=/,'data-caledit=')).join("");
   const linhasV=x.v.map(v=>{ const atr=!v.pago&&(k<todayKey||(hoje&&d<hoje)); return `<div class="item calv ${v.pago?"ok":atr?"atr":"pend"}"><i class="vd ${v.pago?"ok":atr?"atr":"pend"}"></i><span class="desc"><b>${esc(v.nome)}</b><small>${v.pago?"paga":atr?"atrasada":"vence neste dia"}</small></span><span class="v">${brl(v.valor)}</span><button class="btn mini ${v.pago?"ghost":""}" type="button" data-avpagar="${v.t}|${esc(v.id)}|${k}">${v.pago?"Desfazer":"Paguei"}</button></div>`; }).join("");
@@ -2448,9 +2446,7 @@ function viewMes(){
   const acum=acumulado(k), cx=caixinhaAte(k), ini=inicioKey();
   const aviso=avisoCompart()+(!ini?`<div class="note info">Seu controle ainda não começou. Informe o <b>salário deste mês</b> no card Receitas (ou lance uma receita) e os cálculos passam a contar a partir deste mês.</div>`
     :k<ini?`<div class="note info">Este mês é anterior ao início do seu controle (${esc(nomeMes(ini).toLowerCase())}). Aqui só conta o que você lançar à mão; salário padrão, rendas e contas fixas não entram.</div>`:"");
-  const subRec=[ "salário "+brl(c.salario), c.rendas?"fixas "+brl(c.rendas):"", c.avulsos?"avulsos "+brl(c.avulsos):"" ].filter(Boolean).join(" · ");
   const varDesp=prev?variacao(c.despesas,prev.despesas):"";
-  const usoPct=c.receitas>0?Math.round((c.despesas+c.guardado-c.retirado)/c.receitas*100):null;
   const mesN=NOMES[kM(k)-1].toLowerCase(), varS=prev&&Math.abs(prev.saldo)>0.5?(c.saldo-prev.saldo)/Math.abs(prev.saldo):null;
   const pv=c.receitas>0?previsaoMes(k,c):null, alTop=isCur?alertasOrcamento(k).find(a=>a.diaEstoura||a.nivel==="passou"):null;
   const notaTxt=pv?(pv.ritmo>0?`No ritmo atual, ${mesN} termina com <b class="nowrap">≈&nbsp;${brl(pv.saldo)}</b>.`:`Sem gastos do dia a dia até agora: ${mesN} termina com <b>${brl(pv.saldo)}</b> se continuar assim.`):c.porDia!==null&&c.receitas>0?`Você pode gastar <b>${brl(c.porDia)}</b> por dia ${isCur?"até o fim do mês":"neste mês"}.`:"";
@@ -2891,7 +2887,6 @@ const lerCot=t=>{ const n=Number(String(t||"").trim().replace(/\./g,"").replace(
 const emReais=(valor,vg)=>Math.round((Number(valor)||0)*(vg.moeda==="BRL"?1:vg.cotacao)*(1+(vg.moeda==="BRL"?0:(vg.taxa||0))/100)*100)/100;
 const viagemNoDia=iso=>(state.config.viagens||[]).find(v=>v.inicio&&v.fim&&iso>=v.inicio&&iso<=v.fim)||null;
 const viagemAtiva=()=>viagemNoDia(hojeISO());
-const nomeViagem=id=>((state.config.viagens||[]).find(v=>v.id===id)||{}).nome||"";
 function gastosViagem(id){ const out=[]; Object.keys(state.months).sort().forEach(k=>((state.months[k]||{}).gastos||[]).forEach(g=>{ if(g.viagemId===id) out.push(Object.assign({k},g)); }));
   (state.config.parcelas||[]).forEach(pp=>{ if(pp.viagemId===id) out.push(Object.assign({},pp,{k:pp.compra,valor:pp.total,desc:(pp.desc||"Compra parcelada")+" ("+pp.n+"x)",orig:pp.orig?Object.assign({},pp.orig):null})); });
   return out; }
@@ -2977,7 +2972,7 @@ function cardDividas(){
 }
 const catOutros=()=>(state.config.categorias.find(c=>/outro/.test(norm(c.nome)))||state.config.categorias[state.config.categorias.length-1]||{}).id;
 function registrarPagDiv(tudo){
-  const s=ui.sheet, x=itemAtual(); if(!x) return;
+  const x=itemAtual(); if(!x) return;
   const r=restaDiv(x), campo=(document.getElementById("s-pagval")||{}).value||"";
   const v=tudo?r:(campo.trim()?parseMoney(campo):r);
   if(!(v>0)) return erroSheet("Informe quanto foi pago.","s-pagval");
@@ -3313,8 +3308,7 @@ function importarExtrato(){
 function sheetRoot(){ let r=document.getElementById("sheet"); if(!r){ r=document.createElement("div"); r.id="sheet"; document.body.appendChild(r); bindSheet(r); } return r; }
 let sheetVoltaFoco=null;
 function openSheet(tipo,id,extra){
-  if(mode==="login"||precisaTermos()) return;
-  if(mode==="login"||!state.loaded) return;
+  if(mode==="login"||!state.loaded||precisaTermos()) return;
   if(!ui.sheet){ sheetVoltaFoco=document.activeElement; marcaHist("sheet"); }
   ui.sheet=Object.assign({tipo,id:id||null},extra||{});
   renderSheet();
