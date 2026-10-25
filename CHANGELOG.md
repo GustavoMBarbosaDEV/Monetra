@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.34 — 25/10/2026 **Busca que navega**
+
+- Busca: bloco "Ir para" com até 4 telas/quadros/ferramentas que combinam com o que foi digitado (nomes e apelidos, sem acento; "13" já acha o 13º).
+- Ao tocar, abre a aba certa, rola até o quadro com um destaque rápido e leva o foco para ele (leitor de tela avisa); calculadoras, simulador e notificações abrem direto.
+- Título "Buscar no app" e dica explicando que dá para buscar telas. Tutorial cita a busca e as regras automáticas.
+
 ## 5.0.33 — 25/10/2026 **Regras automáticas**
 
 - Ajustes → Regras automáticas: criar regra (palavra + categoria), lista das regras por categoria e atalho para editar.
