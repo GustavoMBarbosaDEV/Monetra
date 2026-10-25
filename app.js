@@ -121,6 +121,7 @@
  * @property {string|null} [ic]    nome do ícone
  * @property {boolean} [sobra]     orçamento com sobra acumulada
  * @property {MesKey|null} [sobraDesde]
+ * @property {string[]} [palavras]  regras automáticas: palavras que caem nesta categoria
  * @property {Subcategoria[]} [subs]
  */
 /**
@@ -259,6 +260,7 @@
  * @property {string|null} id
  * @property {MesKey} [mes]
  * @property {number} [ano]
+ * @property {string} [foco]   campo que recebe o foco ao abrir (ex.: "regras")
  * @property {string} [calc]
  * @property {number} [dia]
  * @property {string} [fim]
@@ -354,10 +356,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.32";
+const VERSAO="5.0.33";
 const NOVIDADES=[
-  "Agora o app comemora com você: ao bater uma meta, concluir um desafio, desbloquear uma conquista ou fechar o mês no azul aparece um cartão de parabéns com confete.",
-  "Com Reduzir movimento ou Modo calmo ligados, a comemoração aparece sem animação."
+  "Novo em Ajustes: Regras automáticas. Ensine ao app as suas palavras (ex.: “petz” → Pets) e toda despesa com essa palavra na descrição já entra na categoria certa.",
+  "As regras valem no lançamento rápido, ao digitar a descrição da despesa e na importação de extrato, e vêm antes das palavras que o app já reconhecia."
 ];
 
 /* ---------- utilidades ---------- */
@@ -548,7 +550,7 @@ function normMonth(d){
  */
 function normConfig(d){
   const ate=(typeof d?.ate==="string"&&/^\d{4}-\d{2}$/.test(d.ate)&&d.ate>=INICIO&&d.ate<=LIMITE_ATE)?d.ate:PADRAO_ATE;
-  const cats=Array.isArray(d?.categorias)&&d.categorias.length?d.categorias.map(c=>({id:String(c.id),nome:String(c.nome||""),orcamento:Number(c.orcamento)||0,cor:(typeof c.cor==="number"&&c.cor>=0&&c.cor<12)?c.cor:null,ic:typeof c.ic==="string"&&/^[a-z]{2,12}$/.test(c.ic)?c.ic:null,sobra:c.sobra===true,sobraDesde:typeof c.sobraDesde==="string"&&/^\d{4}-(0[1-9]|1[0-2])$/.test(c.sobraDesde)?c.sobraDesde:null,subs:Array.isArray(c.subs)?c.subs.filter(x=>x&&x.id&&x.nome).map(x=>({id:String(x.id),nome:String(x.nome)})):[]})):defaultConfig().categorias;
+  const cats=Array.isArray(d?.categorias)&&d.categorias.length?d.categorias.map(c=>({id:String(c.id),nome:String(c.nome||""),orcamento:Number(c.orcamento)||0,cor:(typeof c.cor==="number"&&c.cor>=0&&c.cor<12)?c.cor:null,ic:typeof c.ic==="string"&&/^[a-z]{2,12}$/.test(c.ic)?c.ic:null,sobra:c.sobra===true,sobraDesde:typeof c.sobraDesde==="string"&&/^\d{4}-(0[1-9]|1[0-2])$/.test(c.sobraDesde)?c.sobraDesde:null,palavras:Array.isArray(c.palavras)?c.palavras.filter(x=>typeof x==="string"&&x.trim()).map(x=>x.trim().slice(0,30)).slice(0,40):[],subs:Array.isArray(c.subs)?c.subs.filter(x=>x&&x.id&&x.nome).map(x=>({id:String(x.id),nome:String(x.nome)})):[]})):defaultConfig().categorias;
   const fixos=Array.isArray(d?.fixos)?d.fixos.map(f=>({id:String(f.id),nome:String(f.nome||"Conta fixa"),cat:String(f.cat||""),valor:Number(f.valor)||0,dia:Math.min(31,Math.max(1,Number(f.dia)||1)),forma:String(f.forma||"boleto"),desde:/^\d{4}-\d{2}$/.test(f.desde||"")?f.desde:INICIO,ate:/^\d{4}-\d{2}$/.test(f.ate||"")?f.ate:null,contaId:f.contaId?String(f.contaId):null})):[];
   const inicio=(typeof d?.inicio==="string"&&/^\d{4}-\d{2}$/.test(d.inicio))?d.inicio:null;
   const mk=x=>/^\d{4}-\d{2}$/.test(x||"");
@@ -2171,6 +2173,16 @@ function corpoCalc(tipo){
 function atualizaCalc(){ const el=document.getElementById("s-calcres"); if(el&&ui.sheet) el.innerHTML=calcRes(ui.sheet.calc||"decimo"); }
 /* ---------- lançamento rápido por texto ("45 ifood pix", "120 mercado ontem", "300 tv 3x crédito") ---------- */
 const semAcento=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+/* regras automáticas criadas pela pessoa: palavras que sempre caem numa categoria (Ajustes → Regras automáticas) */
+const limpaPal=t=>semAcento(t).replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," ").trim();
+/** @param {string} texto @returns {string|null} id da categoria */
+function regraCat(texto){
+  const t=" "+limpaPal(texto)+" "; if(t.trim()==="") return null;
+  let melhor=null, tam=0;
+  for(const ct of state.config.categorias) for(const p of (ct.palavras||[])){ const w=limpaPal(p); if(w&&w.length>tam&&t.includes(" "+w)){ melhor=ct.id; tam=w.length; } }
+  return melhor;
+}
+const lePalavras=v=>[...new Set(String(v||"").split(/[,;\n]+/).map(x=>x.trim().replace(/\s+/g," ")).filter(x=>x.length>=2).map(x=>x.slice(0,30)))].slice(0,40);
 const RAP_KW={carrinho:/^(mercado|supermercado|feira|padaria|acougue|hortifruti|atacad|assai|carrefour|sacolao)/,cafe:/^(cafe|lanche|salgado|cafeteria)/,taca:/^(ifood|restaurante|pizza|hamburguer|burger|bar|cerveja|cinema|show|rappi|lanchonete|almoco|jantar|delivery|netflix|spotify|streaming)/,
   carro:/^(uber|99|taxi|gasolina|combustivel|posto|alcool|etanol|estacionamento|pedagio|onibus|metro|passagem|oficina)/,saude:/^(farmacia|remedio|medico|consulta|dentista|exame|drogaria|academia)/,casa:/^(aluguel|condominio|iptu|reforma|moveis)/,
   raio:/^(luz|energia|agua|internet|gas|telefone|conta)/,celular:/^(celular|recarga|chip|plano)/,livro:/^(escola|curso|faculdade|livro|material|mensalidade)/,sacola:/^(roupa|sapato|tenis|shopping|loja|shein|shopee|amazon|mercadolivre|presente)/,pata:/^(pet|racao|veterinario|petshop)/};
@@ -2204,7 +2216,8 @@ function interpretaRapido(txt){
   while(resto.length&&/^(no|na|em|de|do|da|com|pelo|pela|e)$/i.test(semAcento(resto[resto.length-1]))) resto.pop();
   out.desc=resto.join(" ").slice(0,80); if(out.desc) out.desc=out.desc[0].toUpperCase()+out.desc.slice(1);
   const chaves=resto.map(w=>semAcento(w).replace(/[^a-z0-9]/g,"")).filter(w=>w.length>=2);
-  if(chaves.length){
+  const porRegra=out.desc?regraCat(out.desc):null; if(porRegra){ out.cat=porRegra; out.por.push("sua regra"); }
+  if(chaves.length&&!out.cat){
     /* 1) pelo histórico: despesas com a mesma palavra na descrição */
     const cont={}, formas={}; Object.keys(state.months).sort().reverse().slice(0,12).forEach(mk=>((state.months[mk]||{}).gastos||[]).forEach(g=>{ const d=semAcento(g.desc); if(!d) return; if(chaves.some(w=>d.split(/[^a-z0-9]+/).includes(w))){ if(catIndex(g.cat)>=0) cont[g.cat]=(cont[g.cat]||0)+1; if(g.forma) formas[g.forma]=(formas[g.forma]||0)+1; } }));
     const melhor=Object.keys(cont).sort((a,b)=>cont[b]-cont[a])[0];
@@ -2774,6 +2787,14 @@ function cardRetro(){
 }
 
 /* ---------- aba Ajustes ---------- */
+function cardRegras(){
+  const cats=state.config.categorias, com=cats.filter(c=>(c.palavras||[]).length);
+  return `<div class="card" id="regras"><h2>Regras automáticas</h2>
+    <p class="hint">O app já reconhece palavras comuns (mercado, uber, farmácia…). Aqui você ensina as suas: toda despesa com a palavra na descrição entra direto na categoria escolhida. Suas regras vêm antes das automáticas.</p>
+    ${com.length?`<div>${com.map(ct=>`<button type="button" class="item catitem" data-edit="categoria" data-id="${esc(ct.id)}" data-foco="regras" style="--dot:${catColor(ct.id)}">${icoCat(ct.id)}<span class="desc"><b>${esc(ct.nome)}</b><small>${esc(ct.palavras.join(", "))}</small></span><span class="v muted">editar</span></button>`).join("")}</div>`:`<p class="hint"><b>Nenhuma regra ainda.</b> Ex.: “petz, ração” em Pets ou “academia” em Saúde.</p>`}
+    <label class="f">Nova regra: palavra ou nome da loja<input class="in" id="rg-pal" maxlength="30" placeholder="ex.: petz" autocomplete="off"></label>
+    <div class="row"><label class="f">Vai para<select class="in" id="rg-cat">${cats.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join("")}</select></label><button class="btn" type="button" data-addregra="1" style="align-self:flex-end">Criar regra</button></div></div>`;
+}
 function viewAjustes(){
   const cf=state.config;
   const ativos=cf.fixos.filter(f=>!f.ate||f.ate>=todayKey), encerrados=cf.fixos.filter(f=>f.ate&&f.ate<todayKey);
@@ -2810,7 +2831,8 @@ function viewAjustes(){
     <div>${(ui.verCats||cf.categorias.length<=6?cf.categorias:cf.categorias.slice(0,5)).map(ct=>`<button type="button" class="item catitem" data-edit="categoria" data-id="${esc(ct.id)}" style="--dot:${catColor(ct.id)}">${icoCat(ct.id)}<span class="desc"><b>${esc(ct.nome)}</b><small>${ct.orcamento>0?"limite de "+brl(ct.orcamento)+" por mês"+(ct.sobra?" · sobra acumula"+(sobraCat(ct,todayKey)>0?" (+"+brl(sobraCat(ct,todayKey))+" em "+abrMes(todayKey)+")":""):""):"sem limite"}</small></span><span class="v muted">editar</span></button>`).join("")}</div>
     ${cf.categorias.length>6?`<button type="button" class="btn ghost wide vermais" data-vercats="1">${ui.verCats?"Mostrar só as 5 primeiras":"Ver todas as "+cf.categorias.length+" categorias"}</button>`:""}
     <button class="btn ghost" data-novo="categoria" type="button">+ Nova categoria</button>
-    <p class="hint">Excluir uma categoria não apaga os valores já lançados nela (aparecem como "Sem categoria"; ao editar, escolha outra).</p></div>`)}</div></div>`;
+    <p class="hint">Excluir uma categoria não apaga os valores já lançados nela (aparecem como "Sem categoria"; ao editar, escolha outra).</p></div>`)}
+    ${secaoMes("aj-regras","Regras automáticas",(()=>{ const n=cf.categorias.reduce((a,c)=>a+(c.palavras||[]).length,0); return n?n+(n===1?" palavra":" palavras")+" com categoria certa":"crie suas palavras para cada categoria"; })(),icq("raio",18),cardRegras())}</div></div>`;
 }
 
 /* ---------- aba Perfil ---------- */
@@ -2976,6 +2998,7 @@ const REGRAS_CAT=[[/mercad|supermerc|atacad|assai|carrefour|hortifrut|padaria|ac
   [/aluguel|condominio|iptu|imobiliaria/,/moradia|aluguel/],
   [/loja|shopping|renner|riachuelo|\bc&a\b|shein|shopee|magalu|magazine|americanas|mercado ?livre|amazon|zara|centauro|netshoes/,/compras|vestu/]];
 function sugerirCategoria(desc){
+  const rg=regraCat(desc); if(rg) return rg;
   const d=norm(desc);
   if(d) for(const k of Object.keys(state.months).sort().reverse()){ const g=((state.months[k]||{}).gastos||[]).find(x=>x.desc&&norm(x.desc)===d&&catIndex(x.cat)>=0); if(g) return g.cat; }
   for(const [re,alvo] of REGRAS_CAT) if(re.test(d)){ const ct=state.config.categorias.find(c=>alvo.test(norm(c.nome))); if(ct) return ct.id; }
@@ -3180,7 +3203,7 @@ function renderSheet(){
     const usada=it?Object.values(state.months).reduce((a,m)=>a+(m.gastos||[]).filter(g=>g.cat===it.id).length,0)+state.config.fixos.filter(f=>f.cat===it.id).length+state.config.parcelas.filter(p=>p.cat===it.id).length:0;
     const usadas=new Set(state.config.categorias.filter(c=>c!==it).map(corIdx));
     const corSel=it?corIdx(it):[...Array(NCORES).keys()].find(i=>!usadas.has(i))??0;
-    corpo=`<label class="f">Nome<input class="in" id="s-nome" maxlength="40" placeholder="ex.: Pets, Presentes, Viagem" value="${esc(it?it.nome:"")}" data-autofocus></label>
+    corpo=`<label class="f">Nome<input class="in" id="s-nome" maxlength="40" placeholder="ex.: Pets, Presentes, Viagem" value="${esc(it?it.nome:"")}" ${s.foco==="regras"?"":"data-autofocus"}></label>
       <div class="f"><span>Ícone</span><div class="icones" role="radiogroup" aria-label="Ícone">${Object.keys(ICAT).map(kk=>{ const sel=it?(it.ic||icAuto(it.nome)):"pontos"; return `<input type="radio" name="s-ic" id="s-ic-${kk}" value="${kk}" ${kk===sel?"checked":""}><label for="s-ic-${kk}" title="${ICAT_NOMES[kk]}">${svgCat(kk,20)}<span class="sr">${ICAT_NOMES[kk]}</span></label>`; }).join("")}</div></div>
       <div class="f"><span>Cor</span><div class="cores" role="radiogroup" aria-label="Cor">${[...Array(NCORES).keys()].map(i=>`<input type="radio" name="s-cor" id="s-cor-${i}" value="${i}" ${i===corSel?"checked":""}><label for="s-cor-${i}" style="--dot:var(--c${i})" title="Cor ${i+1}"><span class="sr">Cor ${i+1}</span></label>`).join("")}</div></div>
       <label class="f money">Limite por mês (opcional)<input class="in num" id="s-valor" inputmode="numeric" placeholder="sem limite" value="${esc(it&&it.orcamento?moneyInput(it.orcamento):"")}"></label>
@@ -3189,6 +3212,8 @@ function renderSheet(){
       <div class="f"><span>Subcategorias (opcional)</span><div id="s-sublista">${((it&&it.subs)||[]).map(linhaSub).join("")}</div>
         <div class="convrow"><input class="in" id="s-subnova" maxlength="30" placeholder="ex.: Mercado, Restaurante, iFood"><button class="btn ghost" type="button" data-addsub="1">Adicionar</button></div>
         <p class="hint">O limite e o gráfico continuam pela categoria; as subcategorias mostram o detalhe.</p></div>
+      <label class="f">Regras automáticas (opcional)<textarea class="in" id="s-palavras" rows="2" maxlength="600" placeholder="ex.: pet shop, ração, petz" ${s.foco==="regras"?"data-autofocus":""}>${esc(((it&&it.palavras)||[]).join(", "))}</textarea></label>
+      <p class="hint">Palavras separadas por vírgula. Quando a descrição de uma despesa tiver uma delas, ela já entra nesta categoria — no lançamento rápido, ao digitar a descrição e na importação de extrato.</p>
       ${it&&usada?`<p class="hint">Usada em ${usada} lançamento(s). Se excluir, eles continuam nas contas como "Sem categoria".</p>`:""}`;
     sub=""; botoes=novo?`<button class="btn" type="submit">Criar categoria</button>`:`<button class="btn danger" type="button" data-sapagar="1" ${state.config.categorias.length<=1?"disabled":""}>Excluir</button><button class="btn" type="submit">Salvar</button>`;
   }else if(s.tipo==="conta"){
@@ -3455,7 +3480,8 @@ function salvarSheet(outro){
     const icSel=(document.querySelector('#sheet input[name="s-ic"]:checked')||{}).value||null, ic=icSel&&ICAT[icSel]?icSel:null;
     const sobraOn=!!(document.getElementById("s-sobra")||{}).checked&&lim>0, antes=s.id?itemAtual():null;
     const sobraDesde=sobraOn?(antes&&antes.sobra&&antes.sobraDesde?antes.sobraDesde:todayKey):null;
-    if(s.id) Object.assign(itemAtual(),{nome,orcamento:lim,cor,subs,ic,sobra:sobraOn,sobraDesde}); else state.config.categorias.push({id:"c"+uidGen(),nome,orcamento:lim,cor,subs,ic,sobra:sobraOn,sobraDesde});
+    const palavras=lePalavras((document.getElementById("s-palavras")||{}).value);
+    if(s.id) Object.assign(itemAtual(),{nome,orcamento:lim,cor,subs,ic,sobra:sobraOn,sobraDesde,palavras}); else state.config.categorias.push({id:"c"+uidGen(),nome,orcamento:lim,cor,subs,ic,sobra:sobraOn,sobraDesde,palavras});
     save("config"); closeSheet(); render(); toast(s.id?"Categoria atualizada.":"Categoria "+nome+" criada."); return;
   }
   const v=parseMoney((document.getElementById("s-valor")||{}).value);
@@ -3632,7 +3658,8 @@ function bindSheet(r){
     if(b.dataset.sabrir){ openSheet(b.dataset.sabrir,s.id); return; }
   });
   r.addEventListener("keydown",e=>{ if(e.target.id==="s-rapido"&&e.key==="Enter"){ e.preventDefault(); if(!salvando) aplicaRapido(true); } });
-  r.addEventListener("input",e=>{ if(/^s-sim/.test(e.target.id)){ setTimeout(atualizaSim,0); return; } if(/^s-c/.test(e.target.id)&&ui.sheet&&ui.sheet.tipo==="calc"){ setTimeout(atualizaCalc,0); return; } if(e.target.id==="s-rapido"){ const pv=document.getElementById("s-rapprev"); if(pv) pv.innerHTML=previaRapido(e.target.value.trim()?interpretaRapido(e.target.value):null); clearTimeout(_rapT); _rapT=setTimeout(()=>{ const inp=document.getElementById("s-rapido"); if(inp&&inp.value.trim()){ aplicaRapido(false,true); if(document.activeElement!==inp) inp.focus(); } },250); return; } if(e.target.id==="s-busca") atualizaBusca(); if(["s-valor","s-n"].includes(e.target.id)) atualizaParc(); });
+  r.addEventListener("input",e=>{ if(e.target.id==="s-desc"&&ui.sheet&&ui.sheet.tipo==="gasto"&&!ui.sheet.id){ const rc=regraCat(e.target.value), c=rc&&/** @type {HTMLInputElement|null} */(document.getElementById("s-cat-"+rc)); if(c&&!c.checked){ c.checked=true; c.dispatchEvent(new Event("change",{bubbles:true})); marcaPreenchido(c); anunciar("Categoria "+catName(rc)+", pela sua regra."); } }
+    if(/^s-sim/.test(e.target.id)){ setTimeout(atualizaSim,0); return; } if(/^s-c/.test(e.target.id)&&ui.sheet&&ui.sheet.tipo==="calc"){ setTimeout(atualizaCalc,0); return; } if(e.target.id==="s-rapido"){ const pv=document.getElementById("s-rapprev"); if(pv) pv.innerHTML=previaRapido(e.target.value.trim()?interpretaRapido(e.target.value):null); clearTimeout(_rapT); _rapT=setTimeout(()=>{ const inp=document.getElementById("s-rapido"); if(inp&&inp.value.trim()){ aplicaRapido(false,true); if(document.activeElement!==inp) inp.focus(); } },250); return; } if(e.target.id==="s-busca") atualizaBusca(); if(["s-valor","s-n"].includes(e.target.id)) atualizaParc(); });
   r.addEventListener("change",e=>{
     if(e.target.name==="s-tipo"){ const v=(document.getElementById("s-valor")||{}).value||""; ui.sheet={tipo:e.target.value,id:null,valorRasc:v,mes:ui.sheet.mes}; renderSheet(); const f=document.querySelector("#sheet [data-autofocus]"); if(f) f.focus(); return; }
     if(e.target.id==="s-parc"||e.target.name==="s-forma"||e.target.id==="s-dia"||e.target.id==="s-cartao") atualizaParc();
@@ -3692,7 +3719,14 @@ app.addEventListener("click",e=>{
   if(d.verquit){ ui.verQuit=!ui.verQuit; render(); return; }
   if(d.novo&&d.calc){ openSheet("calc",null,{calc:d.calc}); return; }
   if(d.novo){ openSheet(d.novo,null,d.cxtipo?{cxTipo:d.cxtipo}:d.pinmodo?{pinModo:d.pinmodo}:d.dtipo?{dTipo:d.dtipo}:null); return; }
-  if(d.edit){ openSheet(d.edit,d.id,d.mes?{mes:d.mes}:null); return; }
+  if(d.addregra){ const pi=/** @type {HTMLInputElement|null} */(document.getElementById("rg-pal")), ci=/** @type {HTMLSelectElement|null} */(document.getElementById("rg-cat"));
+    const pal=lePalavras(pi&&pi.value)[0], ct=ci&&state.config.categorias.find(c=>c.id===ci.value);
+    if(!pal||!ct){ toast("Escreva a palavra da regra (pelo menos 2 letras)."); if(pi) pi.focus(); return; }
+    const ja=state.config.categorias.find(c=>(c.palavras||[]).some(p=>limpaPal(p)===limpaPal(pal)));
+    if(ja) ja.palavras=ja.palavras.filter(p=>limpaPal(p)!==limpaPal(pal));
+    ct.palavras=(ct.palavras||[]).concat(pal).slice(0,40); save("config"); render(); toast("Regra criada: “"+pal+"” vai para "+ct.nome+"."+(ja&&ja!==ct?" (saiu de "+ja.nome+")":""));
+    setTimeout(()=>{ const x=document.getElementById("rg-pal"); if(x) x.focus({preventScroll:true}); },50); return; }
+  if(d.edit){ openSheet(d.edit,d.id,Object.assign({},d.mes?{mes:d.mes}:{},d.foco?{foco:d.foco}:{})); return; }
   if(d.busca){ openSheet("busca"); return; }
   if(d.planilha){ exportarPlanilha(); return; }
   if(d.copialink){ const u=location.href; (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Link copiado. Cole no Chrome ou Safari.")).catch(()=>prompt("Copie o link:",u)); return; }
