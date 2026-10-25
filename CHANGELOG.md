@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.27 — 25/10/2026 **Detalhes finais do visual**
+
+- Início: barrinhas do logo (sobem animadas) ao lado do nome/saudação.
+- Barra de meses: destaque que desliza do mês anterior até o escolhido.
+- Faixa de avisos com conta atrasada: sininho balança a cada 6 s.
+- Atalhos Despesa/Receita/Conta fixa/Caixinha: sobem com o mouse e encolhem ao tocar.
+- Perfil → Aparência: destaque desliza entre Automático, Claro e Escuro. Sem animação com "reduzir movimento".
+
 ## 5.0.26 — 25/10/2026 **Tutorial revisado**
 
 - Tutorial: passo 2 explica fechar a janela no X ou arrastando o topo; passo 4 cita o anel das metas; passo 5 corrige "círculo" para "quadradinho" ao marcar conta paga, explica os marcadores do calendário (anel, ponto, triângulo) e cita o anel de Relatórios e a Retrospectiva em stories.

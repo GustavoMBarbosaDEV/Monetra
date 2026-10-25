@@ -1456,3 +1456,29 @@ button.check{position:relative;overflow:visible}
   .ap *,.ap *::before{animation:none!important;transition:none!important}
   .ap-revela:not(.vis){opacity:1;transform:none}
 }
+
+/* ---------- 5.0.27 detalhes do protótipo: barrinhas, mês e tema que deslizam, sininho e atalhos ---------- */
+.saud h2 .mbars.mini{height:18px;gap:3px;margin:0 0 0 6px;vertical-align:-1px}
+.saud h2 .mbars.mini i{width:4px;border-radius:2px}
+.anima .saud .mbars i{animation:mb-sobe .6s cubic-bezier(.34,1.56,.64,1) both;animation-delay:calc(.25s + var(--atraso,0ms))}
+.anima .saud .mbars i:nth-child(2){animation-delay:calc(.37s + var(--atraso,0ms))} .anima .saud .mbars i:nth-child(3){animation-delay:calc(.49s + var(--atraso,0ms))}
+/* destaque que desliza entre os meses */
+.months .chips{position:relative}
+.months .chip{position:relative;z-index:1}
+.chipind{position:absolute;z-index:0;border-radius:999px;background:var(--accent);box-shadow:0 0 18px -4px var(--accent);transition:left .4s cubic-bezier(.34,1.3,.64,1),top .4s ease,width .4s ease,height .4s ease;pointer-events:none}
+.tema-claro .chipind{background:#fff;box-shadow:0 6px 18px -8px rgba(0,0,0,.4)}
+.chips.deslizando .chip.on{background:transparent!important;border-color:transparent!important}
+/* sininho do aviso de atraso balança de vez em quando */
+.faixa.atraso .fx-ic svg{transform-origin:50% 8%;animation:mb-sino 6s ease-in-out 2s infinite}
+@keyframes mb-sino{0%,88%,100%{transform:rotate(0)}90%{transform:rotate(-14deg)}92%{transform:rotate(12deg)}94%{transform:rotate(-8deg)}96%{transform:rotate(5deg)}}
+/* atalhos: sobem com o mouse e encolhem ao tocar */
+.qa .q{transition:transform .16s ease,box-shadow .16s ease}
+@media (hover:hover){.qa .q:hover{transform:translateY(-3px)}}
+.qa .q:active{transform:scale(.94)}
+/* escolha de tema: destaque que desliza */
+.seg.segdesliza{position:relative;isolation:isolate}
+.seg.segdesliza input:checked + label{background:transparent;box-shadow:none}
+.seg.segdesliza::before{content:"";position:absolute;z-index:-1;top:3px;bottom:3px;left:3px;width:calc((100% - 6px - 8px) / 3);border-radius:6px;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.14);
+  transform:translateX(calc(var(--pos,0) * (100% + 4px)));transition:var(--trans,transform .38s cubic-bezier(.34,1.3,.64,1))}
+@media (prefers-reduced-motion:reduce){.faixa.atraso .fx-ic svg{animation:none}.qa .q{transition:none}.qa .q:hover,.qa .q:active{transform:none}.seg.segdesliza::before{transition:none}.chipind{transition:none}}
+.tema-claro .saud .mbars i{background:#9CF5C8}

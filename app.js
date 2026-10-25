@@ -353,9 +353,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.26";
+const VERSAO="5.0.27";
 const NOVIDADES=[
-  "Tutorial atualizado com as novidades visuais: janela que fecha arrastando, marcadores do calendário, anel das metas e Retrospectiva em stories."
+  "Barrinhas do logo ao lado do seu nome no Início.",
+  "Ao trocar de mês, o destaque desliza até o mês escolhido; no Perfil, a escolha de tema também desliza.",
+  "O sininho do aviso de conta atrasada balança de vez em quando, e os atalhos sobem com o mouse e encolhem ao tocar."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1627,6 +1629,7 @@ function render(){
   festejaPago(app);
   ligaApresentacao();
   moveIndicadorNav(app);
+  deslizaMes(app); deslizaTema(app);
   if(ui.rolarPara&&state.loaded){ const _id=ui.rolarPara, _e=document.getElementById(_id), _s=_e&&_e.closest(".mais:not(.aberta)"); if(_s){ ui.abre[_s.id.slice(4)]=true; ui.rolarPara=null; render(); ui.rolarPara=null; setTimeout(()=>{ const e2=document.getElementById(_id); e2&&e2.scrollIntoView({block:"center",behavior:"smooth"}); },60); } const el=document.getElementById(ui.rolarPara||"__nada"); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 /* ---------- movimento: valores contam até o número, barras enchem e gráficos se desenham ----------
@@ -1661,6 +1664,25 @@ function festejaPago(raiz){ if(!celebra) return; const sel=celebra; celebra=""; 
   const fx=document.createElement("span"); fx.className="confete"; fx.setAttribute("aria-hidden","true");
   for(let i=0;i<12;i++){ const a=i/12*Math.PI*2+Math.random()*.4, d=22+Math.random()*16, q=document.createElement("i"); q.style.setProperty("--dx",(Math.cos(a)*d).toFixed(1)+"px"); q.style.setProperty("--dy",(Math.sin(a)*d).toFixed(1)+"px"); q.style.setProperty("--r",Math.round(Math.random()*360)+"deg"); q.style.height=(5+Math.random()*6).toFixed(1)+"px"; q.className="c"+(i%3); fx.appendChild(q); }
   b.appendChild(fx); setTimeout(()=>{ fx.remove(); b.classList.remove("pop"); },900); }
+/* barra de meses: um destaque desliza do mês anterior até o mês escolhido */
+let mesAnterior="";
+/** @param {HTMLElement} raiz */
+function deslizaMes(raiz){ const prev=mesAnterior; mesAnterior=ui.tab==="mes"?ui.month:""; if(!prev||prev===ui.month||ui.tab!=="mes"||semMovimento()) return;
+  const box=/** @type {HTMLElement|null} */(raiz.querySelector(".months .chips")); if(!box) return;
+  const de=/** @type {HTMLElement|null} */(box.querySelector(`[data-month="${prev}"]`)), para=/** @type {HTMLElement|null} */(box.querySelector(".chip.on")); if(!de||!para) return;
+  const r=(el)=>({x:el.offsetLeft,y:el.offsetTop,w:el.offsetWidth,h:el.offsetHeight}), a=r(de), b=r(para);
+  const ind=document.createElement("i"); ind.className="chipind"; ind.setAttribute("aria-hidden","true");
+  Object.assign(ind.style,{left:a.x+"px",top:a.y+"px",width:a.w+"px",height:a.h+"px"}); box.appendChild(ind); box.classList.add("deslizando");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>Object.assign(ind.style,{left:b.x+"px",top:b.y+"px",width:b.w+"px",height:b.h+"px"})));
+  setTimeout(()=>{ box.classList.remove("deslizando"); ind.remove(); },430); }
+/* tema no Perfil: o destaque desliza até a opção escolhida */
+let temaPos=-1;
+/** @param {HTMLElement} raiz */
+function deslizaTema(raiz){ const seg=/** @type {HTMLElement|null} */(raiz.querySelector('.seg[aria-label="Tema"]')); if(!seg){ temaPos=-1; return; }
+  const ins=[...seg.querySelectorAll("input")], p=ins.findIndex(i=>/** @type {HTMLInputElement} */(i).checked); if(p<0) return;
+  seg.classList.add("segdesliza"); const poe=i=>seg.style.setProperty("--pos",String(i));
+  if(temaPos<0||temaPos===p||semMovimento()){ poe(p); temaPos=p; return; }
+  seg.style.setProperty("--trans","none"); poe(temaPos); void seg.offsetWidth; seg.style.removeProperty("--trans"); requestAnimationFrame(()=>poe(p)); temaPos=p; }
 /* barra inferior: indicador que desliza até a aba aberta (parte da posição anterior) */
 let navPos=-1;
 /** @param {HTMLElement} raiz */
@@ -1709,7 +1731,7 @@ function header(){
   ${logado&&state.loaded?botaoSino():""}
   ${logado&&state.loaded?`<button type="button" class="avatarbtn ${ui.tab==="perfil"?"on":""}" data-tab="perfil" aria-label="Abrir meu perfil" title="Meu perfil">${avatar(36)}</button>`:""}</div></div>
   ${logado&&mode==="cloud"?seletorEspaco():""}
-  ${ui.tab==="mes"&&logado&&state.loaded?`<div class="saud"><small>${(()=>{ const h=new Date().getHours(); return h<12?"Bom dia,":h<18?"Boa tarde,":"Boa noite,"; })()}</small><h2>${esc(authUser?primeiroNome(meuNome()):"bem-vindo")}</h2></div>`:""}
+  ${ui.tab==="mes"&&logado&&state.loaded?`<div class="saud"><small>${(()=>{ const h=new Date().getHours(); return h<12?"Bom dia,":h<18?"Boa tarde,":"Boa noite,"; })()}</small><h2>${esc(authUser?primeiroNome(meuNome()):"bem-vindo")} <span class="mbars mini" aria-hidden="true"><i></i><i></i><i></i></span></h2></div>`:""}
   ${ui.tab==="mes"&&logado?`<div class="months">
   <div class="chips">${chipsMes().map(k=>`<button class="chip ${k===ui.month?"on":""} ${k===todayKey?"now":""}" data-month="${k}" aria-label="${esc(nomeMes(k))}${k===ui.month?" (aberto)":""}">${ABR[kM(k)-1]} <small>${String(kY(k)).slice(2)}</small></button>`).join("")}</div>
   <button type="button" class="mescal" data-mescal="1" aria-label="Escolher outro mês" title="Todos os meses">${ICON.mes}</button></div>`:""}
