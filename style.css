@@ -1624,3 +1624,12 @@ button.check{position:relative;overflow:visible}
 .hs-ver .hs-graf .hs-pulso{visibility:hidden}
 .a11y-semmov .hs-marca,.a11y-semmov .hs-balao,.a11y-calmo .hs-marca,.a11y-calmo .hs-balao{transition:none}
 @media (prefers-reduced-motion:reduce){.hs-marca,.hs-balao{transition:none}}
+
+/* 5.0.37 — fatia clicável em "Para onde foi" */
+.donut .fatia{cursor:pointer;outline:none;transition:stroke-width .15s ease;-webkit-tap-highlight-color:transparent}
+.donut .fatia:hover,.donut .fatia:focus-visible{stroke-width:7}
+.donut .fatia:focus-visible{filter:drop-shadow(0 0 1.2px var(--fg))}
+.dlab{pointer-events:none}
+.a11y-semmov .donut .fatia,.a11y-calmo .donut .fatia{transition:none}
+@media (prefers-reduced-motion:reduce){.donut .fatia{transition:none}}
+.catmes .item{grid-template-columns:minmax(0,1fr) auto;width:100%;text-align:left}

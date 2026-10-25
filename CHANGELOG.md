@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.37 — 25/10/2026 **Fatia clicável em “Para onde foi”**
+
+- Início: tocar numa fatia do gráfico de rosca de “Para onde foi” abre uma janela com os lançamentos daquela categoria no mês (despesas, contas fixas, parcelas e compras no cartão), com total e % das despesas. Tocar num item abre a edição dele.
+- As fatias também funcionam pelo teclado (Tab até a fatia, Enter ou Espaço) e o leitor de tela lê o nome, o valor e “Ver lançamentos”. Fatia em destaque ao passar o mouse ou com foco.
+- Dica do quadro e tutorial citam a fatia clicável.
+
 ## 5.0.36 — 25/10/2026 **Gráfico do saldo tocável**
 
 - Início: tocar ou arrastar no gráfico do saldo mostra o dia escolhido com marcador (linha + ponto) e balão com o saldo e quanto entrou ou saiu naquele dia. No toque, o balão some sozinho pouco depois de soltar.
