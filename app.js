@@ -357,10 +357,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.37";
+const VERSAO="5.0.38";
 const NOVIDADES=[
-  "Em “Para onde foi”, toque numa fatia do gráfico para ver todos os lançamentos daquela categoria no mês.",
-  "Entram despesas, contas fixas, parcelas e compras no cartão. Toque num item para editar."
+  "Novo olho no topo: toque nele para esconder todos os valores, bom para abrir o app em público.",
+  "O app lembra a escolha neste aparelho. Toque de novo no olho para mostrar os valores."
 ];
 
 /* ---------- utilidades ---------- */
@@ -458,6 +458,8 @@ const ICON={
   poupanca:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 11a7 6 0 0 1 13-2h2v4l-2 1v3h-3v-2H10v2H7v-3a6 6 0 0 1-2-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="15" cy="10.5" r="1" fill="currentColor"/></svg>',
   cartao:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 10h19M6 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   busca:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  olho:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  olhoX:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.6A9.6 9.6 0 0 1 12 5.5C18 5.5 21.5 12 21.5 12a17 17 0 0 1-2.6 3.4M6.3 7.3C3.9 9 2.5 12 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.2-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2M3.5 3.5l17 17"/></svg>',
   mes:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   ano:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 20V11M10 20V5M15 20v-7M20 20V8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
   ajustes:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="7" r="2.3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10" cy="17" r="2.3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
@@ -1373,7 +1375,7 @@ function passosTutorial(){
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o anel mostra quanto já guardou e o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
     {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico (toque ou arraste nele para ver cada dia), a <b>previsão do fim do mês</b> e o orçamento por categoria. Toque em <b>Ouvir</b> no saldo para escutar o resumo do mês.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b> (toque numa fatia para ver os lançamentos dela), <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no quadradinho e toque na conta para editar). No calendário: <b>anel</b> = vence, <b>ponto</b> = pago, <b>triângulo</b> = atrasado.","<b>Relatórios</b>: meses lado a lado, quanto das receitas virou despesa, assinaturas, etiquetas e a retrospectiva do ano em formato de stories.")},
     {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
-    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.","<b>Acessibilidade</b> (em Perfil): texto maior, alto contraste, cores para daltonismo, modo calmo, modo foco, fonte de leitura fácil e botões maiores.","<b>Regras automáticas</b>: ensine suas palavras (ex.: “petz” → Pets) e a categoria vem certa.","Não achou algo? Use a <b>busca</b> no topo: “cartões”, “13º” ou “backup” levam direto à tela.")},
+    {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup. O <b>olho</b> no topo esconde os valores para usar o app em público.","<b>Acessibilidade</b> (em Perfil): texto maior, alto contraste, cores para daltonismo, modo calmo, modo foco, fonte de leitura fácil e botões maiores.","<b>Regras automáticas</b>: ensine suas palavras (ex.: “petz” → Pets) e a categoria vem certa.","Não achou algo? Use a <b>busca</b> no topo: “cartões”, “13º” ou “backup” levam direto à tela.")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
   ];
 }
@@ -1664,6 +1666,26 @@ function aplicaA11y(){ const r=document.documentElement;
   if(a11y.dislexia&&!document.getElementById("fonte-dislexia")){ const l=document.createElement("link"); l.id="fonte-dislexia"; l.rel="stylesheet"; l.href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap"; document.head.appendChild(l); } }
 function salvaA11y(){ try{ localStorage.setItem("mb.a11y",JSON.stringify(a11y)); }catch(e){} aplicaA11y(); }
 aplicaA11y();
+/* ---------- modo privacidade (5.0.38): o olho no topo borra todos os valores; a escolha fica neste aparelho ----------
+   Os valores ganham a classe "pv" ao aparecer na tela (MutationObserver), então vale para qualquer quadro, folha ou aviso. */
+const RE_VALOR=/R\$|(^|[\s(])[-−]?\d{1,3}(\.\d{3})*,\d{2}(?!\d)/;
+let privado=false; try{ privado=localStorage.getItem("mb.privado")==="1"; }catch(e){}
+/** @param {Node} n */
+function marcaTexto(n){ if(!RE_VALOR.test(n.nodeValue||"")) return; let el=n.parentElement; if(!el) return;
+  if(el.classList.contains("vg-rs")||el.classList.contains("vg-cs")) el=el.parentElement||el;
+  if(el.closest("textarea,select,option,title,script,style,.sr")) return; el.classList.add("pv"); }
+/** @param {Node} raiz */
+function marcaValores(raiz){ if(raiz.nodeType===3){ marcaTexto(raiz); return; } if(raiz.nodeType!==1) return; const w=document.createTreeWalker(raiz,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())) marcaTexto(n); }
+/** @type {MutationObserver|null} */
+let obsPriv=null;
+function aplicaPrivado(){
+  document.documentElement.classList.toggle("privado",privado);
+  if(!privado){ if(obsPriv) obsPriv.disconnect(); return; }
+  if(!obsPriv) obsPriv=new MutationObserver(rs=>rs.forEach(r=>{ if(r.type==="characterData") marcaTexto(r.target); else r.addedNodes.forEach(marcaValores); }));
+  marcaValores(document.body); obsPriv.observe(document.body,{childList:true,subtree:true,characterData:true});
+}
+function trocaPrivado(){ privado=!privado; try{ localStorage.setItem("mb.privado",privado?"1":"0"); }catch(e){} aplicaPrivado(); vibra(12); render(); anunciar(privado?"Valores escondidos.":"Valores visíveis."); }
+aplicaPrivado();
 const semMovimento=()=>{ if(a11y.semMov||a11y.calmo) return true; try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
 /* ---------- voz: ouvir o resumo do mês, lançar falando e vibrar ao confirmar ---------- */
 const temFala=()=>"speechSynthesis" in window&&typeof SpeechSynthesisUtterance!=="undefined";
@@ -1811,6 +1833,7 @@ function header(){
   const logado=mode!=="login"&&!precisaTermos();
   return `<div class="top"><div class="brand"><img class="logo" src="icons/marca.png" alt="" width="34" height="27"><h1>Monetra</h1><button type="button" class="status ${statusCls}" id="status" data-status="1" title="${esc(statusTxt)}"><i></i><span class="stt">${esc(statusTxt)}</span></button></div>
   <div class="topright">${logado?`<div class="tabs" role="tablist">${t("mes","Início")}${t("ano","Relatórios")}${t("metas","Metas")}${t("ajustes","Ajustes")}</div>`:botaoTema()}
+  ${logado&&state.loaded?`<button type="button" class="iconbtn olhobtn ${privado?"on":""}" data-privado="1" aria-pressed="${privado}" aria-label="Esconder valores" title="${privado?"Mostrar os valores":"Esconder os valores"}">${privado?ICON.olhoX:ICON.olho}</button>`:""}
   ${logado&&state.loaded?`<button type="button" class="iconbtn" data-busca="1" aria-label="Buscar lançamentos e telas" title="Buscar (tecla /)">${ICON.busca}</button>`:""}
   ${logado&&state.loaded?botaoSino():""}
   ${logado&&state.loaded?`<button type="button" class="avatarbtn ${ui.tab==="perfil"?"on":""}" data-tab="perfil" aria-label="Abrir meu perfil" title="Meu perfil">${avatar(36)}</button>`:""}</div></div>
@@ -3863,6 +3886,7 @@ app.addEventListener("click",e=>{
   if(d.virafixo!==undefined){ virarFixo(+d.virafixo); return; }
   if(d.logout){ setStatus("Salvando antes de sair…","saving"); salvaPendentes().finally(()=>fb.signOut(fb.auth)); return; }
   if(d.tema){ trocaTema(); return; }
+  if(d.privado){ trocaPrivado(); return; }
   if(d.export){ exportar(); return; }
   if(d.month){ goMonth(d.month); return; }
   if(d.mescal){ openSheet("meses",null,{ano:kY(ui.month),sel:ui.month}); return; }
