@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.30 — 25/10/2026 **Voz: ouvir o resumo e lançar falando**
+
+- Botão "Ouvir" no cartão de saldo (navegadores com síntese de voz): lê em português o resumo do mês com valores por extenso ("417 reais e 80 centavos"), contas fixas a pagar, atrasadas, vencendo hoje/amanhã e limites estourados ou estourando; tocar de novo para.
+- Microfone no campo rápido da nova despesa (Chrome/Android): o que for dito preenche o campo e a prévia; o leitor de tela confirma o que foi entendido. Pede permissão de microfone na primeira vez.
+- Vibração curta ao salvar, apagar ou marcar como pago (Android); opção "Vibrar ao confirmar" em Perfil → Acessibilidade.
+- Tutorial cita o Ouvir e o microfone.
+
 ## 5.0.29 — 25/10/2026 **Painel de Acessibilidade**
 
 - Perfil → Acessibilidade (preferências por aparelho, aplicadas antes de desenhar a tela para não piscar):

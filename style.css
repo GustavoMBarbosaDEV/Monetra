@@ -1550,3 +1550,17 @@ button.check{position:relative;overflow:visible}
 .a11y-texto .top .brand{min-width:0}
 .a11y-texto .months .chip{padding-inline:2px;overflow-wrap:normal;word-break:normal}
 .a11y-texto .bottomnav button span{font-size:calc(11px / var(--escala,1) * 1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;overflow-wrap:normal}
+
+/* ---------- 5.0.30 voz: ouvir o resumo e lançar falando ---------- */
+.hs-dir{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ouvir{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:700;border:0;cursor:pointer;border-radius:999px;padding:6px 11px;min-height:32px;
+  color:var(--fg);background:color-mix(in srgb,var(--fg) 10%,transparent)}
+.tema-claro .heroSaldo .ouvir{color:#fff;background:rgba(255,255,255,.16)}
+.ouvir.on{background:var(--accent);color:var(--accent-ink)}
+.ouvir.on svg{animation:mb-respira 1.2s ease-in-out infinite}
+.rapido .rp-in{flex:1}
+.rapido{position:relative}
+.falar{position:absolute;right:16px;top:14px;width:36px;height:36px;border-radius:12px;border:0;cursor:pointer;display:grid;place-items:center;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.falar.on{background:var(--bad);color:#fff;animation:mb-respira 1s ease-in-out infinite}
+.rapido #s-rapido{padding-right:54px}
+@media (prefers-reduced-motion:reduce){.ouvir.on svg,.falar.on{animation:none}}

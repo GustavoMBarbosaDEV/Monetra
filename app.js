@@ -353,11 +353,11 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.29";
+const VERSAO="5.0.30";
 const NOVIDADES=[
-  "Novo painel Acessibilidade no Perfil, salvo neste aparelho: tamanho do texto (até 150%), alto contraste, cores para daltonismo, sem animações, modo calmo, fonte de leitura fácil, botões maiores e links sublinhados.",
-  "Com cores para daltonismo, positivo fica azul e negativo laranja, e barras acima do limite ganham listras, sem depender só da cor.",
-  "O modo calmo tira brilhos, auras, confete e efeitos, para quem se incomoda com estímulos visuais."
+  "Novo botão Ouvir no cartão de saldo: o app lê em voz alta o resumo do mês (saldo, o que entrou e saiu, contas a pagar, atrasos e limites).",
+  "Lance gastos falando: toque no microfone do campo rápido e diga, por exemplo, “45 ifood pix”. Confira e toque em Salvar.",
+  "O celular vibra de leve quando algo é salvo ou marcado como pago (dá para desligar em Perfil → Acessibilidade)."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1182,6 +1182,7 @@ aplicaTema();
 /* ---------- aviso (toast) com Desfazer ---------- */
 let toastTimer=null, toastAcao=null;
 function toast(msg,acaoTxt,acaoFn){
+  vibra(14);
   let el=document.getElementById("toast");
   if(!el){ el=document.createElement("div"); el.id="toast"; el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el);
     el.addEventListener("click",e=>{ if(e.target.closest("[data-toastacao]")&&toastAcao){ const f=toastAcao; toastAcao=null; el.hidden=true; f(); } }); }
@@ -1364,10 +1365,10 @@ function passosTutorial(){
   return [
     {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle financeiro, <b>grátis e sem anúncios</b>. Em 1 minuto você aprende o básico.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
     {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, role até o card <b>Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.","Já tem dinheiro na conta? Informe o <b>saldo inicial</b> em Perfil → Ajustes → Contas.")},
-    {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.","No celular, a janela fecha no <b>X</b> ou arrastando o topo dela para baixo.")},
+    {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter. Prefere falar? Toque no <b>microfone</b> do campo.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.","No celular, a janela fecha no <b>X</b> ou arrastando o topo dela para baixo.")},
     {ic:"ajustes",t:"3. Contas fixas e cartões",d:`Em <b>Perfil → Ajustes</b>, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o anel mostra quanto já guardou e o app diz quanto guardar por mês.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
-    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b>, <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no quadradinho e toque na conta para editar). No calendário: <b>anel</b> = vence, <b>ponto</b> = pago, <b>triângulo</b> = atrasado.","<b>Relatórios</b>: meses lado a lado, quanto das receitas virou despesa, assinaturas, etiquetas e a retrospectiva do ano em formato de stories.")},
+    {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico, a <b>previsão do fim do mês</b> e o orçamento por categoria. Toque em <b>Ouvir</b> no saldo para escutar o resumo do mês.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b>, <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no quadradinho e toque na conta para editar). No calendário: <b>anel</b> = vence, <b>ponto</b> = pago, <b>triângulo</b> = atrasado.","<b>Relatórios</b>: meses lado a lado, quanto das receitas virou despesa, assinaturas, etiquetas e a retrospectiva do ano em formato de stories.")},
     {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em Perfil → Lembretes.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>.")},
     {ic:"grupo",t:"7. Tem muito mais",d:`Quando precisar, está tudo em <b>Perfil → Ajustes</b>:`+L("<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar.","<b>Importar extrato</b> (OFX/CSV), <b>modo viagem</b> e <b>dívidas</b> com pessoas.",nuvem?"<b>Controle compartilhado</b> com a família, separado do seu Pessoal.":"Controle compartilhado (com login Google).","<b>PIN e digital</b>, planilha para Excel e backup.","<b>Acessibilidade</b> (em Perfil): texto maior, alto contraste, cores para daltonismo, modo calmo, fonte de leitura fácil e botões maiores.")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
@@ -1648,9 +1649,9 @@ function ajustaAcessivel(raiz,novaTela,novaVista){
    Roda só quando a tela muda. Quem desativou animações no aparelho vê tudo pronto, sem movimento. */
 let ultimaVista="", timerAnima=0, timerStory=0;
 /* ---------- acessibilidade: preferências deste aparelho ---------- */
-/** @typedef {{texto:number,contraste:boolean,daltonismo:boolean,semMov:boolean,calmo:boolean,dislexia:boolean,alvos:boolean,sublinhar:boolean}} A11y */
+/** @typedef {{texto:number,contraste:boolean,daltonismo:boolean,semMov:boolean,calmo:boolean,dislexia:boolean,alvos:boolean,sublinhar:boolean,vibrar:boolean}} A11y */
 /** @type {A11y} */
-const a11y=(()=>{ const pad={texto:1,contraste:false,daltonismo:false,semMov:false,calmo:false,dislexia:false,alvos:false,sublinhar:false};
+const a11y=(()=>{ const pad={texto:1,contraste:false,daltonismo:false,semMov:false,calmo:false,dislexia:false,alvos:false,sublinhar:false,vibrar:true};
   try{ const x=JSON.parse(localStorage.getItem("mb.a11y")||"{}"); if(x&&typeof x==="object"){ for(const k in pad){ if(typeof x[k]===typeof pad[k]) pad[k]=x[k]; } } }catch(e){}
   if(![1,1.15,1.3,1.5].includes(pad.texto)) pad.texto=1; return pad; })();
 function aplicaA11y(){ const r=document.documentElement;
@@ -1661,6 +1662,43 @@ function aplicaA11y(){ const r=document.documentElement;
 function salvaA11y(){ try{ localStorage.setItem("mb.a11y",JSON.stringify(a11y)); }catch(e){} aplicaA11y(); }
 aplicaA11y();
 const semMovimento=()=>{ if(a11y.semMov||a11y.calmo) return true; try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+/* ---------- voz: ouvir o resumo do mês, lançar falando e vibrar ao confirmar ---------- */
+const temFala=()=>"speechSynthesis" in window&&typeof SpeechSynthesisUtterance!=="undefined";
+const ReconhecimentoVoz=/** @type {any} */(window).SpeechRecognition||/** @type {any} */(window).webkitSpeechRecognition||null;
+/** vibração curta de confirmação (se o aparelho e a preferência permitirem) */
+function vibra(ms){ try{ if(a11y.vibrar&&navigator.vibrate) navigator.vibrate(ms||14); }catch(e){} }
+/** valor por extenso para a voz: 417,8 → "417 reais e 80 centavos" */
+function valorFalado(v){ const n=Math.round(Math.abs(Number(v)||0)*100), r=Math.floor(n/100), c=n%100;
+  const t=(r?r.toLocaleString("pt-BR")+(r===1?" real":" reais"):"")+(r&&c?" e ":"")+(c?c+(c===1?" centavo":" centavos"):"")||"zero reais"; return (v<0?"menos ":"")+t; }
+function resumoFalado(k){ const c=calc(k), fx=fixosDoMes(k).filter(f=>!f.pular&&!f.pago), tfx=soma(fx.map(f=>({valor:f.valor})));
+  const ps=pendencias(), atr=ps.filter(x=>x.dd<0), hoje=ps.filter(x=>x.dd===0), am=ps.filter(x=>x.dd===1);
+  const al=k===todayKey?alertasOrcamento(k):[], passou=al.filter(a=>a.nivel==="passou"), ritmo=al.filter(a=>a.nivel==="ritmo"&&a.diaEstoura);
+  const f=[`Resumo de ${nomeMes(k)}.`,`Saldo: ${valorFalado(c.saldo)}.`,`Entrou ${valorFalado(c.receitas)} e saiu ${valorFalado(c.despesas)}.`];
+  if(fx.length) f.push(`Faltam pagar ${fx.length} ${fx.length===1?"conta fixa":"contas fixas"}, somando ${valorFalado(tfx)}.`); else if(fixosDoMes(k).length) f.push("Todas as contas fixas do mês estão pagas.");
+  if(atr.length) f.push(`Atenção: ${atr.length} ${atr.length===1?"conta atrasada":"contas atrasadas"}: ${atr.map(x=>x.nome).join(", ")}.`);
+  if(hoje.length) f.push(`Vence hoje: ${hoje.map(x=>x.nome+", "+valorFalado(x.valor)).join("; ")}.`);
+  if(am.length) f.push(`Vence amanhã: ${am.map(x=>x.nome).join(", ")}.`);
+  passou.forEach(a=>f.push(`${a.nome} passou do limite: gastou ${valorFalado(a.v)} de ${valorFalado(a.o)}.`));
+  ritmo.slice(0,2).forEach(a=>f.push(`No ritmo de hoje, ${a.nome} estoura o limite no dia ${a.diaEstoura}.`));
+  return f.join(" "); }
+let falando=false;
+function ouvirResumo(){ if(!temFala()) return; const ss=window.speechSynthesis;
+  if(falando||ss.speaking){ ss.cancel(); falando=false; atualizaBotaoOuvir(); return; }
+  const u=new SpeechSynthesisUtterance(resumoFalado(ui.month)); u.lang="pt-BR"; u.rate=1;
+  const vz=ss.getVoices().find(v=>/^pt(-|_)BR/i.test(v.lang))||ss.getVoices().find(v=>/^pt/i.test(v.lang)); if(vz) u.voice=vz;
+  u.onend=u.onerror=()=>{ falando=false; atualizaBotaoOuvir(); }; falando=true; atualizaBotaoOuvir(); ss.speak(u); }
+function atualizaBotaoOuvir(){ document.querySelectorAll("[data-ouvir]").forEach(b=>{ b.classList.toggle("on",falando); b.setAttribute("aria-pressed",String(falando)); b.setAttribute("aria-label",falando?"Parar a leitura do resumo":"Ouvir resumo do mês"); const t=b.querySelector(".ov-t"); if(t) t.textContent=falando?"Parar":"Ouvir"; }); }
+/* lançar falando: preenche o campo rápido com o que foi dito (ex.: "45 ifood pix") */
+let ouvindo=null;
+function lancarPorVoz(){ if(!ReconhecimentoVoz) return; const campo=/** @type {HTMLInputElement|null} */(document.getElementById("s-rapido")), bt=document.querySelector("[data-falar]"); if(!campo) return;
+  if(ouvindo){ try{ ouvindo.stop(); }catch(e){} return; }
+  const r=new ReconhecimentoVoz(); r.lang="pt-BR"; r.interimResults=true; r.maxAlternatives=1; ouvindo=r;
+  if(bt){ bt.classList.add("on"); bt.setAttribute("aria-pressed","true"); bt.setAttribute("aria-label","Parar de ouvir"); }
+  anunciar("Pode falar. Exemplo: 45 ifood pix.");
+  r.onresult=e=>{ let t=""; for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; campo.value=t.replace(/\s+/g," ").trim().slice(0,100); campo.dispatchEvent(new Event("input",{bubbles:true})); };
+  r.onerror=e=>{ if(e&&e.error==="not-allowed") toast("Permita o uso do microfone para lançar falando."); else if(e&&e.error!=="aborted"&&e.error!=="no-speech") toast("Não consegui ouvir. Tente de novo."); };
+  r.onend=()=>{ ouvindo=null; const b2=document.querySelector("[data-falar]"); if(b2){ b2.classList.remove("on"); b2.setAttribute("aria-pressed","false"); b2.setAttribute("aria-label","Lançar falando"); } if(campo.value) { campo.focus(); anunciar("Entendi: "+campo.value+". Confira e toque em Salvar."); } };
+  try{ r.start(); }catch(e){ ouvindo=null; } }
 function cardA11y(){
   const sw=(k,t,d)=>`<label class="switch a11ysw"><input type="checkbox" data-a11y="${k}" ${a11y[k]?"checked":""}><span></span><em class="a11yt"><b>${t}</b><small>${d}</small></em></label>`;
   return `<div class="card" id="acessibilidade"><h2>Acessibilidade</h2>
@@ -1674,6 +1712,7 @@ function cardA11y(){
     ${sw("dislexia","Fonte de leitura fácil","Letra Atkinson Hyperlegible, com mais espaço entre letras e linhas. Ajuda com dislexia e baixa visão.")}
     ${sw("alvos","Botões maiores","Áreas de toque maiores e mais espaço entre elas. Ajuda quem tem tremor ou dificuldade motora.")}
     ${sw("sublinhar","Sublinhar links","Links e botões de texto sempre sublinhados.")}
+    ${"vibrate" in navigator?sw("vibrar","Vibrar ao confirmar","Uma vibração curta quando algo é salvo, apagado ou marcado como pago. Ajuda quem não ouve ou não enxerga bem a tela."):""}
     </div></div>`;
 }
 /** @param {HTMLElement} raiz @param {boolean} cascata */
@@ -1703,7 +1742,7 @@ function festejaPago(raiz){ if(!celebra) return; const sel=celebra; celebra=""; 
   b.classList.remove("pop"); void b.getBoundingClientRect(); b.classList.add("pop");
   const fx=document.createElement("span"); fx.className="confete"; fx.setAttribute("aria-hidden","true");
   for(let i=0;i<12;i++){ const a=i/12*Math.PI*2+Math.random()*.4, d=22+Math.random()*16, q=document.createElement("i"); q.style.setProperty("--dx",(Math.cos(a)*d).toFixed(1)+"px"); q.style.setProperty("--dy",(Math.sin(a)*d).toFixed(1)+"px"); q.style.setProperty("--r",Math.round(Math.random()*360)+"deg"); q.style.height=(5+Math.random()*6).toFixed(1)+"px"; q.className="c"+(i%3); fx.appendChild(q); }
-  b.appendChild(fx); setTimeout(()=>{ fx.remove(); b.classList.remove("pop"); },900); }
+  b.appendChild(fx); vibra(22); setTimeout(()=>{ fx.remove(); b.classList.remove("pop"); },900); }
 /* barra de meses: um destaque desliza do mês anterior até o mês escolhido */
 let mesAnterior="";
 /** @param {HTMLElement} raiz */
@@ -2301,7 +2340,7 @@ function viewMes(){
   const saude=c.saldo<0?"bad":(c.receitas>0&&c.saldo<c.receitas*0.05)?"warn":(c.receitas>0||c.despesas>0)?"ok":"";
   const selo={ok:"mês saudável",warn:"mês apertado",bad:"mês no vermelho"}[saude];
   const tiles=`<div class="heroSaldo ${c.saldo<0?"neg":""} ${saude?"sd-"+saude:""}"><i class="hs-aura" aria-hidden="true"></i><i class="hs-aura b2" aria-hidden="true"></i>
-    <div class="hs-top"><span class="lab">Saldo de ${esc(mesN)}</span>${selo?`<span class="hs-selo"><i></i>${selo}</span>`:""}</div>
+    <div class="hs-top"><span class="lab">Saldo de ${esc(mesN)}</span><span class="hs-dir">${selo?`<span class="hs-selo"><i></i>${selo}</span>`:""}${temFala()?`<button type="button" class="ouvir ${falando?"on":""}" data-ouvir="1" aria-pressed="${falando}" aria-label="${falando?"Parar a leitura do resumo":"Ouvir resumo do mês"}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3l4.5-4v13L7 14.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="ov-t">${falando?"Parar":"Ouvir"}</span></button>`:""}</span></div>
     <b class="hs-val" data-v="${c.saldo}">${valorGrande(c.saldo)}</b>
     <div class="hs-sub">${varS!==null?`<span class="${varS>=0?"hs-up":"hs-down"}">${varS>=0?"▲":"▼"} ${Math.round(Math.abs(varS)*100)}%</span> vs ${esc(NOMES[kM(prevK)-1].toLowerCase())} · `:""}acumulado <b>${brl(acum)}</b></div>
     ${graficoSaldo(serieSaldo(k))}
@@ -3042,7 +3081,7 @@ function renderSheet(){
   if(s.tipo==="gasto"){
     const cat=it?it.cat:(ui.gCat&&catIndex(ui.gCat)>=0?ui.gCat:state.config.categorias[0]?.id);
     const forma=it?(it.forma||""):ui.gForma;
-    corpo=`${novo?`<div class="rapido"><label class="rp-in"><span class="rp-ic" aria-hidden="true">${icq("raio",17)}</span><span class="sr">Lançamento rápido</span><input class="in" id="s-rapido" autocomplete="off" enterkeyhint="send" maxlength="100" placeholder="Rápido: 45 ifood pix · 120 mercado ontem"></label><div class="rp-prev" id="s-rapprev" aria-live="polite">${previaRapido(null)}</div></div>`:""}
+    corpo=`${novo?`<div class="rapido"><label class="rp-in"><span class="rp-ic" aria-hidden="true">${icq("raio",17)}</span><span class="sr">Lançamento rápido</span><input class="in" id="s-rapido" autocomplete="off" enterkeyhint="send" maxlength="100" placeholder="Rápido: 45 ifood pix · 120 mercado ontem"></label>${ReconhecimentoVoz?`<button type="button" class="falar" data-falar="1" aria-pressed="false" aria-label="Lançar falando"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>`:""}<div class="rp-prev" id="s-rapprev" aria-live="polite">${previaRapido(null)}</div></div>`:""}
       ${valorCampo(it?(it.orig&&it.orig.moeda!=="BRL"&&(state.config.viagens||[]).some(v=>v.id===it.viagemId)?it.orig.valor:it.valor):null)}
       ${blocoViagemGasto(it,k)}
       ${novo?`<label class="switch"><input type="checkbox" id="s-parc"><span></span>Compra parcelada</label>
@@ -3485,7 +3524,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-falar],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -3513,6 +3552,7 @@ function bindSheet(r){
     if(b.dataset.semnav){ const nf=somaDias(ui.sheet.fim||ultimoDomingo(),Number(b.dataset.semnav)); if(nf<=ultimoDomingo()){ ui.sheet.fim=nf; renderSheet(); } return; }
     if(b.dataset.avretro){ openSheet("retro",null,{ano:Number(b.dataset.avretro),slide:0}); return; }
     if(b.dataset.vgcot){ buscarCotacao(); return; }
+    if(b.dataset.falar){ lancarPorVoz(); return; }
     if(b.dataset.rtoque){ const rr=b.getBoundingClientRect(), esq=/** @type {MouseEvent} */(e).clientX&&(/** @type {MouseEvent} */(e).clientX-rr.left)<rr.width/3;
       const nx=document.querySelector(esq?'#sheet [data-rpasso="-1"]':'#sheet [data-rpasso="1"]'); if(nx&&!/** @type {HTMLButtonElement} */(nx).disabled) /** @type {HTMLElement} */(nx).click(); else if(!esq){ const f=document.querySelector('#sheet .sheetbtns [data-sfechar]'); if(f) /** @type {HTMLElement} */(f).click(); } return; }
     if(b.dataset.rpasso){ s.slide=(s.slide||0)+Number(b.dataset.rpasso); renderSheet(); return; }
@@ -3601,6 +3641,7 @@ app.addEventListener("click",e=>{
   if(d.abre){ ui.abre[d.abre]=!ui.abre[d.abre]; try{ localStorage.setItem("mb.abre",JSON.stringify(ui.abre)); }catch(e){} render(); if(ui.abre[d.abre]){ const sc=document.getElementById("sec-"+d.abre); if(sc) setTimeout(()=>sc.scrollIntoView({block:"nearest",behavior:"smooth"}),40); } return; }
   if(d.rolar){ const el=garanteVisivel(d.rolar); if(el) el.scrollIntoView({block:"start",behavior:"smooth"}); return; }
   if(d.irajustes){ setTab("ajustes"); return; }
+  if(d.ouvir){ ouvirResumo(); return; }
   if(d.pular){ const m=document.getElementById("conteudo"), alvo=/** @type {HTMLElement|null} */(m&&(m.querySelector(".pagetitle h2, .heroSaldo, h2, h1")||m.firstElementChild));
     if(alvo){ if(!alvo.hasAttribute("tabindex")) alvo.setAttribute("tabindex","-1"); alvo.classList.add("alvo-pulo"); alvo.focus({preventScroll:true}); alvo.scrollIntoView({block:"start"}); } return; }
   if(d.login){ entrar(); return; }
