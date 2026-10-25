@@ -364,11 +364,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.1.0";
+const VERSAO="5.1.1";
 const NOVIDADES=[
-  "Compartilhe um comprovante (Pix, banco, loja) com o Monetra instalado: o texto vira um lançamento rápido, pronto para conferir e salvar.",
-  "No controle compartilhado, escolha quem pagou cada despesa: o quadro Divisão do mês mostra quem deve a quem e registra os acertos.",
-  "Relatórios ganhou o Patrimônio: contas, caixinha, investimentos, imóveis e veículos, menos dívidas e parcelas a vencer."
+  "Correções: o + volta a abrir a despesa depois de fechar o menu, e os bens do patrimônio não contam mais como conta em Ajustes.",
+  "A busca agora leva direto ao Patrimônio, Imposto de Renda, inflação pessoal, Quanto renderia, nota do mês e Divisão do mês."
 ];
 
 /* ---------- utilidades ---------- */
@@ -3088,8 +3087,8 @@ function viewAjustes(){
     `)}${secaoMes("aj-imp","Importar extrato do banco","OFX ou CSV do seu banco",icq("seta-baixo",18),`<div class="card"><h2>Importar extrato do banco</h2>
     <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX ou CSV no app do seu banco e traga tudo de uma vez, com a categoria já sugerida.</p>
     <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>`)}
-    ${secaoMes("aj-contas","Contas",cf.contas.length?cf.contas.length+(cf.contas.length===1?" conta":" contas"):"separe por banco ou carteira",ICON.banco,`<div class="card"><div class="cardhead"><h2>Contas</h2><span class="num muted">${cf.contas.length?brl(saldoInicialTotal())+" inicial":""}</span></div>
-    ${contasMov().length?`<div class="contas">${contasMov().map(ct=>`<button type="button" class="conta" data-edit="conta" data-id="${esc(ct.id)}"><span class="ic">${ICON[ct.tipo==="dinheiro"?"dinheiro":ct.tipo==="poupanca"?"poupanca":"banco"]}</span><span class="desc"><b>${esc(ct.nome)}</b><small>saldo inicial ${brl(ct.saldoInicial)}${(cf.contaSalario||(cf.contas[0]||{}).id)===ct.id?" · recebe o salário":""}</small></span><span class="v muted">editar</span></button>`).join("")}</div>`:`<p class="hint">Separe seu dinheiro por conta (ex.: Nubank, Caixa, Dinheiro). Cada lançamento pode sair de uma conta, e o app mostra o saldo de cada uma. Sem contas cadastradas, tudo fica num saldo só.</p>`}
+    ${secaoMes("aj-contas","Contas",contasMov().length?contasMov().length+(contasMov().length===1?" conta":" contas"):"separe por banco ou carteira",ICON.banco,`<div class="card"><div class="cardhead"><h2>Contas</h2><span class="num muted">${contasMov().length?brl(saldoInicialTotal())+" inicial":""}</span></div>
+    ${contasMov().length?`<div class="contas">${contasMov().map(ct=>`<button type="button" class="conta" data-edit="conta" data-id="${esc(ct.id)}"><span class="ic">${ICON[ct.tipo==="dinheiro"?"dinheiro":ct.tipo==="poupanca"?"poupanca":"banco"]}</span><span class="desc"><b>${esc(ct.nome)}</b><small>saldo inicial ${brl(ct.saldoInicial)}${(cf.contaSalario||(contasMov()[0]||{}).id)===ct.id?" · recebe o salário":""}</small></span><span class="v muted">editar</span></button>`).join("")}</div>`:`<p class="hint">Separe seu dinheiro por conta (ex.: Nubank, Caixa, Dinheiro). Cada lançamento pode sair de uma conta, e o app mostra o saldo de cada uma. Sem contas cadastradas, tudo fica num saldo só.</p>`}
     <button class="btn ghost" data-novo="conta" type="button">+ Nova conta</button></div>`)}
     ${secaoMes("aj-cart","Cartões de crédito",cf.cartoes.length?cf.cartoes.map(x=>x.nome).join(", "):"nenhum ainda",ICON.cartao,`<div class="card"><div class="cardhead"><h2>Cartões de crédito</h2><span class="num muted">${cf.cartoes.length||""}</span></div>
     ${cf.cartoes.length?`<div class="contas">${cf.cartoes.map(cc=>{ const u=usoCartao(cc); return `<button type="button" class="conta" data-edit="cartao" data-id="${esc(cc.id)}"><span class="ic">${ICON.cartao}</span><span class="desc"><b>${esc(cc.nome)}</b><small>${cartaoOk(cc)?"fecha dia "+pad2(cc.fecha)+" · vence dia "+pad2(cc.vence):"sem dias de fatura"}${cc.limite?" · livre "+brl(u.livre):""}</small></span><span class="v muted">editar</span></button>`; }).join("")}</div>`:`<p class="hint">Cadastre seus cartões com o dia de fechamento e vencimento: as compras no crédito passam a contar no mês da fatura, e o app mostra o limite disponível.</p>`}
@@ -3413,7 +3412,7 @@ function renderSheet(){
       ${it&&it.forma==="credito"?`<label class="switch"><input type="checkbox" id="s-gpago" ${it.pago?"checked":""}><span></span>Já paguei esta compra</label>`:""}
       <div id="s-contabox">${selConta(it?it.contaId:ui.gConta,"Sai da conta")}</div><div id="s-cartaobox">${selCartao(it?it.cartaoId:ui.gCartao)}</div>
       <p class="hint" id="s-fatinfo">${cartaoAtivo()?"No crédito, conta na fatura do cartão.":""}</p>
-      ${compartilhado()&&membrosGrupo().length>1?`<label class="f">Quem pagou<select class="in" id="s-pagou">${membrosGrupo().map(id=>`<option value="${esc(id)}" ${(it?(it.pagou||it.por||uid):uid)===id?"selected":""}>${esc(id===uid?"Eu":nomeDe(id)||"Pessoa")}</option>`).join("")}</select></label>`:""}
+      ${compartilhado()&&membrosGrupo().length>1?`<label class="f">Quem pagou<select class="in" id="s-pagou">${it&&!(it.pagou||it.por)?'<option value="" selected>Não informado</option>':""}${membrosGrupo().map(id=>`<option value="${esc(id)}" ${(it?(it.pagou||it.por):uid)===id?"selected":""}>${esc(id===uid?"Eu":nomeDe(id)||"Pessoa")}</option>`).join("")}</select></label>`:""}
       <label class="f">Imposto de Renda<select class="in" id="s-ir"><option value="">Não entra no IR</option>${IR_TIPOS.map(([id,n])=>`<option value="${id}" ${it&&it.ir===id?"selected":""}>Dedutível: ${esc(n)}</option>`).join("")}</select></label>
       ${campoTags(it&&it.tags)}`;
     botoes=novo?`<button class="btn ghost" type="button" data-outro="1">Salvar e lançar outra</button><button class="btn" type="submit">Salvar</button>`:`${apagar}<button class="btn" type="submit">Salvar</button>`;
@@ -3674,7 +3673,13 @@ const DESTINOS=[
   ["Metas","quanto falta para cada objetivo","metas meta objetivo sonho reserva caixinha",{tab:"metas",h2:"Metas de economia"}],
   ["Desafios e conquistas","30 dias sem delivery e outros","desafios desafio conquistas medalhas",{tab:"metas",h2:"Desafios"}],
   ["Relatórios","receitas x despesas e mês a mês","relatorios relatorio graficos ano anual comparar",{tab:"ano"}],
-  ["Assinaturas","streaming e contas que se repetem","assinaturas assinatura netflix spotify streaming",{tab:"ano",h2:"Assinaturas e contas fixas"}],
+  ["Assinaturas","streaming e contas que se repetem","assinaturas assinatura netflix spotify streaming aumento caro reajuste",{tab:"ano",h2:"Assinaturas e contas fixas"}],
+  ["Patrimônio","bens, investimentos e dívidas","patrimonio bens imovel casa apartamento carro veiculo investimento investimentos riqueza liquido",{tab:"ano",h2:"Patrimônio"}],
+  ["Imposto de Renda","despesas dedutíveis do ano","imposto renda ir irpf declaracao dedutivel deducao saude educacao recibo",{tab:"ano",h2:"Imposto de Renda"}],
+  ["Inflação pessoal","seus gastos x IPCA","inflacao ipca precos subiu aumento custo vida",{tab:"ano",h2:"Sua inflação x IPCA"}],
+  ["Quanto renderia","caixinha e metas no CDI e na poupança","rendimento render renderia cdi poupanca juros investir selic",{tab:"metas",h2:"Quanto renderia"}],
+  ["Saúde financeira","nota do mês de 0 a 100","saude financeira nota pontuacao score avaliacao",{tab:"mes",h2:"Saúde financeira"}],
+  ["Divisão do mês","quem pagou e quem deve no compartilhado","divisao dividir rachar acerto acertar compartilhado casal quem pagou",{tab:"mes",h2:"Divisão do mês"}],
   ["Calendário","vencimentos do mês","calendario vencimentos agenda dia",{tab:"mes",h2:"Calendário"}],
   ["Notificações","avisos e lembretes do app","notificacoes avisos sino alertas",{sheet:"avisos"}],
   ["Lembretes","notificações de vencimento","lembretes lembrete notificacao vencimento",{tab:"perfil",h2:"Lembretes"}],
@@ -3866,7 +3871,7 @@ function salvarSheet(outro){
     const vgOn=(document.getElementById("s-vgon")||{}).checked, vgSel=vgOn?(state.config.viagens||[]).find(x=>x.id===val("s-vgid")):null, vgMoeda=vgSel&&radio("s-vgmoeda")===vgSel.moeda?vgSel.moeda:"BRL";
     const old=s.id?itemAtual():null, mant=!!(old&&old.orig&&vgSel&&old.viagemId===vgSel.id&&old.orig.moeda===vgMoeda);
     const orig=vgSel&&vgMoeda!=="BRL"?{moeda:vgMoeda,valor:v,cotacao:mant?old.orig.cotacao:vgSel.cotacao,taxa:mant?old.orig.taxa:(vgSel.taxa||0)}:null, vv=orig?emReais(v,orig):v;
-    const poeExtra=o=>{ if(IR_IDS.includes(irT)) o.ir=irT; else delete o.ir; if(pagouSel) o.pagou=pagouSel; if(sub) o.sub=sub; else delete o.sub; if(tags.length) o.tags=tags; else delete o.tags; if(vgSel) o.viagemId=vgSel.id; else delete o.viagemId; if(orig) o.orig=orig; else delete o.orig; return o; };
+    const poeExtra=o=>{ if(IR_IDS.includes(irT)) o.ir=irT; else delete o.ir; if(pagouSel&&pagouSel!==(o.pagou||o.por)) o.pagou=pagouSel; if(sub) o.sub=sub; else delete o.sub; if(tags.length) o.tags=tags; else delete o.tags; if(vgSel) o.viagemId=vgSel.id; else delete o.viagemId; if(orig) o.orig=orig; else delete o.orig; return o; };
     ui.gCat=cat; if(forma){ ui.gForma=forma; try{localStorage.setItem("meucaixa.ui.forma",forma)}catch(e){} }
     const contaSel=forma!=="credito"?valSel("s-conta"):null, cartaoSel=forma==="credito"?valSel("s-cartao"):null;
     if(contaSel) ui.gConta=contaSel; if(cartaoSel) ui.gCartao=cartaoSel;
@@ -4256,7 +4261,7 @@ app.addEventListener("touchend",e=>{ if(tx===null) return; const dx=e.changedTou
 let fabTimer=0, fabSegurou=false;
 const ICON_MIC='<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>';
 /** @param {boolean} foco volta o foco para o + */
-function fechaFabMenu(foco){ const m=document.getElementById("fabmenu"); if(!m) return; m.remove(); const f=/** @type {HTMLElement|null} */(document.querySelector(".bottomnav .fab")); if(f){ f.setAttribute("aria-expanded","false"); if(foco) f.focus({preventScroll:true}); } }
+function fechaFabMenu(foco){ const m=document.getElementById("fabmenu"); if(!m) return; m.remove(); fabSegurou=false; const f=/** @type {HTMLElement|null} */(document.querySelector(".bottomnav .fab")); if(f){ f.setAttribute("aria-expanded","false"); if(foco) f.focus({preventScroll:true}); } }
 function abreFabMenu(){
   if(mode==="login"||!state.loaded||ui.sheet||document.getElementById("fabmenu")) return;
   const fab=/** @type {HTMLElement|null} */(document.querySelector(".bottomnav .fab")), r=fab?fab.getBoundingClientRect():null;
@@ -4269,8 +4274,8 @@ function abreFabMenu(){
 }
 document.addEventListener("pointerdown",e=>{ const t=e.target; if(!(t instanceof Element)) return;
   if(document.getElementById("fabmenu")&&!t.closest("#fabmenu")) fechaFabMenu(false);
-  if(e.pointerType==="mouse"||!t.closest(".bottomnav .fab")) return;
-  fabSegurou=false; clearTimeout(fabTimer); fabTimer=setTimeout(()=>{ fabSegurou=true; abreFabMenu(); },450); });
+  if(!t.closest(".bottomnav .fab")) return;
+  fabSegurou=false; if(e.pointerType==="mouse") return; clearTimeout(fabTimer); fabTimer=setTimeout(()=>{ fabSegurou=true; abreFabMenu(); },450); });
 ["pointerup","pointercancel"].forEach(ev=>document.addEventListener(ev,()=>clearTimeout(fabTimer)));
 document.addEventListener("contextmenu",e=>{ const t=e.target; if(!(t instanceof Element)||!t.closest(".bottomnav .fab")) return; e.preventDefault(); clearTimeout(fabTimer); fabSegurou=true; abreFabMenu(); });
 /* depois de segurar, soltar o dedo não abre a despesa */

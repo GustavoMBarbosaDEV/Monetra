@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.1.1 — 25/10/2026 **Correções da revisão**
+
+- Menu do +: depois de fechar o menu (Esc, toque fora) ou de um clique com o botão direito, o próximo toque no + abria nada. Agora volta a abrir a despesa.
+- Ajustes → Contas: o resumo (quantidade de contas) e o “recebe o salário” contavam os bens do patrimônio como conta. Agora usam só as contas de dinheiro.
+- Quem pagou (compartilhado): ao editar uma despesa antiga sem dono, o campo mostra “Não informado” em vez de marcar você sem querer. Sem mudança no campo, nada é gravado.
+- Busca que navega: novos destinos para Patrimônio, Imposto de Renda, Inflação pessoal, Quanto renderia, Saúde financeira e Divisão do mês; “aumento”/“reajuste” levam às assinaturas.
+
 ## 5.1.0 — 25/10/2026 **Compartilhar comprovante, divisão de despesas e patrimônio**
 
 - **Lançar compartilhando (Share Target):** com o app instalado, “Compartilhar” um texto de outro app (comprovante de Pix, banco, loja) abre a nova despesa com o texto no campo rápido. O valor em R$ vai para a frente; links, ano e hora saem. O formulário já vem preenchido para conferir e salvar. Manifest com `share_target` (GET, parâmetros `st`, `sx`, `su`).
