@@ -62,7 +62,7 @@ Para cada pessoa ter a própria conta e sincronizar entre aparelhos, faça o pas
   a própria conta Google e começa com a página dela vazia.
 - **Instalar no celular:** abra o link no Chrome (Android) → menu ⋮ → **Adicionar à tela inicial**.
   No iPhone: Safari → botão Compartilhar → **Adicionar à Tela de Início**.
-- **Backup:** em Ajustes → Backup você baixa uma cópia dos seus lançamentos e pode restaurá-la depois.
+- **Backup:** em Perfil → Exportar e backup você baixa uma cópia dos seus lançamentos e pode restaurá-la depois.
 
 ## Se algo der errado
 
@@ -107,7 +107,7 @@ Ao publicar uma versão nova:
 1. Atualize `const VERSAO` e a lista `NOVIDADES` em `app.js`, e o `CACHE` em `sw.js`.
 2. Escreva o que mudou no topo do `CHANGELOG.md`.
    - Se a mudança altera telas, abas ou o jeito de usar, atualize também o **tutorial** (`passosTutorial()` em `app.js`).
-   - Se cria um campo novo nas configurações ou no mês, atualize o `firestore.rules` e publique as regras antes.
+   - Se cria uma chave nova no topo das configurações ou do mês, atualize o `firestore.rules` e publique as regras antes. Campo novo dentro de um item (lançamento, categoria, conta…) não precisa.
 3. Faça o commit e o push.
 4. No GitHub Desktop, aba **History** → botão direito no commit → **Create Tag** → `v2.4.0` (o número da versão) → **Push origin**.
 
