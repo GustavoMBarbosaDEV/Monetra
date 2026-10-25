@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.40 — 25/10/2026 **Esqueleto de carregamento**
+
+- No lugar do texto “Carregando…”, a tela mostra blocos cinza no formato do Início (saldo, atalhos e lista de lançamentos) enquanto os dados chegam, com um brilho suave passando.
+- Vale na abertura do app (já no index.html) e ao trocar de controle ou atualizar os dados.
+- Com Reduzir movimento ou Modo calmo, os blocos ficam parados. Leitor de tela ouve “Carregando seus lançamentos…”.
+
 ## 5.0.39 — 25/10/2026 **Puxar para atualizar**
 
 - No celular, no topo da página, puxar para baixo mostra o aviso “Puxe para atualizar”; passando do ponto vira “Solte para atualizar” (com vibração). Ao soltar: na nuvem, salva o que estiver pendente e recarrega os dados; no modo local, relê o aparelho e redesenha a tela.

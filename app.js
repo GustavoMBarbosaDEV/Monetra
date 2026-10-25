@@ -357,10 +357,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.39";
+const VERSAO="5.0.40";
 const NOVIDADES=[
-  "No celular, puxe a tela para baixo no topo da página e solte para atualizar os dados.",
-  "Útil quando você lançou algo em outro aparelho e quer ver aqui na hora."
+  "Enquanto os dados carregam, o app já mostra o formato da tela, sem o “Carregando…” solto.",
+  "Assim fica mais claro que está chegando e onde cada coisa vai aparecer."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1615,7 +1615,7 @@ function render(){
   const a=document.activeElement, inApp=a&&document.getElementById("app").contains(a);
   const fid=inApp&&a.id, sel=(fid&&"selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const app=document.getElementById("app");
-  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):mostraApresentacao()?viewApresentacao():viewLogin()):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?'<div class="empty-state">Carregando seus lançamentos…</div>':ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?perfilComIcones():viewAjustes();
+  const corpo=mode==="login"?(ui.lerTermos?viewTermos(false):mostraApresentacao()?viewApresentacao():viewLogin()):!state.loaded?esqueleto():precisaTermos()?viewTermos(true):ui.lerTermos?viewTermos(false):!state.loaded?esqueleto():ui.tab==="mes"?viewMes():ui.tab==="ano"?viewAno():ui.tab==="metas"?viewMetas():ui.tab==="perfil"?perfilComIcones():viewAjustes();
   const rolY=window.scrollY;
   /* movimento só quando a tela muda (aba, mês, login, carregou), não a cada digitação */
   const vista=[mode,state.loaded,ui.tab,ui.month,typeof aberto==="undefined"?"":aberto].join("|"), novaVista=vista!==ultimaVista;
@@ -2337,6 +2337,8 @@ function corpoCatMes(k,cat){
   return `<div class="catmes"><div class="assintot"><div><span class="lab">Total</span><b>${brl(tot)}</b><small>${p}% das despesas do mês</small></div><div><span class="lab">Lançamentos</span><b>${its.length}</b><small>${its.length===1?"item":"itens"} nesta categoria</small></div></div>
     ${its.length?its.map(linha).join(""):'<p class="hint">Nada nesta categoria neste mês.</p>'}<p class="hint">Toque num item para editar.</p></div>`;
 }
+/* esqueleto de carregamento (5.0.40): o formato do Início aparece enquanto os dados chegam (o mesmo desenho está no index.html) */
+function esqueleto(){ return "<div class=\"skel\" role=\"status\" aria-busy=\"true\"><span class=\"sr\">Carregando seus lançamentos…</span>\n  <div class=\"card sk-hero\"><i class=\"sk\" style=\"width:38%;height:12px\"></i><i class=\"sk sk-gap\" style=\"width:62%;height:38px\"></i><i class=\"sk\" style=\"width:45%;height:12px\"></i><i class=\"sk sk-gap\" style=\"width:100%;height:64px\"></i><div class=\"sk-duo\"><i class=\"sk\" style=\"height:54px\"></i><i class=\"sk\" style=\"height:54px\"></i></div></div>\n  <div class=\"sk-qa\"><i class=\"sk\"></i><i class=\"sk\"></i><i class=\"sk\"></i><i class=\"sk\"></i></div>\n  <div class=\"card\"><i class=\"sk\" style=\"width:50%;height:16px\"></i><div class=\"sk-row\"><i class=\"sk sk-circ\"></i><div class=\"sk-col\"><i class=\"sk\" style=\"width:60%;height:13px\"></i><i class=\"sk\" style=\"width:38%;height:10px\"></i></div><i class=\"sk\" style=\"width:64px;height:14px\"></i></div><div class=\"sk-row\"><i class=\"sk sk-circ\"></i><div class=\"sk-col\"><i class=\"sk\" style=\"width:60%;height:13px\"></i><i class=\"sk\" style=\"width:38%;height:10px\"></i></div><i class=\"sk\" style=\"width:64px;height:14px\"></i></div><div class=\"sk-row\"><i class=\"sk sk-circ\"></i><div class=\"sk-col\"><i class=\"sk\" style=\"width:60%;height:13px\"></i><i class=\"sk\" style=\"width:38%;height:10px\"></i></div><i class=\"sk\" style=\"width:64px;height:14px\"></i></div><div class=\"sk-row\"><i class=\"sk sk-circ\"></i><div class=\"sk-col\"><i class=\"sk\" style=\"width:60%;height:13px\"></i><i class=\"sk\" style=\"width:38%;height:10px\"></i></div><i class=\"sk\" style=\"width:64px;height:14px\"></i></div></div></div>"; }
 function linhaLanc(g,k){
   if(g.parcela) return `<div class="item fixrow parcrow" style="--dot:${catColor(g.cat)}">
     <button type="button" class="check ${g.pago?"on":""}" data-pagar="parc|${esc(g.id)}|${k}" aria-pressed="${g.pago}" aria-label="${g.pago?"Marcar parcela como não paga":"Marcar parcela como paga"}">${ICON.check}</button>
