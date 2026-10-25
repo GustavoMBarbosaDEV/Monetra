@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.0.38 — 25/10/2026 **Modo privacidade**
+
+- Botão de olho no topo esconde todos os valores (borrados) em qualquer tela, janela ou aviso: saldo, listas, gráficos, balões e tabelas. Toque de novo para mostrar.
+- A escolha fica guardada neste aparelho (`mb.privado`) e já vale antes de desenhar a tela, sem piscar os valores.
+- Leitor de tela avisa “Valores escondidos” / “Valores visíveis”; o botão informa se está ligado. Tutorial cita o olho.
+
 ## 5.0.37 — 25/10/2026 **Fatia clicável em “Para onde foi”**
 
 - Início: tocar numa fatia do gráfico de rosca de “Para onde foi” abre uma janela com os lançamentos daquela categoria no mês (despesas, contas fixas, parcelas e compras no cartão), com total e % das despesas. Tocar num item abre a edição dele.

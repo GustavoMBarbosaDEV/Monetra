@@ -1633,3 +1633,8 @@ button.check{position:relative;overflow:visible}
 .a11y-semmov .donut .fatia,.a11y-calmo .donut .fatia{transition:none}
 @media (prefers-reduced-motion:reduce){.donut .fatia{transition:none}}
 .catmes .item{grid-template-columns:minmax(0,1fr) auto;width:100%;text-align:left}
+
+/* 5.0.38 — modo privacidade: valores borrados (a classe .pv é posta pelo app em todo texto com valor) */
+.privado .pv,.privado .hs-balao,.privado .in.num:not(:focus){filter:blur(7px);-webkit-user-select:none;user-select:none}
+.privado svg .pv{filter:blur(1.2px)}
+.olhobtn.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
