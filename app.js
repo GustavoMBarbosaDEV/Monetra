@@ -357,10 +357,10 @@ const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
 /* Versão do app — ao publicar, atualize aqui, no sw.js (CACHE) e no CHANGELOG.md */
-const VERSAO="5.0.40";
+const VERSAO="5.0.41";
 const NOVIDADES=[
-  "Enquanto os dados carregam, o app já mostra o formato da tela, sem o “Carregando…” solto.",
-  "Assim fica mais claro que está chegando e onde cada coisa vai aparecer."
+  "Ao trocar de aba, a tela nova entra deslizando do lado da aba que você tocou.",
+  "Com Reduzir movimento ou Modo calmo ligados, a troca continua instantânea."
 ];
 
 /* ---------- utilidades ---------- */
@@ -1623,6 +1623,9 @@ function render(){
   app.classList.remove("anima","cascata");
   app.innerHTML='<div class="band" aria-hidden="true"></div><button type="button" class="pular" data-pular="1">Pular para o conteúdo</button><header id="topo" class="lm">'+header()+'</header><main id="conteudo" class="lm" tabindex="-1" aria-label="'+esc(nomeAba())+'">'+corpo+'</main>'+bottomNav();
   posicionaBanda();
+  const comAbas=state.loaded&&mode!=="login"&&!precisaTermos();
+  if(comAbas&&abaAnterior&&abaAnterior!==ui.tab&&!semMovimento()){ const dd=ORDEM_ABAS.indexOf(ui.tab)-ORDEM_ABAS.indexOf(abaAnterior), mn=document.getElementById("conteudo"); if(mn&&dd) mn.classList.add(dd>0?"aba-vem-dir":"aba-vem-esq"); }
+  abaAnterior=comAbas?ui.tab:null;
   if(state.loaded&&mode!=="login") checaConquistas();
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus({preventScroll:true}); if(sel&&el.setSelectionRange){ try{el.setSelectionRange(sel[0],sel[1])}catch(e){} } } }
   /* centraliza o mês escolhido na barra só na horizontal, sem mexer na rolagem da página */
@@ -1653,6 +1656,10 @@ function ajustaAcessivel(raiz,novaTela,novaVista){
 /* ---------- movimento: valores contam até o número, barras enchem e gráficos se desenham ----------
    Roda só quando a tela muda. Quem desativou animações no aparelho vê tudo pronto, sem movimento. */
 let ultimaVista="", timerAnima=0, timerStory=0;
+/* 5.0.41: ao trocar de aba, a tela nova entra deslizando do lado da aba (ordem da barra de baixo) */
+const ORDEM_ABAS=["mes","ano","metas","perfil","ajustes"];
+/** @type {string|null} */
+let abaAnterior=null;
 /* ---------- acessibilidade: preferências deste aparelho ---------- */
 /** @typedef {{texto:number,contraste:boolean,daltonismo:boolean,semMov:boolean,calmo:boolean,dislexia:boolean,alvos:boolean,sublinhar:boolean,vibrar:boolean,foco:boolean,menosTexto:boolean,retroAuto:boolean}} A11y */
 /** @type {A11y} */

@@ -1666,3 +1666,11 @@ html,body{overscroll-behavior-y:contain}
 @keyframes mb-brilho{from{background-position:150% 0}to{background-position:-50% 0}}
 .a11y-semmov .sk,.a11y-calmo .sk{animation:none;background-image:none}
 @media (prefers-reduced-motion:reduce){.sk{animation:none;background-image:none}}
+
+/* 5.0.41 — transição deslizando ao trocar de aba */
+body:has(#conteudo.aba-vem-dir),body:has(#conteudo.aba-vem-esq){overflow-x:clip}
+@keyframes mb-aba-dir{from{transform:translateX(48px);opacity:0}}
+@keyframes mb-aba-esq{from{transform:translateX(-48px);opacity:0}}
+#conteudo.aba-vem-dir{animation:mb-aba-dir .3s cubic-bezier(.2,.8,.2,1) both}
+#conteudo.aba-vem-esq{animation:mb-aba-esq .3s cubic-bezier(.2,.8,.2,1) both}
+@media (prefers-reduced-motion:reduce){#conteudo.aba-vem-dir,#conteudo.aba-vem-esq{animation:none}}
