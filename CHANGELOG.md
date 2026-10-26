@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.2.1 — 26/10/2026 **App Check com reCAPTCHA Enterprise**
+
+- App Check: o app pede um token do App Check (reCAPTCHA Enterprise, chave em firebase-config.js) antes de falar com o Firebase. Quando a verificação for aplicada no console, só o site e o app oficiais conseguem usar o Firestore e o login. Se o App Check falhar ao carregar, o app segue funcionando como antes.
+- CSP: liberado https://www.google.com para scripts e conexões, e www.google.com/recaptcha.google.com em frames, que o reCAPTCHA usa.
+
 ## 5.2.0 — 26/10/2026 **Segurança: CSP, sair limpo, PIN, backup com senha, excluir conta e regras**
 
 - **CSP sem nada inline:** os scripts e o estilo que ficavam escritos no `index.html` foram para `pre.js` (preferências de acessibilidade e privacidade antes de desenhar), `boot.js` (tela de abertura e service worker) e `boot.css`. A política agora aceita scripts só do próprio site e do Google (`www.gstatic.com`, `apis.google.com`), sem hashes. Estilos em tag/arquivo só do site e do Google Fonts (`style-src-elem`); atributos `style` continuam liberados (`style-src-attr`), porque o app usa as cores das categorias neles. Também `media-src 'none'`. Nova meta **Referrer-Policy** `strict-origin-when-cross-origin`.

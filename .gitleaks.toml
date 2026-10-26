@@ -6,5 +6,5 @@ useDefault = true
 # A apiKey do Firebase em firebase-config.js é pública por natureza (vai para o navegador de todo mundo).
 # Quem protege os dados são as regras do Firestore e as restrições da chave no Google Cloud.
 [allowlist]
-description = "Chave pública do app web do Firebase"
-regexes = ['''AIzaSyAdFnTBQv-baQ-HK1irBbFNjLoBKVtJMOs''']
+description = "Chaves públicas do app web: Firebase e reCAPTCHA Enterprise (App Check)"
+regexes = ['''AIzaSyAdFnTBQv-baQ-HK1irBbFNjLoBKVtJMOs''', '''6LfwxwEuAAAAAFTdSqAaXAEQx8X-CxN8VUzeLtmo''']

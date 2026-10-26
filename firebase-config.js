@@ -6,3 +6,4 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: "707200429440",
   appId: "1:707200429440:web:c86a3b6adabdae48f0a565"
 };
+window.APPCHECK_SITE_KEY = "6LfwxwEuAAAAAFTdSqAaXAEQx8X-CxN8VUzeLtmo";
