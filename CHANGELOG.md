@@ -12,6 +12,10 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.2.3 — 26/10/2026 **Aviso de backup antes do App Check obrigatório**
+
+- **Backup urgente de 29 a 31/10/2026:** antes da aplicação obrigatória do App Check (31/10), o app pede a todos um backup: aviso no topo do mês atual com o botão "Baixar backup", item no sino (sem "Depois") e notificação uma vez por dia. Vale para quem tem qualquer lançamento e some quando a pessoa baixa um backup a partir de 29/10. Nenhum dado é apagado.
+
 ## 5.2.2 — 26/10/2026 **Olho da privacidade no card de saldo**
 
 - O botão que esconde os valores saiu do topo e foi para o card de saldo do Início, ao lado de "Saldo de …". Fica só o ícone do olho, sem contorno, com área de toque de 40 px; com os valores escondidos, o olho fica riscado e na cor de destaque. Mesma função e mesma escolha salva no aparelho.
