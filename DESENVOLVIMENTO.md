@@ -158,15 +158,18 @@ O endereço do app passou de `https://gustavombarbosadev.github.io/MB-Controle/`
   e em *Background color* / *Splash color* o `#030605`. O ícone do celular continua vindo do `icon-maskable-512.png`.
 
 
-## Firebase Hosting (planejado, ainda não publicado)
+## Firebase Hosting
 
-Endereço previsto: `https://mb-controle-f70b6.web.app`. Enquanto não houver deploy aprovado, o endereço oficial continua o GitHub Pages.
+Endereço: `https://mb-controle-f70b6.web.app` (primeiro deploy em 26/10/2026, versão 5.3.0, pela CLI). O GitHub Pages continua no ar durante a transição.
 
-- **O que é publicado:** a raiz do repositório, menos o que está em `hosting.ignore` no `firebase.json`. Saem só os arquivos do app (19 hoje). Para conferir a lista exata antes de publicar:
+- **Deploy pela CLI (neste PC):** `.\testes-regras\node_modules\.bin\firebase.cmd login` uma vez; depois
+  `.\testes-regras\node_modules\.bin\firebase.cmd deploy --only hosting --project mb-controle-f70b6`. O `--only hosting` não mexe nas regras do Firestore.
+- **O que é publicado:** a raiz do repositório, menos o que está em `hosting.ignore` no `firebase.json`. Saem só os arquivos do app e o `.well-known/assetlinks.json` (20 hoje). Para conferir a lista exata antes de publicar:
   `node -e "const {listFiles}=require('./testes-regras/node_modules/firebase-tools/lib/listFiles.js');console.log(listFiles('.',require('./firebase.json').hosting.ignore).join('
 '))"`
 - **Arquivo novo no app** (CSS, JS, ícone): confira se entra na lista. **Arquivo interno novo** (nota, script, credencial): confira se fica de fora; na dúvida, acrescente ao `ignore`.
-- **Cabeçalhos:** a CSP do cabeçalho repete a da meta do `index.html`, mais `frame-ancestors 'none'` e `upgrade-insecure-requests`. Mudou a CSP da meta? Mude também a do `firebase.json`.
+- **Cabeçalhos:** a CSP do cabeçalho repete a da meta do `index.html`, mais `frame-ancestors 'none'` e `upgrade-insecure-requests`. Mudou a CSP da meta? Mude também a do `firebase.json`. No Hosting a CSP do cabeçalho vale também para o `sw.js`: tudo o que o service worker busca com `fetch` (o SDK em `www.gstatic.com`, por exemplo) precisa estar no `connect-src`.
+- **APK (TWA) no domínio novo:** o `.well-known/assetlinks.json` deste repositório é publicado em `https://mb-controle-f70b6.web.app/.well-known/assetlinks.json`, com o mesmo Package ID e a mesma impressão SHA-256 do arquivo do `GustavoMBarbosaDEV.github.io`. No PWABuilder, use o endereço `https://mb-controle-f70b6.web.app/`, o **mesmo Package ID**, a **mesma chave** e um **número de versão maior** (veja "Gerar o APK"). Quem atualizar o APK abre o app no domínio novo: dados do modo local, PIN e preferências do domínio antigo não vêm junto (os dados da nuvem vêm).
 - **Deploy:** `.github/workflows/hosting.yml` publica no canal `live` a cada push na `main`, só se existir o secret `FIREBASE_SERVICE_ACCOUNT_MB_CONTROLE_F70B6` (JSON de uma conta de serviço com o papel **Administrador do Firebase Hosting** e **Leitor de chaves de API**). Sem o secret, o job só avisa. Nunca coloque esse JSON no repositório.
 - **Antes do primeiro deploy:** incluir `https://mb-controle-f70b6.web.app/*` nos sites permitidos da chave de API e `mb-controle-f70b6.web.app` nos domínios da chave do reCAPTCHA (App Check); conferir `mb-controle-f70b6.web.app` nos domínios autorizados do Authentication.
 - **PWA instalado:** o `id` do manifest é relativo (`./`), então no domínio novo ele vira outro endereço e o celular trata como **outra instalação**; PIN, preferências e dados do modo local ficam no domínio antigo.

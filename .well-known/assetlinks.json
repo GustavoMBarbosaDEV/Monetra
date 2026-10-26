@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.gustavombarbosadev.twa",
+      "sha256_cert_fingerprints": [
+        "B4:1E:FD:EB:96:E2:AA:A8:96:7D:FB:5C:95:2F:07:43:88:1C:4B:47:33:49:35:5B:4B:EC:FA:EF:9D:F9:41:F7"
+      ]
+    }
+  }
+]
