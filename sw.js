@@ -1,4 +1,4 @@
-const CACHE = "monetra-5.2.1";
+const CACHE = "monetra-5.2.2";
 const SHELL = ["./", "index.html", "style.css", "boot.css", "pre.js", "boot.js", "app.js", "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png"];
 self.addEventListener("install", e => {

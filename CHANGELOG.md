@@ -12,6 +12,10 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.2.2 — 26/10/2026 **Olho da privacidade no card de saldo**
+
+- O botão que esconde os valores saiu do topo e foi para o card de saldo do Início, ao lado de "Saldo de …". Fica só o ícone do olho, sem contorno, com área de toque de 40 px; com os valores escondidos, o olho fica riscado e na cor de destaque. Mesma função e mesma escolha salva no aparelho.
+
 ## 5.2.1 — 26/10/2026 **App Check com reCAPTCHA Enterprise**
 
 - App Check: o app pede um token do App Check (reCAPTCHA Enterprise, chave em firebase-config.js) antes de falar com o Firebase. Quando a verificação for aplicada no console, só o site e o app oficiais conseguem usar o Firestore e o login. Se o App Check falhar ao carregar, o app segue funcionando como antes.
