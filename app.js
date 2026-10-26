@@ -333,10 +333,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.1.3";
+const VERSAO="5.1.4";
 const NOVIDADES=[
-  "Mais segurança: ao tocar em Sair, a cópia dos seus lançamentos guardada no navegador é apagada. Bom para computador de outras pessoas.",
-  "O app só aceita scripts dele mesmo e do Google (login e banco de dados), o que protege contra código estranho."
+  "Ajustes de instalação: o app segue o padrão mais novo do navegador para ser instalado e para receber o que você compartilha de outros apps.",
+  "Nada muda no uso do dia a dia."
 ];
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");
