@@ -1441,7 +1441,11 @@ button.check{position:relative;overflow:visible}
 
 .privado .pv,.privado .hs-balao,.privado .in.num:not(:focus){filter:blur(7px);-webkit-user-select:none;user-select:none}
 .privado svg .pv{filter:blur(1.2px)}
-.olhobtn.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.hs-lab{display:inline-flex;align-items:center;gap:2px}
+.olhobtn{display:grid;place-items:center;width:40px;height:40px;margin:-12px 0 -12px -6px;padding:0;border:0;background:none;border-radius:50%;color:inherit;opacity:.8;cursor:pointer;flex:none}
+.olhobtn svg{width:19px;height:19px}
+.olhobtn:hover{opacity:1}
+.olhobtn.on{opacity:1;color:var(--accent)}
 
 html,body{overscroll-behavior-y:contain}
 .puxa{position:fixed;top:0;left:50%;z-index:60;display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;background:var(--surface);color:var(--fg);box-shadow:0 6px 20px rgba(0,0,0,.2);font-size:13.5px;font-weight:600;transform:translate(-50%,-70px);opacity:0;pointer-events:none;transition:opacity .15s ease}
