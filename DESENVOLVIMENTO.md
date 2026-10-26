@@ -111,6 +111,8 @@ Ao publicar uma versão nova:
 3. Faça o commit e o push.
 4. No GitHub Desktop, aba **History** → botão direito no commit → **Create Tag** → `v2.4.0` (o número da versão) → **Push origin**.
 
+Se mudar um dos 2 `<script>` escritos dentro do `index.html`, atualize os hashes `sha256-…` da meta **Content-Security-Policy** no topo do arquivo (com o texto em LF e em CRLF), senão o navegador bloqueia o script. Domínio externo novo (API, imagem, fonte) também precisa entrar nessa meta.
+
 Para mudanças grandes, use um branch `testes` e só junte na `main` (que é a versão no ar) quando estiver tudo certo.
 
 ## Aplicativo Android (APK) — grátis
