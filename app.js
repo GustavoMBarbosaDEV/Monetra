@@ -831,13 +831,11 @@ function loadLocal(){
 function resetState(){ state.config=defaultConfig(); state.months={}; buildMeses(); }
 let fb=null, authUser=null, unsub=null, loginErro=(()=>{ try{ const m=sessionStorage.getItem("mb.loginErro")||""; sessionStorage.removeItem("mb.loginErro"); return m; }catch(e){ return ""; } })();
 if(loginErro){ const m=loginErro; setTimeout(()=>{ toast(m); anunciar(m); },1200); }
-/* ao sair: o que é da pessoa sai do aparelho; ficam as preferências do aparelho (tema, acessibilidade) e a fila de edições ainda não enviadas (mb.pend.*), que some sozinha quando o envio dá certo */
 const CHAVES_DA_PESSOA=["mb.backup.","mb.conq.","mb.notif.vistos","mb.pin","mb.pin.erros"];
 function limpaDadosDaPessoa(){
   try{ Object.keys(localStorage).filter(k=>CHAVES_DA_PESSOA.some(p=>k===p||(p.endsWith(".")&&k.startsWith(p)))).forEach(k=>localStorage.removeItem(k)); }catch(e){}
   try{ const idb=/** @type {any} */(indexedDB); if(idb&&idb.databases) idb.databases().then(ls=>ls.forEach(d=>{ if(d.name&&/^firestore\//.test(d.name)) indexedDB.deleteDatabase(d.name); })).catch(()=>{}); }catch(e){}
 }
-/* exclui a conta: confirma o login (se o Google pedir) antes de apagar qualquer coisa; depois controles compartilhados, dados pessoais e a conta */
 async function excluirConta(){
   const F=fb, user=F&&F.auth.currentUser, meu=uid; if(!user||!meu) throw new Error("Entre na sua conta para excluí-la.");
   const ultimo=Date.parse((user.metadata&&user.metadata.lastSignInTime)||"")||0;
@@ -1214,7 +1212,6 @@ const PINKEY="mb.pin", PINLEN=4;
 function pinCfg(){ try{ const c=JSON.parse(localStorage.getItem(PINKEY)||"null"); return c&&c.hash?c:null; }catch(e){ return null; } }
 function salvaPinCfg(c){ try{ if(c) localStorage.setItem(PINKEY,JSON.stringify(c)); else localStorage.removeItem(PINKEY); }catch(e){} }
 async function hashPin(pin,salt){ const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("mbc:"+salt+":"+pin)); return Array.from(new Uint8Array(h),b=>b.toString(16).padStart(2,"0")).join(""); }
-/* PIN v2: PBKDF2 (310 mil iterações) sobre o SHA-256 com sal; assim o PIN antigo migra sem a pessoa digitar de novo */
 const PIN_ITER=310000;
 const hexDe=b=>Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("");
 async function pbkdf2Hex(texto,sal,iter){ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(texto),"PBKDF2",false,["deriveBits"]);
@@ -1515,7 +1512,6 @@ const textoBackup=()=>JSON.stringify({app:"monetra",versao:2,exportadoEm:new Dat
 function baixaArquivo(nome,texto){ const blob=new Blob([texto],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500); }
 function exportar(){ salvaInfoBackup({ultimo:hojeISO(),depois:null}); baixaArquivo("monetra-backup-"+new Date().toISOString().slice(0,10)+".json",textoBackup()); }
-/* backup com senha: AES-GCM 256 com chave derivada da senha (PBKDF2-SHA256, 310 mil iterações); sem a senha não há como abrir */
 const BK_ITER=310000;
 function paraB64(u){ let s=""; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,Array.from(u.subarray(i,i+0x8000))); return btoa(s); }
 function deB64(t){ const s=atob(t), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
@@ -1552,7 +1548,6 @@ function mapaBackup(m){ /** @type {Object<string,any>} */ const out={}; if(!ehOb
     if(typeof x.por==="string"&&x.por.length<=128) o.por=x.por;
     out[id]=o; });
   return out; }
-/** confere o backup inteiro antes de mexer em qualquer dado; devolve os dados limpos ou lança um erro com a mensagem para a pessoa */
 function validaBackup(d){
   if(!ehObj(d)) throw new Error("Este arquivo não é um backup do Monetra.");
   if("app" in d&&d.app!=="monetra") throw new Error("Este arquivo é de outro aplicativo, não do Monetra.");
