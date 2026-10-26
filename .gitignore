@@ -1,2 +1,22 @@
 # notas locais de trabalho (não vão para o GitHub)
 PROXIMOS-PASSOS.md
+SEGURANCA-PAINEIS.md
+
+# chaves, certificados e segredos (nunca vão para o GitHub)
+*.keystore
+*.jks
+*.pem
+*.p12
+*.key
+signing*
+.env
+.env.*
+google-services.json
+GoogleService-Info.plist
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+
+# dependências e saídas dos testes das regras
+node_modules/
+firebase-debug.log
+firestore-debug.log
