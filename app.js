@@ -333,10 +333,11 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.1.7";
+const VERSAO="5.2.0";
 const NOVIDADES=[
-  "Restaurar backup ficou mais seguro: o arquivo é conferido inteiro antes, e se algo estiver errado nada é alterado.",
-  "Depois de restaurar, o app mostra quantos meses e lançamentos voltaram."
+  "Backup com senha: em Perfil → Exportar e backup, o arquivo sai criptografado e só abre com a sua senha.",
+  "Excluir minha conta: no fim do Perfil, apaga para sempre os seus dados e a sua conta de login, com confirmação.",
+  "Mais segurança por dentro: PIN guardado com proteção mais forte, ao sair os dados da pessoa somem do aparelho e regras do banco de dados mais rígidas."
 ];
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");
@@ -830,11 +831,45 @@ function loadLocal(){
 }
 function resetState(){ state.config=defaultConfig(); state.months={}; buildMeses(); }
 let fb=null, authUser=null, unsub=null, loginErro=(()=>{ try{ const m=sessionStorage.getItem("mb.loginErro")||""; sessionStorage.removeItem("mb.loginErro"); return m; }catch(e){ return ""; } })();
+if(loginErro){ const m=loginErro; setTimeout(()=>{ toast(m); anunciar(m); },1200); }
+/* ao sair: o que é da pessoa sai do aparelho; ficam as preferências do aparelho (tema, acessibilidade) e a fila de edições ainda não enviadas (mb.pend.*), que some sozinha quando o envio dá certo */
+const CHAVES_DA_PESSOA=["mb.backup.","mb.conq.","mb.notif.vistos","mb.pin","mb.pin.erros"];
+function limpaDadosDaPessoa(){
+  try{ Object.keys(localStorage).filter(k=>CHAVES_DA_PESSOA.some(p=>k===p||(p.endsWith(".")&&k.startsWith(p)))).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  try{ const idb=/** @type {any} */(indexedDB); if(idb&&idb.databases) idb.databases().then(ls=>ls.forEach(d=>{ if(d.name&&/^firestore\//.test(d.name)) indexedDB.deleteDatabase(d.name); })).catch(()=>{}); }catch(e){}
+}
+/* exclui a conta: confirma o login (se o Google pedir) antes de apagar qualquer coisa; depois controles compartilhados, dados pessoais e a conta */
+async function excluirConta(){
+  const F=fb, user=F&&F.auth.currentUser, meu=uid; if(!user||!meu) throw new Error("Entre na sua conta para excluí-la.");
+  const ultimo=Date.parse((user.metadata&&user.metadata.lastSignInTime)||"")||0;
+  if(Date.now()-ultimo>4*60*1000){ try{ await F.reauthenticateWithPopup(user,new F.GoogleAuthProvider()); }
+    catch(e){ throw new Error(String(e&&e.code||"").includes("popup")?"O Google precisa confirmar que é você. Permita a janela do Google e tente de novo.":"O Google não confirmou o login. Nada foi apagado."); } }
+  seqEspaco++; pararEspaco(); zeraFila(); setStatus("Excluindo sua conta…","saving");
+  for(const g of meusGrupos()){
+    try{
+      const d=await F.getDoc(F.doc(F.db,"grupos",g.id)); if(!d.exists()) continue;
+      if(d.data().dono===meu){ const cod=d.data().codigo||null; if(cod) await F.deleteDoc(F.doc(F.db,"convites",cod)).catch(()=>{});
+        for(const sub of ["docs","pedidos"]){ const q=await F.getDocs(F.collection(F.db,"grupos",g.id,sub)); await Promise.all(q.docs.map(x=>F.deleteDoc(x.ref))); }
+        await F.deleteDoc(F.doc(F.db,"grupos",g.id)); }
+      else await F.updateDoc(F.doc(F.db,"grupos",g.id),{["m."+meu]:F.deleteField()});
+    }catch(e){ if(!negado(e)&&!(e&&e.code==="not-found")) throw e; } }
+  for(const g of Object.keys(eu.pendentes||{})) await F.deleteDoc(F.doc(F.db,"grupos",g,"pedidos",meu)).catch(()=>{});
+  const q=await F.getDocs(F.collection(F.db,"users",meu,"docs")); await Promise.all(q.docs.map(x=>F.deleteDoc(x.ref)));
+  await F.deleteDoc(F.doc(F.db,"users",meu,"meta","eu"));
+  try{ Object.keys(localStorage).filter(k=>k.startsWith("mb.pend."+meu+".")).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  await F.deleteUser(user);
+  try{ sessionStorage.setItem("mb.loginErro","Sua conta e os seus dados foram excluídos do Monetra."); }catch(e){}
+  try{ await F.terminate(F.db); await F.clearIndexedDbPersistence(F.db); }catch(e){}
+  limpaDadosDaPessoa();
+  setTimeout(()=>location.reload(),150);
+}
 async function encerraSessao(msg){
   if(msg){ try{ sessionStorage.setItem("mb.loginErro",msg); }catch(e){} }
+  try{ await salvaPendentes(); }catch(e){}
   try{ await fb.signOut(fb.auth); }catch(e){}
   try{ await fb.terminate(fb.db); await fb.clearIndexedDbPersistence(fb.db); }catch(e){}
-  location.reload();
+  limpaDadosDaPessoa();
+  setTimeout(()=>location.reload(),150);
 }
 let aberto="pessoal", eu={}, euCarregado=false, grupoDoc=null, pedidosG={}, unsubs=[], unsubsFixos=[], seqEspaco=0, perdendo={};
 const FB_V="10.12.2";
@@ -1178,8 +1213,18 @@ const PINKEY="mb.pin", PINLEN=4;
 function pinCfg(){ try{ const c=JSON.parse(localStorage.getItem(PINKEY)||"null"); return c&&c.hash?c:null; }catch(e){ return null; } }
 function salvaPinCfg(c){ try{ if(c) localStorage.setItem(PINKEY,JSON.stringify(c)); else localStorage.removeItem(PINKEY); }catch(e){} }
 async function hashPin(pin,salt){ const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("mbc:"+salt+":"+pin)); return Array.from(new Uint8Array(h),b=>b.toString(16).padStart(2,"0")).join(""); }
-async function confere(pin){ const c=pinCfg(); return !!c&&(await hashPin(pin,c.salt))===c.hash; }
-async function definePin(pin,apos){ const salt=novoCodigo(16), c=pinCfg(), n={salt,hash:await hashPin(pin,salt),apos:apos!=null?apos:(c&&c.apos!=null?c.apos:1)}; if(c&&c.bio) n.bio=c.bio; salvaPinCfg(n); }
+/* PIN v2: PBKDF2 (310 mil iterações) sobre o SHA-256 com sal; assim o PIN antigo migra sem a pessoa digitar de novo */
+const PIN_ITER=310000;
+const hexDe=b=>Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("");
+async function pbkdf2Hex(texto,sal,iter){ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(texto),"PBKDF2",false,["deriveBits"]);
+  return hexDe(await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:new TextEncoder().encode(sal),iterations:iter},k,256)); }
+async function confere(pin){ const c=pinCfg(); if(!c) return false;
+  if(c.v===2) return (await pbkdf2Hex(await hashPin(pin,c.salt),c.sal2,c.iter||PIN_ITER))===c.hash;
+  const ok=(await hashPin(pin,c.salt))===c.hash; if(ok) await migraPin(); return ok; }
+async function migraPin(){ const c=pinCfg(); if(!c||c.v===2) return; const sal2=novoCodigo(16), hash=await pbkdf2Hex(c.hash,sal2,PIN_ITER);
+  const agora=pinCfg(); if(agora&&agora.hash===c.hash&&agora.v!==2) salvaPinCfg(Object.assign({},agora,{v:2,sal2,iter:PIN_ITER,hash})); }
+async function definePin(pin,apos){ const salt=novoCodigo(16), sal2=novoCodigo(16), c=pinCfg();
+  const n={v:2,salt,sal2,iter:PIN_ITER,hash:await pbkdf2Hex(await hashPin(pin,salt),sal2,PIN_ITER),apos:apos!=null?apos:(c&&c.apos!=null?c.apos:1)}; if(c&&c.bio) n.bio=c.bio; salvaPinCfg(n); }
 let travado=false, pinDig="", saiuEm=0, pinMsg="", esqueciPin=false;
 const errosPin=()=>{ try{ return JSON.parse(localStorage.getItem("mb.pin.erros")||'{"n":0,"ate":0}'); }catch(e){ return {n:0,ate:0}; } };
 const salvaErros=x=>{ try{ localStorage.setItem("mb.pin.erros",JSON.stringify(x)); }catch(e){} };
@@ -1460,12 +1505,30 @@ function lembreteBackup(){
   if(dias!==null&&dias<30) return null;
   return {dias,local:mode!=="cloud",n};
 }
-function exportar(){
-  salvaInfoBackup({ultimo:hojeISO(),depois:null});
-  const blob=new Blob([JSON.stringify({app:"monetra",versao:2,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2)],{type:"application/json"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="monetra-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
-}
-const BACKUP_MAX=5*1024*1024, BACKUP_MESES_MAX=600, BACKUP_ITENS_MAX=5000;
+const textoBackup=()=>JSON.stringify({app:"monetra",versao:2,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2);
+function baixaArquivo(nome,texto){ const blob=new Blob([texto],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500); }
+function exportar(){ salvaInfoBackup({ultimo:hojeISO(),depois:null}); baixaArquivo("monetra-backup-"+new Date().toISOString().slice(0,10)+".json",textoBackup()); }
+/* backup com senha: AES-GCM 256 com chave derivada da senha (PBKDF2-SHA256, 310 mil iterações); sem a senha não há como abrir */
+const BK_ITER=310000;
+function paraB64(u){ let s=""; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,Array.from(u.subarray(i,i+0x8000))); return btoa(s); }
+function deB64(t){ const s=atob(t), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
+async function chaveDaSenha(senha,sal,iter){ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(senha),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",hash:"SHA-256",salt:sal,iterations:iter},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]); }
+async function cifraBackup(texto,senha){ const sal=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
+  const dados=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},await chaveDaSenha(senha,sal,BK_ITER),new TextEncoder().encode(texto)));
+  return JSON.stringify({app:"monetra",cifrado:1,alg:"AES-GCM",kdf:"PBKDF2-SHA256",iter:BK_ITER,sal:paraB64(sal),iv:paraB64(iv),dados:paraB64(dados)}); }
+/** @param {any} d @param {string} senha */
+async function decifraBackup(d,senha){
+  const b64ok=x=>typeof x==="string"&&/^[A-Za-z0-9+/]+={0,2}$/.test(x);
+  if(d.alg!=="AES-GCM"||d.kdf!=="PBKDF2-SHA256"||!(Number.isInteger(d.iter)&&d.iter>=100000&&d.iter<=5000000)||!b64ok(d.sal)||!b64ok(d.iv)||!b64ok(d.dados)) throw new Error("formato");
+  const txt=await crypto.subtle.decrypt({name:"AES-GCM",iv:deB64(d.iv)},await chaveDaSenha(senha,deB64(d.sal),d.iter),deB64(d.dados));
+  return new TextDecoder().decode(txt); }
+function aplicaBackup(b){
+  const t=state.config.termos; state.config=b.config; if(!state.config.termos) state.config.termos=t; buildMeses(); save("config");
+  Object.keys(b.months).forEach(k=>{ state.months[k]=b.months[k]; save(k); });
+  return "Backup restaurado: "+b.meses+(b.meses===1?" mês":" meses")+" e "+b.lancamentos+(b.lancamentos===1?" lançamento.":" lançamentos."); }
+const BACKUP_MAX=10*1024*1024, BACKUP_MESES_MAX=600, BACKUP_ITENS_MAX=5000;
 const CAMPOS_ITEM=["id","dia","valor","desc","cat","sub","forma","contaId","cartaoId","metaId","tipo","de","para","por","pagou","imp","viagemId","tags","pago","pagoEm","orig","ir"];
 const ehObj=x=>!!x&&typeof x==="object"&&!Array.isArray(x);
 const textoCurto=(v,max)=>String(v).slice(0,max);
@@ -1502,15 +1565,15 @@ function importar(file){
   if(mode==="cloud"&&aberto!=="pessoal"){ ui.importMsg="Para restaurar um backup, abra o controle Pessoal (botões no topo)."; render(); return; }
   const avisa=msg=>{ ui.importMsg=msg; render(); anunciar(msg); };
   if(!file) return;
-  if(file.size>BACKUP_MAX){ avisa("Arquivo grande demais para um backup do Monetra (máximo 5 MB). Nada foi alterado."); return; }
+  if(file.size>BACKUP_MAX){ avisa("Arquivo grande demais para um backup do Monetra (máximo 10 MB). Nada foi alterado."); return; }
   const r=new FileReader();
   r.onerror=()=>avisa("Não consegui ler o arquivo. Nada foi alterado.");
   r.onload=()=>{ let b;
-    try{ let d; try{ d=JSON.parse(String(r.result)); }catch(e){ throw new Error("Este arquivo não é um backup do Monetra."); } b=validaBackup(d); }
+    try{ let d; try{ d=JSON.parse(String(r.result)); }catch(e){ throw new Error("Este arquivo não é um backup do Monetra."); }
+      if(ehObj(d)&&d.app==="monetra"&&d.cifrado===1){ ui.importMsg=""; openSheet("bkabrir",null,{arquivo:d}); return; }
+      b=validaBackup(d); }
     catch(e){ avisa((e&&e.message?e.message:"Arquivo inválido.")+" Use um backup baixado pelo Monetra. Nada foi alterado."); return; }
-    const t=state.config.termos; state.config=b.config; if(!state.config.termos) state.config.termos=t; buildMeses(); save("config");
-    Object.keys(b.months).forEach(k=>{ state.months[k]=b.months[k]; save(k); });
-    avisa("Backup restaurado: "+b.meses+(b.meses===1?" mês":" meses")+" e "+b.lancamentos+(b.lancamentos===1?" lançamento.":" lançamentos.")); };
+    avisa(aplicaBackup(b)); };
   r.readAsText(file);
 }
 function exportarPlanilha(){
@@ -2945,8 +3008,8 @@ function viewAjustes(){
 }
 
 function perfilComIcones(){
-  const I={"Renda e saldos":ICON.dinheiro,"Aparência":icq("sol"),"Bloqueio com PIN":ICON.cadeado,"Lembretes":ICON.sino,"Exportar e backup":icq("nuvem"),"Novidades":icq("estrela"),"Tutorial":svgCat("livro"),"Privacidade":ICON.digital,"Acessibilidade":icq("coracao"),"Recomeçar do zero":ICON.lixo};
-  return viewPerfil().replace(/<h2>([^<]+)<\/h2>/g,(m,t)=>I[t]?`<h2 class="hico${t==="Recomeçar do zero"?" perigo":""}"><span class="hic" aria-hidden="true">${I[t]}</span>${t}</h2>`:m);
+  const I={"Renda e saldos":ICON.dinheiro,"Aparência":icq("sol"),"Bloqueio com PIN":ICON.cadeado,"Lembretes":ICON.sino,"Exportar e backup":icq("nuvem"),"Novidades":icq("estrela"),"Tutorial":svgCat("livro"),"Privacidade":ICON.digital,"Acessibilidade":icq("coracao"),"Recomeçar do zero":ICON.lixo,"Excluir minha conta":ICON.lixo};
+  return viewPerfil().replace(/<h2>([^<]+)<\/h2>/g,(m,t)=>I[t]?`<h2 class="hico${t==="Recomeçar do zero"||t==="Excluir minha conta"?" perigo":""}"><span class="hic" aria-hidden="true">${I[t]}</span>${t}</h2>`:m);
 }
 function viewPerfil(){
   const cf=state.config, u=authUser, ini=inicioKey();
@@ -2982,7 +3045,7 @@ function viewPerfil(){
     <p class="hint">Para avisar mesmo com o app fechado: baixa um arquivo com os vencimentos dos próximos 12 meses. No celular, abra o arquivo e escolha o Google Agenda (ou Calendário, no iPhone). No computador: Google Agenda → Configurações → Importar. Se cadastrar contas novas, baixe de novo.</p></div>
     <div class="card"><h2>Exportar e backup</h2><p class="hint">A planilha abre no Excel e no Google Planilhas. O backup serve para restaurar tudo depois.</p>
     <button class="btn ghost" type="button" data-planilha="1">Baixar planilha (Excel)</button>
-    <div class="row"><button class="btn ghost" type="button" data-export="1">Baixar backup</button><label class="btn ghost" for="impFile" style="text-align:center">Restaurar backup<input type="file" id="impFile" accept="application/json,.json" hidden></label></div>
+    <div class="row"><button class="btn ghost" type="button" data-export="1">Baixar backup</button><button class="btn ghost" type="button" data-novo="bksenha">Baixar backup com senha</button><label class="btn ghost" for="impFile" style="text-align:center">Restaurar backup<input type="file" id="impFile" accept="application/json,.json" hidden></label></div>
     ${ui.importMsg?`<p class="hint">${esc(ui.importMsg)}</p>`:""}
     <p class="hint bkinfo">${(()=>{ const bk=infoBackup(); return bk.ultimo?"Último backup baixado neste aparelho: "+fmtIso(bk.ultimo)+"/"+bk.ultimo.slice(0,4)+(entreDias(bk.ultimo,hojeISO())>=30?" · já faz mais de um mês":""):"Você ainda não baixou um backup neste aparelho. O app lembra uma vez por mês."; })()}</p></div>
     <div class="card"><div class="cardhead"><h2>Novidades</h2><span class="versao">versão ${VERSAO}</span></div>
@@ -2994,7 +3057,9 @@ function viewPerfil(){
     ${meusTermos()?`<p class="hint">Você aceitou os termos de privacidade (versão ${esc(meusTermos().v)})${meusTermos().em?" em "+esc(dataBR(meusTermos().em)):""}.</p>`:""}
     <div class="row2"><button class="btn ghost" type="button" data-termos="ler">Ler os termos</button><button class="btn ghost" type="button" data-termos="revogar">Retirar meu aceite</button></div></div>
     ${souDono()?`    <div class="card perigo"><h2>Recomeçar do zero</h2><p class="hint">Apaga todos os seus lançamentos, contas fixas, parcelas e configurações. Não dá para desfazer; se quiser, baixe um backup antes.</p>
-    ${ui.confirmaApagar?`<label class="f">Para confirmar, digite APAGAR<input class="in" id="txtApagar" autocomplete="off" placeholder="APAGAR"></label><div class="row2"><button class="btn ghost" type="button" data-apagar="nao">Cancelar</button><button class="btn danger" type="button" data-apagar="sim">Apagar tudo</button></div>`:`<button class="btn danger" type="button" data-apagar="pedir">Apagar todos os meus dados</button>`}</div>`:""}</div></div>`;
+    ${ui.confirmaApagar?`<label class="f">Para confirmar, digite APAGAR<input class="in" id="txtApagar" autocomplete="off" placeholder="APAGAR"></label><div class="row2"><button class="btn ghost" type="button" data-apagar="nao">Cancelar</button><button class="btn danger" type="button" data-apagar="sim">Apagar tudo</button></div>`:`<button class="btn danger" type="button" data-apagar="pedir">Apagar todos os meus dados</button>`}</div>`:""}
+    ${mode==="cloud"&&authUser?`<div class="card perigo" id="excluirconta"><h2>Excluir minha conta</h2><p class="hint">Apaga para sempre os seus dados no Monetra e a sua conta de login. Controles compartilhados que você criou também são excluídos. Não dá para desfazer.</p>
+      <button class="btn danger" type="button" data-novo="excluirconta">Excluir minha conta…</button></div>`:""}</div></div>`;
 }
 
 const TERMOS_V="1.1", TERMOS_DATA="17/10/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
@@ -3212,7 +3277,7 @@ function renderSheet(){
   document.body.classList.add("sheet-open"); const _ap=document.getElementById("app"); if(_ap) _ap.inert=true;
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
   if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="catmes"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="radiogroup" aria-label="Tipo de lançamento">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -3315,6 +3380,25 @@ function renderSheet(){
       <label class="switch"><input type="checkbox" id="s-recebe" ${recebe?"checked":""}><span></span>O salário cai nesta conta</label>
       <p class="hint">Lançamentos sem conta escolhida usam a primeira conta da lista${contasMov()[0]&&!primeira?" ("+esc(contasMov()[0].nome)+")":""}.</p>`;
     sub=""; botoes=novo?`<button class="btn" type="submit">Criar conta</button>`:`<button class="btn danger" type="button" data-sapagar="1">Excluir conta</button><button class="btn" type="submit">Salvar</button>`;
+  }else if(s.tipo==="bksenha"){
+    corpo=`<p class="hint">O arquivo sai criptografado (AES-GCM). Só abre com a senha: <b>sem ela, ninguém recupera o backup, nem você</b>. Guarde a senha num gerenciador de senhas.</p>
+      <label class="f">Senha (mínimo 8 caracteres)<input class="in" id="s-senha" type="password" autocomplete="new-password" minlength="8" maxlength="200" required data-autofocus></label>
+      <label class="f">Repita a senha<input class="in" id="s-senha2" type="password" autocomplete="new-password" minlength="8" maxlength="200" required></label>`;
+    sub=""; botoes=`<button class="btn" type="submit">Baixar backup com senha</button>`;
+  }else if(s.tipo==="bkabrir"){
+    corpo=`<p class="hint">Este backup está protegido por senha. Digite a senha usada ao baixar. Se estiver errada, nada é alterado.</p>
+      <label class="f">Senha do backup<input class="in" id="s-senha" type="password" autocomplete="current-password" maxlength="200" required data-autofocus></label>`;
+    sub=""; botoes=`<button class="btn" type="submit">Restaurar backup</button>`;
+  }else if(s.tipo==="excluirconta"){
+    const gs=meusGrupos(), meus=gs.filter(g=>g.dono), outros=gs.filter(g=>!g.dono);
+    corpo=`<p><b>Isto apaga para sempre:</b></p>
+      <ul class="exclista"><li>todos os seus lançamentos, contas, cartões, metas e configurações do controle Pessoal;</li>
+      ${meus.length?`<li>os controles compartilhados que você criou, <b>para todas as pessoas</b>: ${meus.map(g=>"“"+esc(g.nome||"Sem nome")+"”").join(", ")};</li>`:""}
+      ${outros.length?`<li>a sua participação em ${outros.map(g=>"“"+esc(g.nome||"Sem nome")+"”").join(", ")} (os lançamentos desses controles continuam com as outras pessoas);</li>`:""}
+      <li>a sua conta de login no Monetra.</li></ul>
+      <p class="hint">Quer guardar uma cópia? Feche esta janela e baixe um backup antes, em Perfil → Exportar e backup. O Google pode pedir para você entrar de novo antes de excluir.</p>
+      <label class="f">Para confirmar, digite EXCLUIR<input class="in" id="s-excluir" autocomplete="off" placeholder="EXCLUIR" data-autofocus></label>`;
+    sub=""; botoes=`<button class="btn danger" type="submit">Excluir minha conta para sempre</button>`;
   }else if(s.tipo==="bem"){
     corpo=`<label class="f">Nome<input class="in" id="s-nome" maxlength="30" placeholder="ex.: Apartamento, Carro, Moto" value="${esc(it?it.nome:"")}" data-autofocus></label>
       <div class="seg" role="radiogroup" aria-label="Tipo de bem">${TIPOS_BEM.map(([v,l])=>`<input type="radio" name="s-tipobem" id="s-tb-${v}" value="${v}" ${(it?it.tipo:"bem-imovel")===v?"checked":""}><label for="s-tb-${v}">${l}</label>`).join("")}</div>
@@ -3549,6 +3633,7 @@ function atualizaBusca(){
 function erroSheet(msg,campo){ salvando=false; const e=document.getElementById("s-erro"); if(e){ e.textContent=msg; e.hidden=false; } if(campo){ const c=document.getElementById(campo); if(c) c.focus(); } }
 const TIPOS_COM_ITEM=["bem","desafio","viagem","gasto","avulso","caixinha","fixo","fixoMes","parcela","renda","rendaMes","categoria","meta","conta","cartao","transf","divida"];
 let salvando=false;
+const campoTexto=id=>{ const el=/** @type {HTMLInputElement|null} */(document.getElementById(id)); return el?el.value:""; };
 function salvarSheet(outro){
   const s=ui.sheet, k=mesSheet(); if(!s) return;
   if(s.id&&TIPOS_COM_ITEM.includes(s.tipo)&&!itemAtual()){ closeSheet(); render(); toast("Este item foi apagado (talvez em outro aparelho)."); return; }
@@ -3579,6 +3664,30 @@ function salvarSheet(outro){
     save("config"); closeSheet(); render(); toast(s.id?"Dívida atualizada.":tipo==="receber"?pessoa+" te deve "+brl(valor)+".":"Você deve "+brl(valor)+" a "+pessoa+"."); return;
   }
   if(s.tipo==="importar"){ if(s.itens) importarExtrato(); return; }
+  if(s.tipo==="excluirconta"){
+    if(campoTexto("s-excluir").trim().toUpperCase()!=="EXCLUIR") return erroSheet("Digite EXCLUIR para confirmar.","s-excluir");
+    const bt=/** @type {HTMLButtonElement|null} */(document.querySelector('#sheet button[type="submit"]')); if(bt){ bt.disabled=true; bt.textContent="Excluindo…"; }
+    excluirConta().catch(e=>{ console.error("Excluir conta:",e&&e.code); if(bt){ bt.disabled=false; bt.textContent="Excluir minha conta para sempre"; }
+      erroSheet(e&&e.message&&!e.code?e.message:"Não foi possível excluir agora ("+((e&&e.code)||"erro")+"). Confira a internet e tente de novo."); });
+    return;
+  }
+  if(s.tipo==="bksenha"){
+    const a=campoTexto("s-senha")||"", b=campoTexto("s-senha2")||"";
+    if(a.length<8) return erroSheet("Use uma senha com pelo menos 8 caracteres.","s-senha");
+    if(a!==b) return erroSheet("As duas senhas não são iguais.","s-senha2");
+    const bt=/** @type {HTMLButtonElement|null} */(document.querySelector('#sheet button[type="submit"]')); if(bt){ bt.disabled=true; bt.textContent="Criptografando…"; }
+    cifraBackup(textoBackup(),a).then(txt=>{ salvaInfoBackup({ultimo:hojeISO(),depois:null}); baixaArquivo("monetra-backup-"+new Date().toISOString().slice(0,10)+"-protegido.json",txt); closeSheet(); render(); toast("Backup com senha baixado."); })
+      .catch(()=>{ if(bt){ bt.disabled=false; bt.textContent="Baixar backup com senha"; } erroSheet("Não consegui criptografar neste navegador."); });
+    return;
+  }
+  if(s.tipo==="bkabrir"){
+    const senha=campoTexto("s-senha")||""; if(!senha) return erroSheet("Digite a senha do backup.","s-senha");
+    const arquivo=s.arquivo, bt=/** @type {HTMLButtonElement|null} */(document.querySelector('#sheet button[type="submit"]')); if(bt){ bt.disabled=true; bt.textContent="Abrindo…"; }
+    decifraBackup(arquivo,senha).then(txt=>{ let b; try{ b=validaBackup(JSON.parse(txt)); }catch(e){ if(bt){ bt.disabled=false; bt.textContent="Restaurar backup"; } erroSheet((e&&e.message?e.message:"Backup inválido.")+" Nada foi alterado."); return; }
+        const msg=aplicaBackup(b); closeSheet(); ui.importMsg=msg; render(); anunciar(msg); toast(msg); })
+      .catch(()=>{ if(bt){ bt.disabled=false; bt.textContent="Restaurar backup"; } erroSheet("Senha errada ou arquivo corrompido. Nada foi alterado.","s-senha"); });
+    return;
+  }
   if(s.tipo==="bem"){
     const nome=((document.getElementById("s-nome")||{}).value||"").trim(); if(!nome) return erroSheet("Dê um nome, ex.: Apartamento","s-nome");
     const vb=parseMoney((document.getElementById("s-valor")||{}).value); if(!(vb>0)) return erroSheet("Informe quanto vale, ex.: 250.000,00","s-valor");
@@ -4120,6 +4229,7 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 setInterval(()=>{ const d=new Date(); if(keyOf(d.getFullYear(),d.getMonth()+1)!==todayKey&&!ui.sheet&&!dirty.size) location.reload(); },60000);
 
 travar();
+migraPin().catch(()=>{});
 render();
 init();
 })();

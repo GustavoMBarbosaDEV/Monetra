@@ -1536,3 +1536,5 @@ html,body{overscroll-behavior-x:none}
 .ptlin .num.neg{color:var(--bad)}
 button.ptlin{cursor:pointer;min-height:48px}
 button.ptlin:hover b{color:var(--accent)}
+
+.exclista{margin:0 0 4px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
