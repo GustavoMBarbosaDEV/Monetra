@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.1.4 — 25/10/2026 **Avisos do navegador**
+
+- `manifest.webmanifest`: `share_target` com `"enctype": "application/x-www-form-urlencoded"` explícito (era o padrão, mas o Chrome avisava).
+- `index.html`: meta `mobile-web-app-capable`, que substitui a `apple-mobile-web-app-capable` no Chrome. A da Apple continua para iPhones mais antigos.
+
 ## 5.1.3 — 25/10/2026 **Segurança**
 
 - **Sair apaga a cópia offline:** ao sair da conta (botão Sair, "Esqueci o PIN" ou recusar os termos), o app encerra o Firestore e apaga a cópia dos dados guardada no navegador (`terminate` + `clearIndexedDbPersistence`) e recarrega a página. Antes, os lançamentos continuavam no IndexedDB depois de sair. Pendências são enviadas antes, como já acontecia. Com outra aba do app aberta, o navegador não deixa apagar; nesse caso a saída acontece normalmente e a cópia fica até a próxima saída.
