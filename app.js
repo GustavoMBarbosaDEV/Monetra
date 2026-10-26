@@ -333,10 +333,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.1.5";
+const VERSAO="5.1.6";
 const NOVIDADES=[
-  "Mais proteção no código do Monetra: cada atualização passa por verificações automáticas de segurança antes de chegar até você.",
-  "Encontrou uma falha? Veja como avisar com segurança no arquivo SECURITY.md do projeto."
+  "Revisão de segurança de tudo o que aparece na tela: textos de lançamentos, extratos, backups e do controle compartilhado não conseguem virar código.",
+  "Nada muda no uso do dia a dia."
 ];
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");
@@ -591,7 +591,7 @@ function parcelasDoMes(k){
     const valor=valorParcela(p.total,p.n,i);
     const o=((state.months[k]||{}).parcelas||{})[p.id]||{};
     const dia=cartao?Math.min(cc.vence,dim):Math.min(p.venc||p.dia,dim);
-    out.push({id:p.id,parcela:true,idx:i+1,n:p.n,desc:p.desc,cat:p.cat,sub:p.sub||null,tags:p.tags||[],forma:p.forma,contaId:p.contaId||null,cartaoId:cc?cc.id:null,dia,valor,total:p.total,compra:p.compra,cartao,pago:!!o.pago,pagoEm:o.pagoEm||null});
+    out.push({id:p.id,parcela:true,idx:i+1,n:p.n,desc:p.desc,cat:p.cat,sub:p.sub||null,tags:p.tags||[],forma:p.forma,contaId:p.contaId||null,cartaoId:cc?cc.id:null,dia,valor,total:p.total,compra:p.compra,cartao,pago:!!o.pago,pagoEm:typeof o.pagoEm==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(o.pagoEm)?o.pagoEm:null});
   });
   return out;
 }

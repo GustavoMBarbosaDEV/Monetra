@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.1.6 — 26/10/2026 **Auditoria de XSS**
+
+- Auditoria de todos os pontos que escrevem HTML (25 `innerHTML`, 1 `insertAdjacentHTML`, 1 `outerHTML`) e de todas as interpolações `${…}` dos templates, seguindo variáveis, parâmetros e listas até a origem. As 240 que não eram seguras por construção foram revisadas uma a uma: todo texto vindo do usuário, de extrato OFX/CSV, de backup ou de outro membro do compartilhado passa por `esc()`, inclusive em atributos (`data-*`, `aria-label`, `value`, `title`). Os demais são números, chaves de mês validadas ou textos fixos do app.
+- **Corrigido:** a data de pagamento de parcela (`pagoEm`, no mapa `parcelas` do mês) chegava à tela sem validação. Não era explorável (só 2 caracteres por recorte apareciam), mas agora só vale o formato `AAAA-MM-DD`, conferido em `parcelasDoMes`.
+- Teste de ataque: HTML malicioso em todos os campos de texto dos dados (categorias, subcategorias, contas, cartões, contas fixas, rendas, metas, parcelas, dívidas, viagens, desafios, etiquetas, ids, formas, `pagoEm`, quem lançou/pagou, transferências e acertos). Nas 5 abas, em todas as janelas de edição, na busca, no sininho e nos 31 dias do calendário, nenhum código executou e nenhum elemento foi injetado.
+
 ## 5.1.5 — 26/10/2026 **Segurança do repositório**
 
 - `.gitignore`: chaves e segredos nunca vão para o GitHub (`*.keystore`, `*.jks`, `*.pem`, `*.p12`, `*.key`, `signing*`, `.env*`, `google-services.json`, contas de serviço do Firebase) e o guia local `SEGURANCA-PAINEIS.md`.
