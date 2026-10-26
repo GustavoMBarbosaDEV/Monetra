@@ -333,11 +333,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.2.0";
+const VERSAO="5.2.1";
 const NOVIDADES=[
-  "Backup com senha: em Perfil → Exportar e backup, o arquivo sai criptografado e só abre com a sua senha.",
-  "Excluir minha conta: no fim do Perfil, apaga para sempre os seus dados e a sua conta de login, com confirmação.",
-  "Mais segurança por dentro: PIN guardado com proteção mais forte, ao sair os dados da pessoa somem do aparelho e regras do banco de dados mais rígidas."
+  "Mais proteção na nuvem: o app agora se identifica para o servidor, que pode recusar acessos que não venham do Monetra oficial.",
+  "Nada muda no seu uso: login, lançamentos e modo local continuam iguais."
 ];
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");
@@ -879,7 +878,9 @@ async function init(){
   try{
     const base="https://www.gstatic.com/firebasejs/"+FB_V+"/";
     const [A,U,F]=await Promise.all([import(base+"firebase-app.js"),import(base+"firebase-auth.js"),import(base+"firebase-firestore.js")]);
-    const app=A.initializeApp(cfg), auth=U.getAuth(app);
+    const app=A.initializeApp(cfg);
+    if(window.APPCHECK_SITE_KEY){ try{ const C=await import(base+"firebase-app-check.js"); C.initializeAppCheck(app,{provider:new C.ReCaptchaEnterpriseProvider(window.APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true}); }catch(e){ console.warn("App Check não iniciou",e); } }
+    const auth=U.getAuth(app);
     let db; try{ db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})}); }catch(e){ db=F.getFirestore(app); }
     fb={...U,...F,db,auth};
     U.getRedirectResult(auth).then(r=>{ if(r) boasVindas(r); }).catch(e=>{ loginErro=traduzErro(e); render(); });

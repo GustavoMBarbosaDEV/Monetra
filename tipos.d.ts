@@ -42,6 +42,7 @@ interface Credential { rawId?: ArrayBuffer; }
 interface Window {
   /** definido em firebase-config.js */
   FIREBASE_CONFIG: any;
+  APPCHECK_SITE_KEY?: string;
   /** navegadores antigos (Internet Explorer) */
   clipboardData?: any;
 }
