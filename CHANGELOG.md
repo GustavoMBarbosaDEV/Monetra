@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.1.7 — 26/10/2026 **Backup validado antes de restaurar**
+
+- O arquivo é conferido inteiro **antes** de mexer em qualquer dado; se algo estiver errado, aparece o motivo e nada é alterado (antes, um erro no meio podia deixar parte restaurada).
+- Limites: até 5 MB, 600 meses e 5.000 lançamentos por lista em cada mês. Precisa ser um objeto com `config` e `months`; se tiver `app`, tem que ser `"monetra"` (backups antigos sem esse campo continuam aceitos).
+- Lançamentos ficam só com os campos que o app usa (`id`, `dia`, `valor`, `desc`, `cat`, `sub`, `forma`, `contaId`, `cartaoId`, `metaId`, `tipo`, `de`, `para`, `por`, `pagou`, `imp`, `viagemId`, `tags`, `pago`, `pagoEm`, `orig`, `ir`), com tipos corrigidos e textos limitados. Nos mapas do mês (contas fixas, rendas, parcelas) ficam só `pago`, `pagoEm` (AAAA-MM-DD), `valor` (número), `pular` e `por`; faturas pagas viram verdadeiro/falso. Meses com chave inválida e chaves desconhecidas são descartados. As configurações já eram limpas campo a campo.
+- Mensagem com o resultado ("Backup restaurado: 2 meses e 6 lançamentos.") ou com o motivo da recusa, também lida pelo leitor de tela.
+- Testes: ida e volta (exportar e restaurar não perde nenhum valor; uma segunda volta não muda nada), arquivo de 6 MB, texto que não é JSON, lista, backup de outro app, backup sem meses, backup com campos estranhos e tipos errados, e backup com HTML malicioso.
+
 ## 5.1.6 — 26/10/2026 **Auditoria de XSS**
 
 - Auditoria de todos os pontos que escrevem HTML (25 `innerHTML`, 1 `insertAdjacentHTML`, 1 `outerHTML`) e de todas as interpolações `${…}` dos templates, seguindo variáveis, parâmetros e listas até a origem. As 240 que não eram seguras por construção foram revisadas uma a uma: todo texto vindo do usuário, de extrato OFX/CSV, de backup ou de outro membro do compartilhado passa por `esc()`, inclusive em atributos (`data-*`, `aria-label`, `value`, `title`). Os demais são números, chaves de mês validadas ou textos fixos do app.
