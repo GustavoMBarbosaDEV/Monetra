@@ -16,6 +16,17 @@ GoogleService-Info.plist
 serviceAccount*.json
 *-firebase-adminsdk-*.json
 
+# pacotes do PWABuilder, APK e backups (podem conter a chave de assinatura)
+*.zip
+*.7z
+*.apk
+*.aab
+*-key-info*
+
+# cache do Firebase CLI
+.firebase/
+.firebaserc
+
 # dependências e saídas dos testes das regras
 node_modules/
 firebase-debug.log

@@ -333,10 +333,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.2.3";
+const VERSAO="5.3.0";
 const NOVIDADES=[
   "Atualização de segurança em 31/10: de 29 a 31/10 o app pede um backup dos seus dados, só por precaução. Nada será apagado.",
-  "O olho que esconde os valores agora fica ao lado de \"Saldo do mês\", no Início."
+  "Preparação para um novo endereço do Monetra, com mais proteções do servidor. Por enquanto nada muda: continue usando o endereço de sempre."
 ];
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");

@@ -84,7 +84,9 @@ Para cada pessoa ter a própria conta e sincronizar entre aparelhos, faça o pas
 | `firestore.rules` | Regras de segurança para colar no Firebase |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Deixam o app instalável e abrindo sem internet |
 | `pre.js`, `boot.js`, `boot.css` | Preferências aplicadas antes de desenhar, tela de abertura e registro do service worker (fora do `index.html` por causa da CSP) |
-| `firebase.json`, `testes-regras/` | Testes das regras do Firestore no emulador |
+| `firebase.json` | Regras do Firestore, Firebase Hosting (arquivos publicados, cabeçalhos e cache) e emuladores |
+| `testes-regras/` | Testes das regras do Firestore no emulador |
+| `.github/workflows/hosting.yml` | Deploy no Firebase Hosting em push na `main` (precisa do secret da conta de serviço) |
 
 ## Controles compartilhados
 
@@ -124,7 +126,7 @@ Para mudanças grandes, use um branch `testes` e só junte na `main` (que é a v
 
 1. Abra **pwabuilder.com**, cole o endereço do app e clique em **Start**.
 2. Clique em **Package for stores** → **Android** → **Generate Package**.
-3. Em *Package ID*, use **sempre o mesmo** do APK já instalado (`io.github.gustavombarbosadev.twa`), senão o celular instala como outro app. Em *Signing key*, deixe **Create new**.
+3. Em *Package ID*, use **sempre o mesmo** do APK já instalado (`io.github.gustavombarbosadev.twa`), senão o celular instala como outro app. Em *Signing key*: **só na primeira vez** use **Create new**. Em toda atualização, escolha **Use mine** (ou "Upload existing") e envie o **mesmo `signing.keystore`** com as senhas do `signing-key-info.txt`; com chave nova o Android recusa a atualização e o `assetlinks.json` deixa de valer.
 4. Baixe o .zip. Dentro dele:
    - o arquivo **.apk**, para instalar e compartilhar;
    - o **signing.keystore** e o **signing-key-info.txt**: **guarde em lugar seguro**, porque sem eles não dá para atualizar o app depois;
@@ -155,6 +157,19 @@ O endereço do app passou de `https://gustavombarbosadev.github.io/MB-Controle/`
 - **Tela de abertura do APK:** no PWABuilder, use em *Icon URL* o `icons/splash-512.png` (logo sem o quadrado)
   e em *Background color* / *Splash color* o `#030605`. O ícone do celular continua vindo do `icon-maskable-512.png`.
 
+
+## Firebase Hosting (planejado, ainda não publicado)
+
+Endereço previsto: `https://mb-controle-f70b6.web.app`. Enquanto não houver deploy aprovado, o endereço oficial continua o GitHub Pages.
+
+- **O que é publicado:** a raiz do repositório, menos o que está em `hosting.ignore` no `firebase.json`. Saem só os arquivos do app (19 hoje). Para conferir a lista exata antes de publicar:
+  `node -e "const {listFiles}=require('./testes-regras/node_modules/firebase-tools/lib/listFiles.js');console.log(listFiles('.',require('./firebase.json').hosting.ignore).join('
+'))"`
+- **Arquivo novo no app** (CSS, JS, ícone): confira se entra na lista. **Arquivo interno novo** (nota, script, credencial): confira se fica de fora; na dúvida, acrescente ao `ignore`.
+- **Cabeçalhos:** a CSP do cabeçalho repete a da meta do `index.html`, mais `frame-ancestors 'none'` e `upgrade-insecure-requests`. Mudou a CSP da meta? Mude também a do `firebase.json`.
+- **Deploy:** `.github/workflows/hosting.yml` publica no canal `live` a cada push na `main`, só se existir o secret `FIREBASE_SERVICE_ACCOUNT_MB_CONTROLE_F70B6` (JSON de uma conta de serviço com o papel **Administrador do Firebase Hosting** e **Leitor de chaves de API**). Sem o secret, o job só avisa. Nunca coloque esse JSON no repositório.
+- **Antes do primeiro deploy:** incluir `https://mb-controle-f70b6.web.app/*` nos sites permitidos da chave de API e `mb-controle-f70b6.web.app` nos domínios da chave do reCAPTCHA (App Check); conferir `mb-controle-f70b6.web.app` nos domínios autorizados do Authentication.
+- **PWA instalado:** o `id` do manifest é relativo (`./`), então no domínio novo ele vira outro endereço e o celular trata como **outra instalação**; PIN, preferências e dados do modo local ficam no domínio antigo.
 
 ## Segurança do repositório
 
