@@ -83,6 +83,8 @@ Para cada pessoa ter a própria conta e sincronizar entre aparelhos, faça o pas
 | `firebase-config.js` | Onde você cola a configuração do seu Firebase |
 | `firestore.rules` | Regras de segurança para colar no Firebase |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Deixam o app instalável e abrindo sem internet |
+| `pre.js`, `boot.js`, `boot.css` | Preferências aplicadas antes de desenhar, tela de abertura e registro do service worker (fora do `index.html` por causa da CSP) |
+| `firebase.json`, `testes-regras/` | Testes das regras do Firestore no emulador |
 
 ## Controles compartilhados
 
@@ -111,8 +113,7 @@ Ao publicar uma versão nova:
 3. Faça o commit e o push.
 4. No GitHub Desktop, aba **History** → botão direito no commit → **Create Tag** → `v2.4.0` (o número da versão) → **Push origin**.
 
-Se mudar um dos 2 `<script>` escritos dentro do `index.html`, atualize os hashes `sha256-…` da meta **Content-Security-Policy** no topo do arquivo (com o texto em LF e em CRLF), senão o navegador bloqueia o script. Domínio externo novo (API, imagem, fonte) também precisa entrar nessa meta.
-
+A meta **Content-Security-Policy** do `index.html` só deixa rodar scripts dos arquivos do próprio site e do Google. Não escreva `<script>` nem `<style>` dentro do `index.html`: use um arquivo `.js`/`.css` e coloque no `SHELL` do `sw.js`. Domínio externo novo (API, imagem, fonte) precisa entrar na meta, senão o navegador bloqueia.
 Para mudanças grandes, use um branch `testes` e só junte na `main` (que é a versão no ar) quando estiver tudo certo.
 
 ## Aplicativo Android (APK) — grátis
@@ -161,6 +162,11 @@ O endereço do app passou de `https://gustavombarbosadev.github.io/MB-Controle/`
 - `.github/workflows/codeql.yml`: análise de segurança do código; os alertas aparecem na aba **Security** do GitHub.
 - `.github/dependabot.yml`: abre pull requests quando sai versão nova das Actions.
 - Como relatar falhas: `SECURITY.md`.
+
+## Regras do Firestore: testar e publicar
+
+- Testes em `testes-regras/regras.test.js`. Para rodar: instale o Node 20+ e o Java 21, depois `cd testes-regras`, `npm ci` e `npm test` (o emulador sobe sozinho). A Action `regras.yml` faz o mesmo no GitHub.
+- Mudou o `firestore.rules`? Rode os testes e **publique as regras**: Firebase Console → Firestore Database → Regras → cole o arquivo inteiro → Publicar. O app não depende de publicar, mas a proteção nova só vale depois disso.
 
 ## Checagem de tipos (VS Code / TypeScript)
 

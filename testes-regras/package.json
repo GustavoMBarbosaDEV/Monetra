@@ -1,0 +1,15 @@
+{
+  "name": "monetra-testes-regras",
+  "private": true,
+  "description": "Testes das regras do Firestore (firestore.rules) no emulador do Firebase",
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --config ../firebase.json --only firestore --project demo-monetra \"node --test\"",
+    "test:emulador-ligado": "node --test"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "4.0.1",
+    "firebase": "11.10.0",
+    "firebase-tools": "14.11.0"
+  }
+}
