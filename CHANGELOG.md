@@ -12,7 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
-## 5.3.0 — 26/10/2026 **Preparação do Firebase Hosting (planejado, não publicado)**
+## 5.3.1 — (publicar depois de 31/10/2026) **Aviso de mudança de endereço**
+
+- **Novo endereço:** quem abre o app pelo `gustavombarbosadev.github.io` vê, em todas as telas, um aviso de que o Monetra agora fica em `https://mb-controle-f70b6.web.app`. Não há redirecionamento automático: os lançamentos na nuvem continuam, mas o PIN, as preferências e os dados do modo local ficam no endereço antigo, porque para o navegador é outra instalação.
+- **Backup antes de ir:** com lançamentos carregados, o aviso mostra **Baixar backup** como botão principal e **Ir para o novo endereço** como secundário; depois do backup do dia, os papéis se invertem. O link mantém os parâmetros (`?convite=...`). No `web.app` o aviso não aparece.
+- **Mantém:** `gustavombarbosadev.github.io` nos domínios autorizados do Authentication, na chave de API e no reCAPTCHA enquanto o endereço antigo estiver em uso. A lógica do backup urgente de 29 a 31/10 não mudou.
+
+## 5.3.0 — 26/10/2026 **Firebase Hosting**
 
 - **Firebase Hosting configurado, sem deploy:** `firebase.json` ganhou a seção `hosting` para servir o app em `https://mb-controle-f70b6.web.app` (endereço planejado, ainda não publicado). O GitHub Pages continua sendo o endereço oficial durante a transição. Publica-se a própria raiz do repositório com uma lista de exclusão: saem só os 19 arquivos do app (HTML, CSS, JS, `manifest`, `sw.js`, `icons/` e `screenshots/`, que o manifest usa na tela de instalação); documentação, testes, notas locais, `.git`, `.github`, `.claude`, logs, `.env`, `.zip`/`.7z`, APK/AAB e arquivos de assinatura nunca vão. `.well-known/assetlinks.json` fica liberado para quando o TWA mudar de domínio.
 - **Cabeçalhos HTTP:** CSP igual à da meta do `index.html` mais `frame-ancestors 'none'` e `upgrade-insecure-requests`; `X-Frame-Options: DENY`; `X-Content-Type-Options: nosniff`; `Referrer-Policy: strict-origin-when-cross-origin`; `Permissions-Policy` montada a partir das APIs que o app usa (microfone, WebAuthn, compartilhar e área de transferência só para o próprio site; câmera, localização, pagamento, USB, Bluetooth e sensores desligados); `Cross-Origin-Opener-Policy: same-origin-allow-popups` (mantém o login do Google por popup); `Strict-Transport-Security` pedido, a conferir no domínio publicado (o Firebase pode substituir o valor no `*.web.app`).
