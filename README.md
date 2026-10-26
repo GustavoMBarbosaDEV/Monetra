@@ -34,6 +34,10 @@ Depois é só abrir pelo ícone, como qualquer aplicativo. As atualizações che
 - Os dados ficam no Google Firebase, protegidos por regras que impedem qualquer outra pessoa de ler ou alterar.
 - Nada é vendido nem usado para publicidade. Os termos completos ficam no app, em **Perfil → Privacidade**.
 
+## Segurança
+
+Encontrou uma falha? Veja como relatar no [SECURITY.md](SECURITY.md).
+
 ## Versões
 
 O histórico de novidades fica no [CHANGELOG.md](CHANGELOG.md) e no app, em **Perfil → Novidades**.

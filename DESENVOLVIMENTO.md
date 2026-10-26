@@ -155,6 +155,13 @@ O endereço do app passou de `https://gustavombarbosadev.github.io/MB-Controle/`
   e em *Background color* / *Splash color* o `#030605`. O ícone do celular continua vindo do `icon-maskable-512.png`.
 
 
+## Segurança do repositório
+
+- `.github/workflows/gitleaks.yml`: procura senhas e chaves em cada push. Falsos positivos se liberam no `.gitleaks.toml` (nunca libere uma chave de verdade).
+- `.github/workflows/codeql.yml`: análise de segurança do código; os alertas aparecem na aba **Security** do GitHub.
+- `.github/dependabot.yml`: abre pull requests quando sai versão nova das Actions.
+- Como relatar falhas: `SECURITY.md`.
+
 ## Checagem de tipos (VS Code / TypeScript)
 
 - O `app.js` começa com `// @ts-check` e tem os tipos principais em JSDoc (Config, Mes, Gasto, Parcela…).

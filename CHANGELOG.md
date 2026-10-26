@@ -12,6 +12,15 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.1.5 — 26/10/2026 **Segurança do repositório**
+
+- `.gitignore`: chaves e segredos nunca vão para o GitHub (`*.keystore`, `*.jks`, `*.pem`, `*.p12`, `*.key`, `signing*`, `.env*`, `google-services.json`, contas de serviço do Firebase) e o guia local `SEGURANCA-PAINEIS.md`.
+- **gitleaks** numa GitHub Action a cada push e pull request (`.github/workflows/gitleaks.yml`), com `.gitleaks.toml` liberando só a `apiKey` pública do Firebase. Histórico atual (92 commits) sem vazamentos.
+- **CodeQL** (JavaScript e Actions, consultas `security-extended`) a cada push em `main`/`testes`, em pull requests e toda segunda-feira.
+- **Dependabot** para as GitHub Actions.
+- `SECURITY.md`: como relatar falhas pelo relato privado do GitHub.
+- Erro ao ler extrato (OFX/CSV) não vai mais inteiro para o console (a mensagem podia trazer um trecho do arquivo); fica só o tipo do erro.
+
 ## 5.1.4 — 25/10/2026 **Avisos do navegador**
 
 - `manifest.webmanifest`: `share_target` com `"enctype": "application/x-www-form-urlencoded"` explícito (era o padrão, mas o Chrome avisava).
