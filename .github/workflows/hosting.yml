@@ -1,0 +1,38 @@
+name: Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-hosting
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      CONTA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MB_CONTROLE_F70B6 }}
+    steps:
+      - name: Conferir credencial
+        id: cred
+        run: |
+          if [ -z "$CONTA" ]; then
+            echo "::notice::Secret FIREBASE_SERVICE_ACCOUNT_MB_CONTROLE_F70B6 ausente: deploy pulado."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.cred.outputs.ok == 'true'
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: steps.cred.outputs.ok == 'true'
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MB_CONTROLE_F70B6 }}
+          projectId: mb-controle-f70b6
+          channelId: live

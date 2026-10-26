@@ -12,6 +12,15 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.3.0 — 26/10/2026 **Preparação do Firebase Hosting (planejado, não publicado)**
+
+- **Firebase Hosting configurado, sem deploy:** `firebase.json` ganhou a seção `hosting` para servir o app em `https://mb-controle-f70b6.web.app` (endereço planejado, ainda não publicado). O GitHub Pages continua sendo o endereço oficial durante a transição. Publica-se a própria raiz do repositório com uma lista de exclusão: saem só os 19 arquivos do app (HTML, CSS, JS, `manifest`, `sw.js`, `icons/` e `screenshots/`, que o manifest usa na tela de instalação); documentação, testes, notas locais, `.git`, `.github`, `.claude`, logs, `.env`, `.zip`/`.7z`, APK/AAB e arquivos de assinatura nunca vão. `.well-known/assetlinks.json` fica liberado para quando o TWA mudar de domínio.
+- **Cabeçalhos HTTP:** CSP igual à da meta do `index.html` mais `frame-ancestors 'none'` e `upgrade-insecure-requests`; `X-Frame-Options: DENY`; `X-Content-Type-Options: nosniff`; `Referrer-Policy: strict-origin-when-cross-origin`; `Permissions-Policy` montada a partir das APIs que o app usa (microfone, WebAuthn, compartilhar e área de transferência só para o próprio site; câmera, localização, pagamento, USB, Bluetooth e sensores desligados); `Cross-Origin-Opener-Policy: same-origin-allow-popups` (mantém o login do Google por popup); `Strict-Transport-Security` pedido, a conferir no domínio publicado (o Firebase pode substituir o valor no `*.web.app`).
+- **Cache:** `no-cache` para `/`, `index.html`, `sw.js`, `firebase-config.js`, `manifest.webmanifest` e `.well-known/**` (com `Content-Type: application/json`); 1 hora para o resto. O service worker já busca os arquivos do app revalidando, então a atualização do PWA não atrasa.
+- **Deploy automático preparado:** `.github/workflows/hosting.yml` publica no canal `live` só em push na `main` (nunca na `testes`), e só quando existir o secret `FIREBASE_SERVICE_ACCOUNT_MB_CONTROLE_F70B6`; sem ele, o job avisa e pula. Nenhuma credencial foi criada.
+- **`.gitignore`:** cobre também `.zip`/`.7z` do PWABuilder, APK/AAB, `*-key-info*` e a pasta `.firebase/`.
+- **Guia:** `DESENVOLVIMENTO.md` explica o Hosting e corrige o passo do PWABuilder: em atualizações, usar **a chave existente**, nunca "Create new".
+
 ## 5.2.3 — 26/10/2026 **Aviso de backup antes do App Check obrigatório**
 
 - **Backup urgente de 29 a 31/10/2026:** antes da aplicação obrigatória do App Check (31/10), o app pede a todos um backup: aviso no topo do mês atual com o botão "Baixar backup", item no sino (sem "Depois") e notificação uma vez por dia. Vale para quem tem qualquer lançamento e some quando a pessoa baixa um backup a partir de 29/10. Nenhum dado é apagado.

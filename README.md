@@ -5,6 +5,8 @@ Funciona no celular e no computador, com login Google e seus dados salvos na nuv
 
 👉 **Abrir o app:** https://gustavombarbosadev.github.io/Monetra/
 
+> Novo endereço planejado (ainda não publicado): https://mb-controle-f70b6.web.app. Até o aviso de mudança, use o endereço acima.
+
 ---
 
 ## O que dá para fazer
