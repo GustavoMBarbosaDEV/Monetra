@@ -333,10 +333,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.1.4";
+const VERSAO="5.1.5";
 const NOVIDADES=[
-  "Ajustes de instalação: o app segue o padrão mais novo do navegador para ser instalado e para receber o que você compartilha de outros apps.",
-  "Nada muda no uso do dia a dia."
+  "Mais proteção no código do Monetra: cada atualização passa por verificações automáticas de segurança antes de chegar até você.",
+  "Encontrou uma falha? Veja como avisar com segurança no arquivo SECURITY.md do projeto."
 ];
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");
@@ -3087,7 +3087,7 @@ async function abrirArquivoExtrato(file){
     if(!r.itens.length){ s.erroImp=r.erro||"Não encontrei lançamentos neste arquivo. Confira se é um extrato em OFX ou CSV."; s.itens=null; renderSheet(); return; }
     s.erroImp=""; s.arquivo=file.name; s.cartaoArq=cartao; s.contaImp=valSel("s-impconta")||s.contaImp; s.cartaoImp=valSel("s-cartao")||s.cartaoImp;
     s.itens=preparaImportacao(r.itens,cartao); renderSheet();
-  }catch(e){ console.error(e); s.erroImp="Não consegui ler o arquivo."; renderSheet(); }
+  }catch(e){ console.error("Importar extrato:",e&&e.name); s.erroImp="Não consegui ler o arquivo."; renderSheet(); }
 }
 function importarExtrato(){
   const s=ui.sheet, its=(s.itens||[]).filter(x=>x.incluir&&!x.bloq); if(!its.length) return erroSheet("Marque pelo menos um lançamento para importar.");
