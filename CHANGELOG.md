@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.1.3 — 25/10/2026 **Segurança**
+
+- **Sair apaga a cópia offline:** ao sair da conta (botão Sair, "Esqueci o PIN" ou recusar os termos), o app encerra o Firestore e apaga a cópia dos dados guardada no navegador (`terminate` + `clearIndexedDbPersistence`) e recarrega a página. Antes, os lançamentos continuavam no IndexedDB depois de sair. Pendências são enviadas antes, como já acontecia. Com outra aba do app aberta, o navegador não deixa apagar; nesse caso a saída acontece normalmente e a cópia fica até a próxima saída.
+- **Política de segurança de conteúdo (CSP)** no `index.html`: scripts só do próprio site, dos 2 scripts do index.html (por hash) e do Google (`www.gstatic.com`, `apis.google.com`); conexões só com o Google (`*.googleapis.com`) e a API de cotação (`open.er-api.com`); fotos de perfil do Google; nada de `object`/`embed`.
+- **PIN:** o quadro do PIN explica que ele trava a tela, mas não criptografa os dados, e sugere usar Sair em computador de outras pessoas.
+
 ## 5.1.2 — 25/10/2026 **Limpeza e textos atualizados**
 
 - Textos com nomes antigos das abas: Relatórios sem dados dizia “A visão geral aparece…” e “Vá na aba Mês”; Perfil → Renda e saldos dizia “ajuste na aba Mês”. Agora falam em Relatórios e Início. A descrição da página (index.html) também.

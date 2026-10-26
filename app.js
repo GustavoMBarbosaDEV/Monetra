@@ -333,10 +333,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.1.2";
+const VERSAO="5.1.3";
 const NOVIDADES=[
-  "Textos atualizados com os nomes atuais das abas: Relatórios e Início.",
-  "Limpeza interna do código e do visual, sem mudar nada no uso do app."
+  "Mais segurança: ao tocar em Sair, a cópia dos seus lançamentos guardada no navegador é apagada. Bom para computador de outras pessoas.",
+  "O app só aceita scripts dele mesmo e do Google (login e banco de dados), o que protege contra código estranho."
 ];
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");
@@ -829,7 +829,13 @@ function loadLocal(){
   try{ const raw=localStorage.getItem(LSKEY); if(raw){ const d=JSON.parse(raw); if(d.config){ state.config=normConfig(d.config); buildMeses(); } if(d.months) for(const k in d.months) if(mesValido(k)) state.months[k]=normMonth(d.months[k]); } }catch(e){}
 }
 function resetState(){ state.config=defaultConfig(); state.months={}; buildMeses(); }
-let fb=null, authUser=null, unsub=null, loginErro="";
+let fb=null, authUser=null, unsub=null, loginErro=(()=>{ try{ const m=sessionStorage.getItem("mb.loginErro")||""; sessionStorage.removeItem("mb.loginErro"); return m; }catch(e){ return ""; } })();
+async function encerraSessao(msg){
+  if(msg){ try{ sessionStorage.setItem("mb.loginErro",msg); }catch(e){} }
+  try{ await fb.signOut(fb.auth); }catch(e){}
+  try{ await fb.terminate(fb.db); await fb.clearIndexedDbPersistence(fb.db); }catch(e){}
+  location.reload();
+}
 let aberto="pessoal", eu={}, euCarregado=false, grupoDoc=null, pedidosG={}, unsubs=[], unsubsFixos=[], seqEspaco=0, perdendo={};
 const FB_V="10.12.2";
 async function init(){
@@ -1219,7 +1225,7 @@ document.addEventListener("click",e=>{
   if(a==="bio"){ usarBio(false); return; }
   if(a==="esqueci"){ esqueciPin=true; renderLock(); }
   if(a==="voltar"){ esqueciPin=false; renderLock(); }
-  if(a==="sair"){ salvaPinCfg(null); salvaErros({n:0,ate:0}); destravar(); if(fb) fb.signOut(fb.auth); }
+  if(a==="sair"){ salvaPinCfg(null); salvaErros({n:0,ate:0}); destravar(); if(fb) encerraSessao(); }
   if(a==="apagar"){ if(!lk.dataset.ok){ lk.dataset.ok="1"; lk.textContent="Toque de novo para apagar tudo"; return; } try{ localStorage.removeItem(LSKEY); }catch(e){} salvaPinCfg(null); salvaErros({n:0,ate:0}); location.reload(); }
 });
 document.addEventListener("keydown",e=>{ if(!travado) return; if(esqueciPin){ if(e.key!=="Tab"&&e.key!=="Enter"&&e.key!==" ") e.preventDefault(); return; } if(e.key.length===1&&!/^\d$/.test(e.key)){ e.preventDefault(); return; } if(/^\d$/.test(e.key)){ e.preventDefault(); teclaPin(e.key); } else if(e.key==="Backspace"){ e.preventDefault(); teclaPin("del"); } },true);
@@ -1256,6 +1262,7 @@ function cardPin(){
   const c=pinCfg();
   return `<div class="card" id="bloqueio"><div class="cardhead"><h2>Bloqueio com PIN</h2>${c?'<span class="tag">ligado</span>':""}</div>
   ${c?`<p class="hint">O app pede o PIN de ${PINLEN} números ao abrir neste aparelho. Cada aparelho tem o seu.</p>
+    <p class="hint">O PIN é uma trava da tela: impede que alguém abra o app no seu aparelho, mas não criptografa os dados. Em computador de outras pessoas, use <b>Sair</b> no fim.</p>
     <label class="f">Pedir o PIN de novo quando voltar para o app<select class="in" id="pinApos">${[[0,"Na hora"],[1,"Depois de 1 minuto fora"],[5,"Depois de 5 minutos fora"],[15,"Depois de 15 minutos fora"]].map(([v,t])=>`<option value="${v}" ${Number(c.apos)===v?"selected":""}>${t}</option>`).join("")}</select></label>
     ${bioOk?`<label class="switch"><input type="checkbox" id="pinBio" ${c.bio?"checked":""}><span></span>Desbloquear com digital (ou rosto)</label>`:bioOk===false?`<p class="hint">Desbloqueio por digital: este aparelho ou navegador não oferece leitor de digital para sites.</p>`:""}
     <div class="row2"><button class="btn ghost" type="button" data-novo="pin" data-pinmodo="trocar">Trocar PIN</button><button class="btn ghost" type="button" data-novo="pin" data-pinmodo="desligar">Desligar</button></div>`
@@ -3002,7 +3009,7 @@ function acaoTermos(a){
   if(a==="fechar"){ ui.lerTermos=false; render(); window.scrollTo({top:0}); return; }
   if(a==="aceitar"){ const t={v:TERMOS_V,em:new Date().toISOString()}; if(mode==="cloud") salvaEu({termos:t}); else { state.config.termos=t; save("config"); } ui.recusouTermos=false; ui.lerTermos=false; render(); toast("Termos aceitos. Bom controle!"); return; }
   if(a==="recusar"){
-    if(mode==="cloud"&&fb){ loginErro="Para usar o Monetra é preciso aceitar os termos de privacidade. Seus dados não foram alterados."; fb.signOut(fb.auth); return; }
+    if(mode==="cloud"&&fb){ encerraSessao("Para usar o Monetra é preciso aceitar os termos de privacidade. Seus dados não foram alterados."); return; }
     ui.recusouTermos=true; render(); return;
   }
   if(a==="revogar"){ if(!confirmaRevogar()) return; if(mode==="cloud") salvaEu({termos:null}); else { state.config.termos=null; save("config"); } ui.lerTermos=false; render(); window.scrollTo({top:0}); }
@@ -3898,7 +3905,7 @@ app.addEventListener("click",e=>{
   if(d.termos){ acaoTermos(d.termos); return; }
   if(d.comp){ acaoComp(d.comp,d.id); return; }
   if(d.virafixo!==undefined){ virarFixo(+d.virafixo); return; }
-  if(d.logout){ setStatus("Salvando antes de sair…","saving"); salvaPendentes().finally(()=>fb.signOut(fb.auth)); return; }
+  if(d.logout){ setStatus("Salvando antes de sair…","saving"); salvaPendentes().finally(()=>encerraSessao()); return; }
   if(d.tema){ trocaTema(); return; }
   if(d.privado){ trocaPrivado(); return; }
   if(d.acerto){ const [de,para,v]=d.acerto.split("|"), mes=d.mes||ui.month, valor=Number(v); if(!(valor>0)) return;
