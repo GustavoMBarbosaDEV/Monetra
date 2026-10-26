@@ -333,10 +333,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.1.6";
+const VERSAO="5.1.7";
 const NOVIDADES=[
-  "Revisão de segurança de tudo o que aparece na tela: textos de lançamentos, extratos, backups e do controle compartilhado não conseguem virar código.",
-  "Nada muda no uso do dia a dia."
+  "Restaurar backup ficou mais seguro: o arquivo é conferido inteiro antes, e se algo estiver errado nada é alterado.",
+  "Depois de restaurar, o app mostra quantos meses e lançamentos voltaram."
 ];
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");
@@ -1465,13 +1465,52 @@ function exportar(){
   const blob=new Blob([JSON.stringify({app:"monetra",versao:2,exportadoEm:new Date().toISOString(),config:state.config,months:state.months},null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="monetra-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
+const BACKUP_MAX=5*1024*1024, BACKUP_MESES_MAX=600, BACKUP_ITENS_MAX=5000;
+const CAMPOS_ITEM=["id","dia","valor","desc","cat","sub","forma","contaId","cartaoId","metaId","tipo","de","para","por","pagou","imp","viagemId","tags","pago","pagoEm","orig","ir"];
+const ehObj=x=>!!x&&typeof x==="object"&&!Array.isArray(x);
+const textoCurto=(v,max)=>String(v).slice(0,max);
+function itemBackup(x){ const o={}; CAMPOS_ITEM.forEach(k=>{ if(k in x) o[k]=x[k]; });
+  ["desc","imp"].forEach(k=>{ if(typeof o[k]==="string") o[k]=textoCurto(o[k],500); });
+  ["cat","sub","forma","contaId","cartaoId","metaId","tipo","de","para","por","pagou","viagemId","ir"].forEach(k=>{ if(typeof o[k]==="string") o[k]=textoCurto(o[k],128); });
+  o.id=textoCurto(o.id,128); return o; }
+/** @param {any} m @returns {Object<string,any>} */
+function mapaBackup(m){ /** @type {Object<string,any>} */ const out={}; if(!ehObj(m)) return out;
+  Object.keys(m).slice(0,2000).forEach(id=>{ const x=m[id]; if(!ehObj(x)||!id||id.length>128) return; const o={};
+    if("pago" in x) o.pago=!!x.pago;
+    if(typeof x.pagoEm==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x.pagoEm)) o.pagoEm=x.pagoEm;
+    if(typeof x.valor==="number"&&isFinite(x.valor)) o.valor=x.valor;
+    if("pular" in x) o.pular=!!x.pular;
+    if(typeof x.por==="string"&&x.por.length<=128) o.por=x.por;
+    out[id]=o; });
+  return out; }
+/** confere o backup inteiro antes de mexer em qualquer dado; devolve os dados limpos ou lança um erro com a mensagem para a pessoa */
+function validaBackup(d){
+  if(!ehObj(d)) throw new Error("Este arquivo não é um backup do Monetra.");
+  if("app" in d&&d.app!=="monetra") throw new Error("Este arquivo é de outro aplicativo, não do Monetra.");
+  if(!ehObj(d.config)||!ehObj(d.months)) throw new Error("O arquivo não tem as configurações e os meses de um backup do Monetra.");
+  const ks=Object.keys(d.months).filter(mesValido);
+  if(ks.length>BACKUP_MESES_MAX) throw new Error("O backup tem meses demais ("+ks.length+").");
+  const months={}; let n=0;
+  ks.forEach(k=>{ const bruto=d.months[k]; if(!ehObj(bruto)) return; const m=normMonth(bruto);
+    ["avulsos","gastos","caixinha","transf"].forEach(l=>{ if(m[l].length>BACKUP_ITENS_MAX) throw new Error("O mês "+nomeMes(k).toLowerCase()+" tem lançamentos demais."); m[l]=m[l].map(itemBackup); n+=m[l].length; });
+    m.fixos=mapaBackup(m.fixos); m.rendas=mapaBackup(m.rendas); m.parcelas=mapaBackup(m.parcelas);
+    /** @type {Object<string,boolean>} */ const fp={}; if(ehObj(m.faturasPagas)) Object.keys(m.faturasPagas).slice(0,200).forEach(id=>{ if(id.length<=128) fp[id]=!!m.faturasPagas[id]; }); m.faturasPagas=fp;
+    months[k]=m; });
+  return {config:normConfig(d.config),months,meses:Object.keys(months).length,lancamentos:n};
+}
 function importar(file){
   if(mode==="cloud"&&aberto!=="pessoal"){ ui.importMsg="Para restaurar um backup, abra o controle Pessoal (botões no topo)."; render(); return; }
+  const avisa=msg=>{ ui.importMsg=msg; render(); anunciar(msg); };
+  if(!file) return;
+  if(file.size>BACKUP_MAX){ avisa("Arquivo grande demais para um backup do Monetra (máximo 5 MB). Nada foi alterado."); return; }
   const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(String(r.result)); if(!d.config||!d.months) throw 0;
-    const t=state.config.termos; state.config=normConfig(d.config); if(!state.config.termos) state.config.termos=t; buildMeses(); save("config");
-    for(const k in d.months){ if(!mesValido(k)) continue; state.months[k]=normMonth(d.months[k]); save(k); }
-    ui.importMsg="Backup restaurado."; render(); }catch(e){ ui.importMsg="Arquivo inválido. Use um backup baixado pelo Monetra."; render(); } };
+  r.onerror=()=>avisa("Não consegui ler o arquivo. Nada foi alterado.");
+  r.onload=()=>{ let b;
+    try{ let d; try{ d=JSON.parse(String(r.result)); }catch(e){ throw new Error("Este arquivo não é um backup do Monetra."); } b=validaBackup(d); }
+    catch(e){ avisa((e&&e.message?e.message:"Arquivo inválido.")+" Use um backup baixado pelo Monetra. Nada foi alterado."); return; }
+    const t=state.config.termos; state.config=b.config; if(!state.config.termos) state.config.termos=t; buildMeses(); save("config");
+    Object.keys(b.months).forEach(k=>{ state.months[k]=b.months[k]; save(k); });
+    avisa("Backup restaurado: "+b.meses+(b.meses===1?" mês":" meses")+" e "+b.lancamentos+(b.lancamentos===1?" lançamento.":" lançamentos.")); };
   r.readAsText(file);
 }
 function exportarPlanilha(){
