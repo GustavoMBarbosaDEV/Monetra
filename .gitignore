@@ -23,6 +23,9 @@ serviceAccount*.json
 *.aab
 *-key-info*
 
+# configurações locais do Claude Code
+.claude/
+
 # cache do Firebase CLI
 .firebase/
 .firebaserc

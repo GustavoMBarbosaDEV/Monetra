@@ -5,11 +5,13 @@ on:
     paths:
       - "firestore.rules"
       - "testes-regras/**"
+      - "firebase.json"
       - ".github/workflows/regras.yml"
   pull_request:
     paths:
       - "firestore.rules"
       - "testes-regras/**"
+      - "firebase.json"
   workflow_dispatch:
 
 permissions:
