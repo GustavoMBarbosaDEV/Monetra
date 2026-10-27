@@ -178,6 +178,11 @@ Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_
 - **Domínio novo no Firebase:** incluir `https://<domínio>/*` nos sites permitidos da chave de API, `<domínio>` nos domínios da chave do reCAPTCHA (App Check) e nos domínios autorizados do Authentication. Os endereços antigos ficam nessas listas enquanto estiverem em uso (inclusive por APKs antigos).
 - **PWA instalado:** o `id` do manifest é relativo (`./`), então em outro domínio ele vira outro endereço e o celular trata como **outra instalação**; PIN, preferências e dados do modo local ficam no domínio antigo.
 
+## Bibliotecas de terceiros (vendor/)
+
+- **pdf.js 6.3.289** (build `legacy`), em `vendor/pdfjs-6.3.289/`: `pdf.min.mjs`, `pdf.worker.min.mjs` e `LICENSE` (Apache-2.0). Usado só na importação de extrato em PDF e carregado sob demanda (`carregaPdfjs()` em `app.js`). Não entra no `SHELL` do `sw.js` (são ~1,8 MB); o service worker guarda os arquivos na primeira vez que forem usados.
+- **Atualizar:** `npm pack pdfjs-dist@<versão>` numa pasta temporária, copie `legacy/build/pdf.min.mjs`, `legacy/build/pdf.worker.min.mjs` e `LICENSE` para uma pasta nova `vendor/pdfjs-<versão>/`, troque `PDFJS_DIR` no `app.js`, apague a pasta antiga e teste a importação com PDFs reais e com senha. A pasta leva a versão no nome para nenhum cache antigo misturar arquivos.
+
 ## Segurança do repositório
 
 - `.github/workflows/gitleaks.yml`: procura senhas e chaves em cada push. Falsos positivos se liberam no `.gitleaks.toml` (nunca libere uma chave de verdade).

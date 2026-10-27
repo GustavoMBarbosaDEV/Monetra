@@ -12,6 +12,15 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.3.6 — 27/10/2026 **Importar extrato em PDF**
+
+- **PDF na importação:** Ajustes → Importar extrato do banco aceita `.pdf`, além de OFX e CSV. O texto é extraído no próprio aparelho com o pdf.js 6.3.289 (build `legacy`, para Safari/iOS e Android mais antigos), guardado em `vendor/pdfjs-6.3.289/` com a licença Apache-2.0 e carregado só quando o arquivo escolhido é PDF. Nada vem de CDN e a CSP não mudou (`isEvalSupported:false`, worker em módulo do próprio site).
+- **Leitura:** os trechos de texto são agrupados por linha (mesma altura na página) e uma linha vira lançamento quando tem data (`dd/mm`, `dd/mm/aaaa`, `12 OUT`, `12 de outubro de 2026`) e valor (`1.234,56`, `-45,90`, `R$`, `D`/`C`). Cabeçalhos, saldos, totais, limite, vencimento e pagamento mínimo são ignorados. Linhas sem data usam a data do cabeçalho do dia (como no Inter e na conta do Nubank). Com coluna de saldo, vale o primeiro valor; valores em dólar são descartados. O ano vem do próprio documento.
+- **Fatura ou extrato:** detectado pelo texto (fatura, limite, pagamento mínimo × extrato, saldo, agência). Na fatura, valor positivo é gasto e negativo é pagamento/estorno; no extrato, negativo ou `D` é gasto e positivo ou `C` é receita. A prévia, os duplicados e a sugestão de categoria são os mesmos do CSV (`preparaImportacao`).
+- **PDF com senha:** o app pede a senha numa caixa própria, não guarda, e mostra "Senha incorreta" quando ela não abre o arquivo. PDF escaneado (sem texto) ou sem nenhuma linha reconhecida mostra uma explicação e sugere OFX/CSV.
+- **Correção:** a caixa "É a fatura de um cartão de crédito" deixou de voltar marcada sozinha depois de importar uma fatura (antes o arquivo seguinte também era tratado como fatura).
+- **Textos:** card de importação, busca e tutorial (Mapa: Ajustes) citam o PDF.
+
 ## 5.3.5 — 27/10/2026 **Tutorial com o mapa do app**
 
 - **Tutorial:** o passo genérico "Tem muito mais" virou um mapa em quatro passos com o caminho de cada função: **Mapa: Ajustes** (contas fixas, parcelas, modo viagem, dívidas, ferramentas, **Importar extrato do banco** com o passo a passo do OFX/CSV, contas, cartões, categorias e regras), **Mapa: Perfil** (compartilhados, renda e saldos, aparência, PIN, lembretes, acessibilidade, backup, privacidade, recomeçar e excluir conta), **Mapa: Relatórios** e **Atalhos** (busca, olho, quem pagou, comprovante, app Android). O caminho para Ajustes aparece certo para cada aparelho: **Perfil → Ajustes** no celular e a aba **Ajustes** no computador. Agora são 12 passos.
