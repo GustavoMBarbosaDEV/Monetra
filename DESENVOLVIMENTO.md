@@ -137,7 +137,7 @@ Para mudanças grandes, use um branch `testes` e só junte na `main` (que é a v
 `https://gustavombarbosadev.github.io/.well-known/assetlinks.json`. Para isso, crie um repositório chamado
 `GustavoMBarbosaDEV.github.io`, coloque nele a pasta `.well-known` com o `assetlinks.json` e um arquivo `.nojekyll`, e ative o GitHub Pages.
 
-O APK abre o próprio site, então toda atualização publicada no GitHub aparece no app sem gerar outro APK.
+O APK abre o próprio site, então toda atualização publicada aparece no app sem gerar outro APK. O endereço atual do app e do APK está em "Firebase Hosting" (abaixo); o download do APK para quem usa fica em `https://monetraapp.web.app/baixar`.
 
 
 ## Troca de nome do repositório (MB-Controle → Monetra, na 5.0.9)
@@ -160,19 +160,23 @@ O endereço do app passou de `https://gustavombarbosadev.github.io/MB-Controle/`
 
 ## Firebase Hosting
 
-Endereço: `https://mb-controle-f70b6.web.app` (primeiro deploy em 26/10/2026, versão 5.3.0, pela CLI). O GitHub Pages continua no ar durante a transição.
+Endereço oficial: `https://monetraapp.web.app` (site `monetraapp`, desde a 5.3.3). O projeto continua o `mb-controle-f70b6`.
+Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_ANTIGOS` no `app.js`): `gustavombarbosadev.github.io/Monetra` (GitHub Pages, branch `main`) e o site padrão `mb-controle-f70b6.web.app` (5.3.0 a 5.3.2).
 
+- **Dois sites no `firebase.json`:** `hosting` é uma lista com uma configuração para `monetraapp` e outra para `mb-controle-f70b6`, iguais (arquivos, `ignore`, `/baixar`, cabeçalhos e cache). Mudou uma? **Mude a outra igual.**
 - **Deploy pela CLI (neste PC):** `.\testes-regras\node_modules\.bin\firebase.cmd login` uma vez; depois
-  `.\testes-regras\node_modules\.bin\firebase.cmd deploy --only hosting --project mb-controle-f70b6`. O `--only hosting` não mexe nas regras do Firestore.
-- **O que é publicado:** a raiz do repositório, menos o que está em `hosting.ignore` no `firebase.json`. Saem só os arquivos do app e o `.well-known/assetlinks.json` (20 hoje). Para conferir a lista exata antes de publicar:
-  `node -e "const {listFiles}=require('./testes-regras/node_modules/firebase-tools/lib/listFiles.js');console.log(listFiles('.',require('./firebase.json').hosting.ignore).join('
+  `.\testes-regras\node_modules\.bin\firebase.cmd deploy --only hosting:monetraapp --project mb-controle-f70b6`.
+  Para o site antigo (só para o aviso de mudança chegar a quem ainda está nele): `--only hosting:mb-controle-f70b6`. O `--only hosting:...` não mexe nas regras do Firestore.
+- **`/baixar`:** redirecionamento 302 para `https://github.com/gustavombarbosadev/Monetra/releases/latest/download/Monetra.apk`, o APK da Release mais nova. O botão **Baixar o app para Android** da apresentação usa `https://monetraapp.web.app/baixar` (`APK_URL`).
+- **O que é publicado:** a raiz do repositório, menos o que está em `ignore`. Saem só os arquivos do app e o `.well-known/assetlinks.json` (20 hoje). Para conferir a lista exata antes de publicar:
+  `node -e "const {listFiles}=require('./testes-regras/node_modules/firebase-tools/lib/listFiles.js');console.log(listFiles('.',require('./firebase.json').hosting[0].ignore).join('
 '))"`
-- **Arquivo novo no app** (CSS, JS, ícone): confira se entra na lista. **Arquivo interno novo** (nota, script, credencial): confira se fica de fora; na dúvida, acrescente ao `ignore`.
-- **Cabeçalhos:** a CSP do cabeçalho repete a da meta do `index.html`, mais `frame-ancestors 'none'` e `upgrade-insecure-requests`. Mudou a CSP da meta? Mude também a do `firebase.json`. No Hosting a CSP do cabeçalho vale também para o `sw.js`: tudo o que o service worker busca com `fetch` (o SDK em `www.gstatic.com`, por exemplo) precisa estar no `connect-src`.
-- **APK (TWA) no domínio novo:** o `.well-known/assetlinks.json` deste repositório é publicado em `https://mb-controle-f70b6.web.app/.well-known/assetlinks.json`, com o mesmo Package ID e a mesma impressão SHA-256 do arquivo do `GustavoMBarbosaDEV.github.io`. No PWABuilder, use o endereço `https://mb-controle-f70b6.web.app/`, o **mesmo Package ID**, a **mesma chave** e um **número de versão maior** (veja "Gerar o APK"). Quem atualizar o APK abre o app no domínio novo: dados do modo local, PIN e preferências do domínio antigo não vêm junto (os dados da nuvem vêm).
-- **Deploy:** `.github/workflows/hosting.yml` publica no canal `live` a cada push na `main`, só se existir o secret `FIREBASE_SERVICE_ACCOUNT_MB_CONTROLE_F70B6` (JSON de uma conta de serviço com o papel **Administrador do Firebase Hosting** e **Leitor de chaves de API**). Sem o secret, o job só avisa. Nunca coloque esse JSON no repositório.
-- **Antes do primeiro deploy:** incluir `https://mb-controle-f70b6.web.app/*` nos sites permitidos da chave de API e `mb-controle-f70b6.web.app` nos domínios da chave do reCAPTCHA (App Check); conferir `mb-controle-f70b6.web.app` nos domínios autorizados do Authentication.
-- **PWA instalado:** o `id` do manifest é relativo (`./`), então no domínio novo ele vira outro endereço e o celular trata como **outra instalação**; PIN, preferências e dados do modo local ficam no domínio antigo.
+- **Arquivo novo no app** (CSS, JS, ícone): confira se entra na lista. **Arquivo interno novo** (nota, script, credencial): confira se fica de fora; na dúvida, acrescente ao `ignore` dos dois sites.
+- **Cabeçalhos:** a CSP do cabeçalho repete a da meta do `index.html`, mais `frame-ancestors 'none'` e `upgrade-insecure-requests`. Mudou a CSP da meta? Mude também a do `firebase.json` (nos dois sites). No Hosting a CSP do cabeçalho vale também para o `sw.js`: tudo o que o service worker busca com `fetch` (o SDK em `www.gstatic.com`, por exemplo) precisa estar no `connect-src`.
+- **APK (TWA):** o `.well-known/assetlinks.json` deste repositório é publicado nos dois sites, com o mesmo Package ID (`io.github.gustavombarbosadev.twa`) e a mesma impressão SHA-256. No PWABuilder, use o host `monetraapp.web.app`, o **mesmo Package ID**, a **mesma chave** e um **versionCode maior** (veja "Gerar o APK"); publique o `.apk` como `Monetra.apk` numa Release nova do GitHub para o `/baixar` entregar a versão nova. Quem atualizar o APK abre o app no domínio novo: dados do modo local, PIN e preferências do domínio antigo não vêm junto (os dados da nuvem vêm).
+- **Deploy automático:** `.github/workflows/hosting.yml` publica no site `monetraapp` (canal `live`) a cada push na `main`, só se existir o secret `FIREBASE_SERVICE_ACCOUNT_MB_CONTROLE_F70B6` (JSON de uma conta de serviço com o papel **Administrador do Firebase Hosting** e **Leitor de chaves de API**). Sem o secret, o job só avisa. Nunca coloque esse JSON no repositório.
+- **Domínio novo no Firebase:** incluir `https://<domínio>/*` nos sites permitidos da chave de API, `<domínio>` nos domínios da chave do reCAPTCHA (App Check) e nos domínios autorizados do Authentication. Os endereços antigos ficam nessas listas enquanto estiverem em uso (inclusive por APKs antigos).
+- **PWA instalado:** o `id` do manifest é relativo (`./`), então em outro domínio ele vira outro endereço e o celular trata como **outra instalação**; PIN, preferências e dados do modo local ficam no domínio antigo.
 
 ## Segurança do repositório
 
