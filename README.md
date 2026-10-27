@@ -19,7 +19,7 @@ Funciona no celular e no computador, com login Google e seus dados salvos na nuv
 - **Lembretes:** sininho com contas que vencem, notificações e lembretes no calendário do celular.
 - **Caixinha e metas:** guarde dinheiro separado do saldo e acompanhe metas com prazo.
 - **Categorias do seu jeito:** cores, limite por mês, subcategorias e etiquetas (#viagem, #presente).
-- **Várias contas e cartões**, transferências e **importação de extrato** do banco (OFX/CSV).
+- **Várias contas e cartões**, transferências e **importação de extrato** do banco (OFX, CSV ou PDF, inclusive com senha).
 - **Controle compartilhado** com a família, separado do seu controle pessoal.
 - **Dívidas com pessoas:** quem te deve e para quem você deve.
 - **Relatórios e retrospectiva do ano**, planilha para Excel e backup.

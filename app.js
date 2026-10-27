@@ -248,6 +248,10 @@
  * @property {Array<any>} [itens]
  * @property {string} [pinModo]
  * @property {boolean} [cartaoArq]
+ * @property {boolean} [cartaoMarcado]
+ * @property {File|null} [pdfArq]
+ * @property {boolean} [pedeSenha]
+ * @property {boolean} [lendo]
  * @property {string} [cartaoImp]
  * @property {string} [contaImp]
  * @property {string} [dTipo]
@@ -333,16 +337,13 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.3.5";
+const VERSAO="5.3.6";
 const NOVIDADES=[
-  "Tutorial novo: além do básico, ele mostra um mapa de onde fica cada função (Ajustes, Perfil, Relatórios e atalhos), inclusive Importar extrato do banco. Reveja em Perfil → Tutorial.",
-  "O Monetra mudou de endereço: agora é monetraapp.web.app. Seus lançamentos na nuvem continuam; no endereço novo, entre com a mesma conta Google. PIN e preferências precisam ser configurados de novo.",
-  "Na página inicial, quem abre pelo celular Android vê o botão Baixar o app para Android, que baixa sempre a versão mais nova do APK."
+  "Importar extrato agora aceita PDF, além de OFX e CSV: em Ajustes → Importar extrato do banco, escolha o PDF do extrato ou da fatura do cartão. Se o PDF tiver senha, o app pede na hora e não guarda.",
+  "O PDF é lido no seu aparelho e você confere tudo antes de importar, com a categoria sugerida e os lançamentos repetidos desmarcados. PDF escaneado (foto) não dá para ler: nesse caso use OFX ou CSV."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
-// /baixar é um redirecionamento do firebase.json para o APK da Release mais nova do GitHub.
 const APK_URL=ENDERECO_NOVO+"baixar";
-// Endereços em que o app já foi servido. Neles aparece o aviso de mudança (ir para ENDERECO_NOVO).
 const HOSTS_ANTIGOS=["gustavombarbosadev.github.io","mb-controle-f70b6.web.app","mb-controle-f70b6.firebaseapp.com"];
 const enderecoAntigo=()=>HOSTS_ANTIGOS.includes(location.hostname);
 
@@ -1337,7 +1338,6 @@ let tutAberto=false, tutI=0;
 function passosTutorial(){
   const nuvem=mode==="cloud", tecla=matchMedia("(hover:hover) and (pointer:fine)").matches;
   const L=(...xs)=>`<ul>${xs.filter(Boolean).map(x=>`<li>${x}</li>`).join("")}</ul>`;
-  // No celular Ajustes fica dentro do Perfil; no computador é uma aba no topo.
   const AJ=tecla?"na aba <b>Ajustes</b> (no topo)":"em <b>Perfil → Ajustes</b>";
   return [
     {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle financeiro, <b>grátis e sem anúncios</b>. Em poucos passos você vê o básico e onde fica cada função.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
@@ -1347,7 +1347,7 @@ function passosTutorial(){
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o anel mostra quanto já guardou e o app diz quanto guardar por mês.","<b>Quanto renderia</b>: veja quanto a caixinha e as metas renderiam no CDI ou na poupança.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
     {ic:"ano",t:"5. Acompanhe para onde vai",d:`O <b>Início</b> mostra o saldo com gráfico (toque ou arraste nele para ver cada dia), a <b>previsão do fim do mês</b> e o orçamento por categoria. Toque em <b>Ouvir</b> no saldo para escutar o resumo do mês.`+L("No topo ficam 4 meses: o anterior, o atual e os próximos com fatura ou parcela para pagar. Para ir a qualquer outro, toque no <b>calendário</b> ao lado deles.","Mais abaixo: <b>calendário de gastos</b>, <b>para onde foi</b> (toque numa fatia para ver os lançamentos dela), <b>fatura do cartão</b> e <b>contas fixas</b> (marque como paga tocando no quadradinho e toque na conta para editar). No calendário: <b>anel</b> = vence, <b>ponto</b> = pago, <b>triângulo</b> = atrasado.","A <b>nota de saúde financeira</b> (0 a 100) mostra como foi o mês e explica cada ponto.","No celular, fora do Início, <b>deslize para os lados</b> para trocar de aba. Ao rolar, o saldo fica numa <b>barrinha no topo</b> (toque nela para voltar ao topo).")},
     {ic:"sino",t:"6. Não esqueça nenhuma conta",d:`O <b>sininho</b> no topo avisa contas que vencem amanhã, hoje ou estão atrasadas (com botão <b>Paguei</b>), limites estourando e o resumo da semana.`+L("Ative as <b>notificações</b> em <b>Perfil → Lembretes</b>.","No celular, <b>puxe a tela para baixo</b> no topo para atualizar os dados.","Para avisar até com o app fechado, use <b>Adicionar lembretes ao calendário</b>, no mesmo lugar.")},
-    {ic:"ajustes",t:"7. Mapa: Ajustes",d:`Tudo o que dá para configurar fica ${AJ}. Toque no nome para abrir cada parte:`+L("<b>Contas fixas</b> e <b>Compras parceladas</b>.","<b>Modo viagem</b>: gastos em outra moeda, convertidos para real.","<b>Dívidas com pessoas</b>: quem te deve e quem você deve.","<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar por mês.","<b>Importar extrato do banco</b>: baixe o extrato ou a fatura do cartão em <b>OFX</b> ou <b>CSV</b> no app do seu banco, toque em <b>Importar extrato</b> e escolha o arquivo. A categoria já vem sugerida e você escolhe o que entra.","<b>Contas</b>: separe por banco ou carteira, com saldo inicial.","<b>Cartões de crédito</b>: limite, fechamento e vencimento.","<b>Categorias de gastos</b>: ícone, cor, limite por mês e subcategorias.","<b>Regras automáticas</b>: ensine suas palavras (ex.: “petz” → Pets) e a categoria vem certa.")},
+    {ic:"ajustes",t:"7. Mapa: Ajustes",d:`Tudo o que dá para configurar fica ${AJ}. Toque no nome para abrir cada parte:`+L("<b>Contas fixas</b> e <b>Compras parceladas</b>.","<b>Modo viagem</b>: gastos em outra moeda, convertidos para real.","<b>Dívidas com pessoas</b>: quem te deve e quem você deve.","<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar por mês.","<b>Importar extrato do banco</b>: baixe o extrato ou a fatura do cartão em <b>OFX</b>, <b>CSV</b> ou <b>PDF</b> no app do seu banco, toque em <b>Importar extrato</b> e escolha o arquivo (PDF com senha também funciona). A categoria já vem sugerida e você escolhe o que entra.","<b>Contas</b>: separe por banco ou carteira, com saldo inicial.","<b>Cartões de crédito</b>: limite, fechamento e vencimento.","<b>Categorias de gastos</b>: ícone, cor, limite por mês e subcategorias.","<b>Regras automáticas</b>: ensine suas palavras (ex.: “petz” → Pets) e a categoria vem certa.")},
     {ic:"perfil",t:"8. Mapa: Perfil",d:`Na aba <b>Perfil</b> ficam sua conta e as preferências do app:`+L(nuvem?"<b>Controles compartilhados</b>: crie um controle com a família, separado do seu Pessoal. Os botões no topo trocam entre eles.":"<b>Controles compartilhados</b>: disponíveis ao entrar com a conta Google.","<b>Renda e saldos</b>: salário padrão, outras rendas e saldo inicial.","<b>Aparência</b> (tema claro ou escuro) e <b>Bloqueio com PIN</b> (e digital).","<b>Lembretes</b>: notificações de vencimento e lembretes no calendário do celular.","<b>Acessibilidade</b>: texto maior, alto contraste, cores para daltonismo, modo calmo, modo foco, fonte de leitura fácil e botões maiores.","<b>Exportar e backup</b>: planilha para Excel, backup (também com senha) e restaurar backup.","<b>Novidades</b>, <b>Tutorial</b> e <b>Privacidade</b>.",`<b>Recomeçar do zero</b>${nuvem?" e <b>Excluir minha conta</b>":""}, no fim da página.`)},
     {ic:"ano",t:"9. Mapa: Relatórios",d:`Na aba <b>Relatórios</b> você vê o ano inteiro:`+L("<b>Receitas x despesas</b> e <b>mês a mês</b>, lado a lado.","<b>Para onde foi o dinheiro</b> e por <b>forma de pagamento</b>.","<b>Assinaturas e contas fixas</b>, com aviso quando uma fica mais cara.","<b>Imposto de Renda</b>: despesas dedutíveis do ano.","<b>Sua inflação x IPCA</b> e <b>etiquetas</b> (escreva #etiqueta na descrição).","<b>Patrimônio</b>: some imóveis, veículos e investimentos às suas contas.","<b>Retrospectiva</b> do ano em formato de stories.")},
     {ic:"busca",t:"10. Atalhos",d:`Para ir mais rápido:`+L("<b>Busca</b> (lupa no topo): procure lançamentos ou telas. “extrato”, “13º”, “cartões” e “backup” levam direto ao lugar.","O <b>olho</b> no saldo do mês esconde os valores para usar o app em público.",nuvem?"No compartilhado, escolha <b>Quem pagou</b> na despesa: a <b>Divisão do mês</b>, no Início, mostra quem deve a quem.":null,"Com o app instalado, <b>compartilhe um comprovante</b> com o Monetra para lançar mais rápido.","No Android, dá para instalar o app pelo botão <b>Baixar o app para Android</b> da página inicial (antes de entrar).")},
@@ -1864,8 +1864,6 @@ function header(){
   ${mode==="local"&&state.loaded?`<div class="note">Modo local: sem conexão com o login, os dados ficam só neste aparelho.</div>`:""}
   ${avisoMudanca()}`;
 }
-// Só nos HOSTS_ANTIGOS: o app passou para ENDERECO_NOVO. Para o navegador é outra instalação, então
-// PIN, preferências e dados do modo local ficam aqui; por isso o backup vem antes do botão de ir.
 function avisoMudanca(){
   if(!enderecoAntigo()) return "";
   const novo=ENDERECO_NOVO.replace(/^https:\/\/|\/$/g,"");
@@ -1899,7 +1897,6 @@ const logoM=(px,id)=>`<svg class="logom" viewBox="90 120 340 270" width="${px}" 
 function viewApresentacao(){
   const inApp=/FBAN|FBAV|FB_IAB|Instagram|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|Twitter/i.test(navigator.userAgent);
   const entrarBtn=`<button class="ap-btn pri" type="button" ${inApp?'data-apres="entrar"':'data-login="1"'}>Entrar com Google <span aria-hidden="true">→</span></button>`;
-  // A apresentação não aparece com o app instalado (appInstalado), então o APK/TWA nunca mostra este link.
   const apk=/Android/i.test(navigator.userAgent)?`<a class="ap-apk" href="${APK_URL}" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Baixar o app para Android</a>`:"";
   const palavras="Controle seu dinheiro. Viva seus planos.".split(" ").map((w,i)=>{ const m=w.match(/^(.*?)([.,!?]?)$/)||["",w,""], dest=m[1].toLowerCase()==="dinheiro";
     return `<span class="ap-w" style="--i:${i}">${dest?`<span class="ap-dest">${esc(m[1])}</span>${esc(m[2])}`:esc(w)}</span>`; }).join(" ");
@@ -3013,8 +3010,8 @@ function viewAjustes(){
     <button type="button" class="ferr" data-novo="calc" data-calc="ferias"><span class="fi" style="--dot:#0EA5E9">${svgCat('aviao',20)}</span><span><b>Férias</b><small>Férias + 1/3, com opção de vender 10 dias.</small></span></button>
     <button type="button" class="ferr" data-novo="calc" data-calc="liquido"><span class="fi" style="--dot:#8B5CF6">${svgCat('dinheiro',20)}</span><span><b>Salário líquido</b><small>Do bruto ao que cai na conta, com a tabela de ${TAB.ano}.</small></span></button>
     <button type="button" class="ferr" data-novo="calc" data-calc="guardar"><span class="fi" style="--dot:#F59E0B">${icq('alvo',20)}</span><span><b>Quanto guardar por mês</b><small>Para comprar algo à vista numa data, com ou sem rendimento.</small></span></button></div>
-    `)}${secaoMes("aj-imp","Importar extrato do banco","OFX ou CSV do seu banco",icq("seta-baixo",18),`<div class="card"><h2>Importar extrato do banco</h2>
-    <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX ou CSV no app do seu banco e traga tudo de uma vez, com a categoria já sugerida.</p>
+    `)}${secaoMes("aj-imp","Importar extrato do banco","OFX, CSV ou PDF do seu banco",icq("seta-baixo",18),`<div class="card"><h2>Importar extrato do banco</h2>
+    <p class="hint">Baixe o extrato (ou a fatura do cartão) em OFX, CSV ou PDF no app do seu banco e traga tudo de uma vez, com a categoria já sugerida. O arquivo é lido no seu aparelho; PDF com senha também funciona.</p>
     <button class="btn" type="button" data-novo="importar">Importar extrato</button></div>`)}
     ${secaoMes("aj-contas","Contas",contasMov().length?contasMov().length+(contasMov().length===1?" conta":" contas"):"separe por banco ou carteira",ICON.banco,`<div class="card"><div class="cardhead"><h2>Contas</h2><span class="num muted">${contasMov().length?brl(saldoInicialTotal())+" inicial":""}</span></div>
     ${contasMov().length?`<div class="contas">${contasMov().map(ct=>`<button type="button" class="conta" data-edit="conta" data-id="${esc(ct.id)}"><span class="ic">${ICON[ct.tipo==="dinheiro"?"dinheiro":ct.tipo==="poupanca"?"poupanca":"banco"]}</span><span class="desc"><b>${esc(ct.nome)}</b><small>saldo inicial ${brl(ct.saldoInicial)}${(cf.contaSalario||(contasMov()[0]||{}).id)===ct.id?" · recebe o salário":""}</small></span><span class="v muted">editar</span></button>`).join("")}</div>`:`<p class="hint">Separe seu dinheiro por conta (ex.: Nubank, Caixa, Dinheiro). Cada lançamento pode sair de uma conta, e o app mostra o saldo de cada uma. Sem contas cadastradas, tudo fica num saldo só.</p>`}
@@ -3178,6 +3175,98 @@ function parseCSV(t){
   linhas.slice(hi+1).forEach(l=>{ const c=linhaCSV(l,sep), d=dataCSV(c[iD]), v=numCSV(c[iV]); if(!d||!isFinite(v)||v===0) return; itens.push({data:d,valor:v,desc:(iDesc>=0?c[iDesc]:"").replace(/\s+/g," "),fitid:iId>=0?c[iId]:""}); });
   return {itens,cartao};
 }
+const PDFJS_DIR="vendor/pdfjs-6.3.289/";
+/** @type {Promise<any>|null} */
+let pdfjsProm=null;
+function carregaPdfjs(){
+  if(!pdfjsProm) pdfjsProm=import(new URL(PDFJS_DIR+"pdf.min.mjs",document.baseURI).href).then(m=>{ m.GlobalWorkerOptions.workerSrc=new URL(PDFJS_DIR+"pdf.worker.min.mjs",document.baseURI).href; return m; }).catch(e=>{ pdfjsProm=null; throw Object.assign(new Error("pdfjs"),{name:"PdfjsLoad",cause:e}); });
+  return pdfjsProm;
+}
+/** @param {ArrayBuffer} buf @param {string} [senha] */
+async function textoPDF(buf,senha){
+  const pdfjs=await carregaPdfjs();
+  const tarefa=pdfjs.getDocument({data:new Uint8Array(buf),password:senha||undefined,isEvalSupported:false,disableFontFace:true,enableXfa:false,verbosity:0});
+  const doc=await tarefa.promise;
+  /** @type {string[]} */
+  const linhas=[];
+  try{
+    for(let p=1;p<=Math.min(doc.numPages,80);p++){
+      const pg=await doc.getPage(p), tc=await pg.getTextContent();
+      /** @type {{y:number,h:number,itens:{x:number,w:number,s:string}[]}[]} */
+      const grupos=[];
+      tc.items.forEach(/** @param {any} it */ it=>{ if(!it.str||!it.str.trim()) return; const x=it.transform[4], y=it.transform[5], h=Math.abs(it.height||it.transform[3])||8;
+        let g=grupos.find(g=>Math.abs(g.y-y)<=Math.max(2,Math.min(g.h,h)*0.45)); if(!g){ g={y,h,itens:[]}; grupos.push(g); } g.itens.push({x,w:it.width||0,s:it.str}); });
+      grupos.sort((a,b)=>b.y-a.y).forEach(g=>{ g.itens.sort((a,b)=>a.x-b.x); let t="", fim=-1; g.itens.forEach(i=>{ t+=(fim>=0&&i.x-fim>1?" ":"")+i.s; fim=i.x+i.w; }); t=t.replace(/\s+/g," ").trim(); if(t) linhas.push(t); });
+      pg.cleanup();
+    }
+  }finally{ tarefa.destroy(); }
+  return linhas;
+}
+const MES3={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+const RE_DATA_N=/(^|[^\d])(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?(?![\d\/])/;
+const RE_DATA_M=/(^|[^\da-z])(\d{1,2})(?:\s*(?:de\s+|\/|-)?\s*)(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*\.?(?:\s*(?:de\s+|\/|-)?\s*(\d{4}))?(?![a-z])/;
+const RE_VALOR_PDF=/(^|[^\d.,\w$])((?:US\$|USD|U\$)\s?)?([-−–+]?)\s?(R\$)?\s?([-−–]?)\s?(\d[\d.]*,\d{2})(?![\d])(\s?\(?[DC]\)?(?![a-zà-ú]))?/gi;
+const RE_PDF_IGNORA=/\bsaldo\b|\btotal\b|subtotal|limite (total|disponivel|de credito)|pagamento minimo|valor minimo|melhor dia|vencimento|fechamento|fatura anterior|encargos (do|financeiros)|^data\b|lancamentos? futuros|^resumo|^periodo|^pagina|^agencia|^conta\b|\bcpf\b|\bcnpj\b/;
+/** @param {string} dd @param {string} mm @param {string|undefined} aa @param {number} anoRef */
+function dataPDF(dd,mm,aa,anoRef){
+  const d=+dd, mo=+mm; if(!(d>=1&&d<=31&&mo>=1&&mo<=12)) return null;
+  let y=aa?(aa.length===2?2000+Number(aa):Number(aa)):anoRef;
+  let iso=dataOk(y+"-"+pad2(mo)+"-"+pad2(d));
+  if(iso&&!aa){ const lim=new Date(); lim.setDate(lim.getDate()+45); if(new Date(iso+"T12:00:00")>lim) iso=dataOk((y-1)+"-"+pad2(mo)+"-"+pad2(d)); }
+  return iso;
+}
+/** @param {string} l @param {number} anoRef */
+function achaDataPDF(l,anoRef){
+  const n=norm(l), a=RE_DATA_N.exec(n), b=RE_DATA_M.exec(n);
+  const posA=a?a.index+a[1].length:Infinity, posB=b?b.index+b[1].length:Infinity;
+  if(a&&posA<=posB){ const iso=dataPDF(a[2],a[3],a[4],anoRef); if(iso) return {iso,ini:posA,fim:a.index+a[0].length}; }
+  if(b){ const iso=dataPDF(b[2],String(MES3[/** @type {keyof typeof MES3} */(b[3])]),b[4],anoRef); if(iso) return {iso,ini:posB,fim:b.index+b[0].length}; }
+  return null;
+}
+/** @param {string} l */
+function valoresPDF(l){
+  /** @type {{v:number,ini:number,fim:number,rs:boolean,sinal:boolean}[]} */
+  const out=[]; RE_VALOR_PDF.lastIndex=0; let m;
+  while((m=RE_VALOR_PDF.exec(l))){
+    const ini=m.index+m[1].length, fim=m.index+m[0].length; if(m[2]) continue;
+    const corpo=m[6]; if(!/^\d{1,3}(\.\d{3})*,\d{2}$|^\d+,\d{2}$/.test(corpo)) continue;
+    const dc=(m[7]||"").replace(/[\s()]/g,"").toUpperCase(), neg=/[-−–]/.test(m[3]+m[5])||dc==="D";
+    const v=numCSV(corpo); if(!isFinite(v)||v===0) continue;
+    out.push({v:neg?-v:v,ini,fim,rs:!!m[4],sinal:!!(m[3]||m[5]||dc)});
+  }
+  return out;
+}
+/** @param {string[]} linhas */
+function parsePDF(linhas){
+  const tudo=norm(linhas.join(" "));
+  if(tudo.replace(/[^a-z0-9]/g,"").length<20) return {itens:[],cartao:false,erro:"Este PDF não tem texto para ler: parece uma imagem ou um documento escaneado. Baixe o extrato em OFX ou CSV no app do banco."};
+  const anos=/** @type {Object<string,number>} */({}); (tudo.match(/\b20\d{2}\b/g)||[]).forEach(a=>{ anos[a]=(anos[a]||0)+1; });
+  const anoRef=Number(Object.keys(anos).sort((a,b)=>anos[b]-anos[a])[0])||today.getFullYear();
+  const pts=(re,t)=>(t.match(re)||[]).length;
+  const cartao=pts(/fatura|cartao de credito|limite (total|disponivel)|pagamento minimo|melhor dia de compra/g,tudo)>pts(/extrato|saldo (anterior|do dia|disponivel|em conta)|conta corrente|agencia/g,tudo);
+  /** @type {{data:string,valor:number,desc:string,fitid:string}[]} */
+  const itens=[]; let dataCtx="", sinalCtx=0;
+  const ls=linhas.map(l=>({l,n:norm(l),dt:achaDataPDF(l,anoRef),vs:valoresPDF(l)}));
+  const temSinal=ls.some(x=>x.vs.some(v=>v.sinal));
+  ls.forEach(({l,n,dt,vs})=>{
+    if(/total de saidas|^saidas\b|saidas do dia/.test(n)) sinalCtx=-1; else if(/total de entradas|^entradas\b|entradas do dia/.test(n)) sinalCtx=1;
+    if(dt&&!vs.length){ const resto=n.slice(0,dt.ini)+n.slice(dt.fim); if(!/[a-z]{3}/.test(resto.replace(/\b(segunda|terca|quarta|quinta|sexta|sabado|domingo)(-feira)?\b|\bde\b|\bhoje\b|\bontem\b/g,""))) dataCtx=dt.iso; return; }
+    if(dt&&RE_PDF_IGNORA.test(n)&&vs.length){ dataCtx=dt.iso; return; }
+    if(!vs.length||RE_PDF_IGNORA.test(n)) return;
+    const data=dt?dt.iso:dataCtx; if(!data) return;
+    const usados=vs.filter(x=>!dt||x.ini>=dt.fim); if(!usados.length) return;
+    const comRS=usados.filter(x=>x.rs), alvo=comRS.length===1?comRS[0]:usados[0];
+    let desc=l;
+    const cortes=[...usados.map(x=>[x.ini,x.fim])]; if(dt) cortes.push([dt.ini,dt.fim]);
+    cortes.sort((a,b)=>b[0]-a[0]).forEach(([i,f])=>{ desc=desc.slice(0,i)+" "+desc.slice(f); });
+    desc=desc.replace(/(US\$|USD|U\$)\s?\d[\d.]*,\d{2}/gi," ").replace(/R\$|US\$|\bUSD\b/gi," ").replace(/(^|\s)\d{4,}(?=\s|$)/g," ").replace(/\s+/g," ").replace(/^[\s\-–—:|•·]+|[\s\-–—:|•·]+$/g,"").trim();
+    if(desc.length<2) return;
+    let v=alvo.v;
+    if(!alvo.sinal&&!cartao){ const nd=norm(desc); v=temSinal||sinalCtx>0||/recebid|deposito|salario|credito em conta|estorno|rendimento|resgate|devolu/.test(nd)?Math.abs(v):-Math.abs(v); }
+    itens.push({data,valor:v,desc,fitid:""});
+  });
+  return {itens,cartao,erro:itens.length?"":"Não reconheci nenhum lançamento neste PDF. Cada linha precisa ter data e valor. Se puder, baixe o extrato em OFX ou CSV no app do banco."};
+}
 const REGRAS_CAT=[[/mercad|supermerc|atacad|assai|carrefour|hortifrut|padaria|acougue|sacolao|atacarejo/,/mercado|aliment/],
   [/uber|99app|\b99\b|posto|shell|ipiranga|petrobras|combust|estacion|onibus|metro|pedagio|recarga.*transporte/,/transp|combust/],
   [/farm|droga|raia|pacheco|pague menos|panvel|hospital|clinica|laborat|odonto|consulta/,/saude|farm/],
@@ -3205,17 +3294,49 @@ function preparaImportacao(lista,cartao){
     return {k,dia,valor,desc:x.desc,fitid:x.fitid,tipo,cat:tipo==="gasto"?sugerirCategoria(x.desc):null,forma:tipo==="gasto"?sugerirForma(x.desc,cartao):null,incluir:!obs,obs,bloq:fora||tipo==="ignorar"};
   }).sort((a,b)=>(a.k+pad2(a.dia)).localeCompare(b.k+pad2(b.dia)));
 }
-async function abrirArquivoExtrato(file){
+/** @param {File} file @param {string} [senha] */
+async function abrirArquivoExtrato(file,senha){
   const s=ui.sheet; if(!s||s.tipo!=="importar") return;
+  const ck=/** @type {HTMLInputElement|null} */(document.getElementById("s-impcartao"));
+  if(ck) s.cartaoMarcado=ck.checked;
+  s.contaImp=valSel("s-impconta")||s.contaImp; s.cartaoImp=valSel("s-cartao")||s.cartaoImp;
+  const ehPDF=/\.pdf$/i.test(file.name)||file.type==="application/pdf";
   try{
-    const t=await lerArquivoTexto(file);
-    const ehOFX=/<OFX>|OFXHEADER|<STMTTRN>/i.test(t);
-    const r=ehOFX?{itens:parseOFX(t),cartao:false}:parseCSV(t);
-    const cartao=document.getElementById("s-impcartao")?document.getElementById("s-impcartao").checked||r.cartao:r.cartao;
-    if(!r.itens.length){ s.erroImp=r.erro||"Não encontrei lançamentos neste arquivo. Confira se é um extrato em OFX ou CSV."; s.itens=null; renderSheet(); return; }
-    s.erroImp=""; s.arquivo=file.name; s.cartaoArq=cartao; s.contaImp=valSel("s-impconta")||s.contaImp; s.cartaoImp=valSel("s-cartao")||s.cartaoImp;
-    s.itens=preparaImportacao(r.itens,cartao); renderSheet();
-  }catch(e){ console.error("Importar extrato:",e&&e.name); s.erroImp="Não consegui ler o arquivo."; renderSheet(); }
+    let r;
+    if(ehPDF){
+      s.lendo=true; s.erroImp=""; renderSheet(); anunciar("Lendo o PDF.");
+      r=parsePDF(await textoPDF(await file.arrayBuffer(),senha));
+      s.lendo=false; s.pdfArq=null; s.pedeSenha=false;
+    } else {
+      const t=await lerArquivoTexto(file);
+      const ehOFX=/<OFX>|OFXHEADER|<STMTTRN>/i.test(t);
+      r=ehOFX?{itens:parseOFX(t),cartao:false}:parseCSV(t);
+    }
+    const cartao=!!s.cartaoMarcado||r.cartao;
+    if(!r.itens.length){ s.erroImp=r.erro||"Não encontrei lançamentos neste arquivo. Confira se é um extrato em OFX, CSV ou PDF."; s.itens=null; renderSheet(); anunciar(s.erroImp); return; }
+    s.erroImp=""; s.arquivo=file.name; s.cartaoArq=cartao;
+    s.itens=preparaImportacao(r.itens,cartao); renderSheet(); anunciar(r.itens.length+" lançamento"+(r.itens.length===1?"":"s")+" encontrado"+(r.itens.length===1?"":"s")+". Confira antes de importar.");
+  }catch(e){
+    const err=/** @type {any} */(e); s.lendo=false;
+    if(ehPDF&&err&&err.name==="PasswordException"){
+      s.pdfArq=file; s.pedeSenha=true; s.itens=null;
+      s.erroImp=err.code===2?"Senha incorreta. Confira e tente de novo.":"";
+      renderSheet(); anunciar(s.erroImp||"Este PDF tem senha. Digite a senha do arquivo."); vibra(err.code===2?40:0);
+      const i=document.getElementById("s-impsenha"); if(i) i.focus();
+      return;
+    }
+    console.error("Importar extrato:",err&&err.name);
+    s.pdfArq=null; s.pedeSenha=false;
+    s.erroImp=err&&err.name==="PdfjsLoad"?"Não consegui carregar o leitor de PDF. Confira a internet e tente de novo.":ehPDF?"Não consegui ler este PDF. Se puder, baixe o extrato em OFX ou CSV no app do banco.":"Não consegui ler o arquivo.";
+    renderSheet(); anunciar(s.erroImp);
+  }
+}
+function tentaSenhaPDF(){
+  const s=ui.sheet, i=/** @type {HTMLInputElement|null} */(document.getElementById("s-impsenha"));
+  const v=i?i.value:""; if(i) i.value="";
+  if(!s||!s.pdfArq) return;
+  if(!v){ s.erroImp="Digite a senha do PDF."; renderSheet(); anunciar(s.erroImp); const j=document.getElementById("s-impsenha"); if(j) j.focus(); return; }
+  abrirArquivoExtrato(s.pdfArq,v);
 }
 function importarExtrato(){
   const s=ui.sheet, its=(s.itens||[]).filter(x=>x.incluir&&!x.bloq); if(!its.length) return erroSheet("Marque pelo menos um lançamento para importar.");
@@ -3446,13 +3567,20 @@ function renderSheet(){
     botoes=novo?`<button class="btn" type="submit">Transferir</button>`:`${apagar}<button class="btn" type="submit">Salvar</button>`;
   }else if(s.tipo==="importar"){
     sub="";
-    if(!s.itens){
-      corpo=`<p class="hint">No app ou no site do seu banco, procure <b>Extrato</b> e a opção de <b>exportar / baixar</b> em <b>OFX</b> ou <b>CSV</b> (Excel). Depois escolha o arquivo aqui.</p>
+    if(s.pedeSenha&&s.pdfArq){
+      corpo=`<p class="hint"><b>${esc(s.pdfArq.name)}</b> tem senha. Digite a senha do arquivo para o app ler o extrato. A senha não fica salva.</p>
+        <label class="f">Senha do PDF<input class="in" type="password" id="s-impsenha" autocomplete="off" autocapitalize="off" spellcheck="false" data-autofocus ${s.erroImp?'aria-invalid="true" aria-describedby="s-imperro"':""}></label>
+        ${s.lendo?`<p class="hint" role="status">Lendo o PDF…</p>`:""}
+        ${s.erroImp?`<p class="erro" id="s-imperro" role="alert">${esc(s.erroImp)}</p>`:""}`;
+      botoes=`<button class="btn ghost" type="button" data-impvoltar="1">Outro arquivo</button><button class="btn" type="button" data-impsenha="1">Abrir PDF</button>`;
+    } else if(!s.itens){
+      corpo=`<p class="hint">No app ou no site do seu banco, procure <b>Extrato</b> (ou a fatura do cartão) e a opção de <b>exportar / baixar</b> em <b>OFX</b>, <b>CSV</b> (Excel) ou <b>PDF</b>. Depois escolha o arquivo aqui. OFX e CSV costumam vir mais completos; o PDF precisa ter texto (não serve foto ou documento escaneado).</p>
         ${selConta(s.contaImp,"Os lançamentos são da conta","s-impconta")}
-        <label class="switch"><input type="checkbox" id="s-impcartao" ${s.cartaoArq?"checked":""}><span></span>É a fatura de um cartão de crédito</label>
+        <label class="switch"><input type="checkbox" id="s-impcartao" ${s.cartaoMarcado?"checked":""}><span></span>É a fatura de um cartão de crédito</label>
         ${state.config.cartoes.length>1?`<div id="s-impcartaobox">${selCartao(s.cartaoImp)}</div>`:""}
-        <label class="btn wide" for="s-arquivo" style="cursor:pointer">Escolher arquivo do extrato<input type="file" id="s-arquivo" accept=".ofx,.csv,.txt,text/csv,application/x-ofx" hidden></label>
-        ${s.erroImp?`<p class="erro">${esc(s.erroImp)}</p>`:""}
+        <label class="btn wide" for="s-arquivo" style="cursor:pointer">Escolher arquivo do extrato<input type="file" id="s-arquivo" accept=".ofx,.csv,.txt,.pdf,text/csv,application/x-ofx,application/pdf" hidden></label>
+        ${s.lendo?`<p class="hint" role="status">Lendo o arquivo…</p>`:""}
+        ${s.erroImp?`<p class="erro" role="alert">${esc(s.erroImp)}</p>`:""}
         <p class="hint">O app sugere a categoria de cada gasto e desmarca o que já foi lançado. Você confere antes de importar.</p>`;
     } else {
       const its=s.itens, inc=its.filter(x=>x.incluir&&!x.bloq), cats=state.config.categorias;
@@ -3593,7 +3721,7 @@ const DESTINOS=[
   ["Categorias","nomes, cores e limites","categorias categoria limite orcamento",{tab:"ajustes",h2:"Categorias de gastos"}],
   ["Regras automáticas","suas palavras para cada categoria","regras regra automatica palavras",{tab:"ajustes",h2:"Regras automáticas"}],
   ["Contas e bancos","saldo por banco ou carteira","contas bancos banco carteira conta corrente",{tab:"ajustes",h2:"Contas"}],
-  ["Importar extrato","OFX ou CSV do banco","importar extrato ofx csv banco",{tab:"ajustes",h2:"Importar extrato do banco"}],
+  ["Importar extrato","OFX, CSV ou PDF do banco","importar extrato ofx csv pdf banco fatura",{tab:"ajustes",h2:"Importar extrato do banco"}],
   ["Modo viagem","gastos em outra moeda","viagem moeda dolar euro cambio exterior",{tab:"ajustes",h2:"Modo viagem"}],
   ["Dívidas com pessoas","quem te deve e quem você deve","dividas emprestei devo deve emprestimo pessoa",{tab:"ajustes",h2:"Dívidas com pessoas"}],
   ["Metas","quanto falta para cada objetivo","metas meta objetivo sonho reserva caixinha",{tab:"metas",h2:"Metas de economia"}],
@@ -3687,7 +3815,7 @@ function salvarSheet(outro){
     else state.config.dividas.push({id:"d"+uidGen(),pessoa,tipo,valor,desc,data,venc,pags:[]});
     save("config"); closeSheet(); render(); toast(s.id?"Dívida atualizada.":tipo==="receber"?pessoa+" te deve "+brl(valor)+".":"Você deve "+brl(valor)+" a "+pessoa+"."); return;
   }
-  if(s.tipo==="importar"){ if(s.itens) importarExtrato(); return; }
+  if(s.tipo==="importar"){ if(s.itens) importarExtrato(); else if(s.pedeSenha) tentaSenhaPDF(); return; }
   if(s.tipo==="excluirconta"){
     if(campoTexto("s-excluir").trim().toUpperCase()!=="EXCLUIR") return erroSheet("Digite EXCLUIR para confirmar.","s-excluir");
     const bt=/** @type {HTMLButtonElement|null} */(document.querySelector('#sheet button[type="submit"]')); if(bt){ bt.disabled=true; bt.textContent="Excluindo…"; }
@@ -3873,7 +4001,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -3915,7 +4043,8 @@ function bindSheet(r){
     if(b.dataset.avbackup){ exportar(); toast("Backup baixado. Guarde o arquivo em um lugar seguro (Drive, e-mail…)."); renderSheet(); render(); return; }
     if(b.dataset.avbackupdepois){ salvaInfoBackup({depois:somaDias(hojeISO(),7)}); toast("Ok, lembro de novo em 7 dias."); renderSheet(); render(); return; }
     if(b.dataset.avperfil){ closeSheet(); ui.tab="perfil"; ui.rolarPara="lembretes"; render(); return; }
-    if(b.dataset.impvoltar){ s.itens=null; s.erroImp=""; renderSheet(); return; }
+    if(b.dataset.impvoltar){ s.itens=null; s.erroImp=""; s.pdfArq=null; s.pedeSenha=false; s.lendo=false; renderSheet(); return; }
+    if(b.dataset.impsenha){ tentaSenhaPDF(); return; }
     if(b.dataset.sguardarmeta){ const id=s.id; openSheet("caixinha",null,{cxTipo:"guardar",metaId:id}); return; }
     if(b.dataset.sexcluirfixo){ const id=s.id, apartir=b.dataset.sexcluirfixo==="todos"?null:(s.tipo==="fixoMes"||ui.tab==="mes"?k:todayKey); closeSheet(); excluirFixo(id,apartir); return; }
     if(b.dataset.snovacat){ const bx=document.getElementById("s-novacatbox"); bx.hidden=!bx.hidden; if(!bx.hidden) document.getElementById("s-novacat").focus(); return; }
