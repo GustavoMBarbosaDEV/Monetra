@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.3.5 — 27/10/2026 **Tutorial com o mapa do app**
+
+- **Tutorial:** o passo genérico "Tem muito mais" virou um mapa em quatro passos com o caminho de cada função: **Mapa: Ajustes** (contas fixas, parcelas, modo viagem, dívidas, ferramentas, **Importar extrato do banco** com o passo a passo do OFX/CSV, contas, cartões, categorias e regras), **Mapa: Perfil** (compartilhados, renda e saldos, aparência, PIN, lembretes, acessibilidade, backup, privacidade, recomeçar e excluir conta), **Mapa: Relatórios** e **Atalhos** (busca, olho, quem pagou, comprovante, app Android). O caminho para Ajustes aparece certo para cada aparelho: **Perfil → Ajustes** no celular e a aba **Ajustes** no computador. Agora são 12 passos.
+- **Novidades:** linha nova apontando para o tutorial.
+
 ## 5.3.4 — 27/10/2026 **Fim do aviso de backup urgente**
 
 - **App Check obrigatório já ativo:** o Enforce do App Check foi aplicado em 27/10/2026 no Cloud Firestore e no Authentication, antes do dia 31/10 planejado. Por isso o aviso urgente de backup de 29 a 31/10 (`BK_URGENTE`, criado na 5.2.2) não faz mais sentido e foi removido: a faixa no mês atual, o item em Avisos e a notificação “Backup urgente”. Nenhum dado foi ou será apagado.
