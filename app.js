@@ -333,13 +333,17 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.3.2";
-const APK_URL="https://github.com/gustavombarbosadev/Monetra/releases/latest/download/Monetra.apk";
+const VERSAO="5.3.3";
 const NOVIDADES=[
-  "Na página inicial, quem abre pelo celular Android vê o botão Baixar o app para Android, que baixa sempre a versão mais nova do APK.",
-  "Atualização de segurança em 31/10: de 29 a 31/10 o app pede um backup dos seus dados, só por precaução. Nada será apagado.",
-  "Preparação para um novo endereço do Monetra, com mais proteções do servidor. Por enquanto nada muda: continue usando o endereço de sempre."
+  "O Monetra mudou de endereço: agora é monetraapp.web.app. Seus lançamentos na nuvem continuam; no endereço novo, entre com a mesma conta Google. PIN e preferências precisam ser configurados de novo.",
+  "Na página inicial, quem abre pelo celular Android vê o botão Baixar o app para Android, que baixa sempre a versão mais nova do APK."
 ];
+const ENDERECO_NOVO="https://monetraapp.web.app/";
+// /baixar é um redirecionamento do firebase.json para o APK da Release mais nova do GitHub.
+const APK_URL=ENDERECO_NOVO+"baixar";
+// Endereços em que o app já foi servido. Neles aparece o aviso de mudança (ir para ENDERECO_NOVO).
+const HOSTS_ANTIGOS=["gustavombarbosadev.github.io","mb-controle-f70b6.web.app","mb-controle-f70b6.firebaseapp.com"];
+const enderecoAntigo=()=>HOSTS_ANTIGOS.includes(location.hostname);
 
 const pad2=n=>String(Math.trunc(Number(n))||0).padStart(2,"0");
 const keyOf=(y,m)=>y+"-"+pad2(m);
@@ -1855,7 +1859,19 @@ function header(){
   ${ui.tab==="mes"&&logado?`<div class="months">
   <div class="chips">${chipsMes().map(k=>`<button class="chip ${k===ui.month?"on":""} ${k===todayKey?"now":""}" data-month="${k}" aria-label="${esc(nomeMes(k))}${k===ui.month?" (aberto)":""}">${ABR[kM(k)-1]} <small>${String(kY(k)).slice(2)}</small></button>`).join("")}</div>
   <button type="button" class="mescal" data-mescal="1" aria-label="Escolher outro mês" title="Todos os meses">${ICON.mes}</button></div>`:""}
-  ${mode==="local"&&state.loaded?`<div class="note">Modo local: sem conexão com o login, os dados ficam só neste aparelho.</div>`:""}`;
+  ${mode==="local"&&state.loaded?`<div class="note">Modo local: sem conexão com o login, os dados ficam só neste aparelho.</div>`:""}
+  ${avisoMudanca()}`;
+}
+// Só nos HOSTS_ANTIGOS: o app passou para ENDERECO_NOVO. Para o navegador é outra instalação, então
+// PIN, preferências e dados do modo local ficam aqui; por isso o backup vem antes do botão de ir.
+function avisoMudanca(){
+  if(!enderecoAntigo()) return "";
+  const novo=ENDERECO_NOVO.replace(/^https:\/\/|\/$/g,"");
+  const comDados=mode!=="login"&&state.loaded&&nLancamentos()>0, bk=infoBackup(), fezBk=!!(bk.ultimo&&bk.ultimo===hojeISO());
+  const ir=`<a class="btn${comDados&&!fezBk?" ghost":""}" href="${esc(ENDERECO_NOVO+location.search.slice(0,500))}">Ir para o novo endereço</a>`;
+  return `<div class="note info mudanca" role="status"><b>O Monetra mudou de endereço: ${novo}</b>
+  <span>Seus lançamentos na nuvem continuam lá: é só entrar com a mesma conta Google. O PIN, as preferências e o que fica só neste aparelho não vão junto, porque o navegador trata o endereço novo como outro app.${comDados?(fezBk?" Backup de hoje baixado: pode ir.":" Antes de ir, baixe um backup."):""}</span>
+  <span class="mdbtns">${comDados?`<button class="btn${fezBk?" ghost":""}" type="button" data-bkurgente="1">${fezBk?"Baixar de novo":"Baixar backup"}</button>`:""}${ir}</span></div>`;
 }
 function avatar(px){
   const nome=(authUser&&(authUser.displayName||authUser.email))||"";

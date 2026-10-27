@@ -3,9 +3,11 @@
 **Controle de gastos pessoal, grátis e sem anúncios.**
 Funciona no celular e no computador, com login Google e seus dados salvos na nuvem.
 
-👉 **Abrir o app:** https://gustavombarbosadev.github.io/Monetra/
+👉 **Abrir o app:** https://monetraapp.web.app
 
-> Novo endereço planejado (ainda não publicado): https://mb-controle-f70b6.web.app. Até o aviso de mudança, use o endereço acima.
+📱 **App para Android (APK):** https://monetraapp.web.app/baixar
+
+> Endereços antigos (`gustavombarbosadev.github.io/Monetra` e `mb-controle-f70b6.web.app`) continuam no ar por enquanto e mostram um aviso para ir ao endereço novo. Seus lançamentos na nuvem vêm junto; PIN e preferências precisam ser configurados de novo.
 
 ---
 
