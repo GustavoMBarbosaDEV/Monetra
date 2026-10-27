@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.3.2 — 26/10/2026 **Botão para baixar o app Android**
+
+- **Página inicial (apresentação):** no celular Android aparece o botão **Baixar o app para Android**, logo abaixo de "Entrar com Google / Criar conta grátis" e de novo no fim da página, em "Comece pelo mês de hoje". Ele leva a `https://github.com/gustavombarbosadev/Monetra/releases/latest/download/Monetra.apk` (constante `APK_URL` no `app.js`), que sempre baixa o APK da Release mais nova do GitHub.
+- **Onde não aparece:** no computador e no iPhone, e dentro do app instalado (APK/TWA ou PWA), porque a apresentação já não é mostrada quando `appInstalado()` é verdadeiro.
+- **Visual:** botão com contorno verde e cantos arredondados; no topo escuro usa `#9CF5C8` e a mesma entrada animada dos outros elementos; no fim da página usa a cor de destaque do tema. Sem animação com movimento reduzido ou no modo calmo, e com foco visível no teclado. Sem script inline e sem mudança na CSP.
+- **Numeração:** a 5.3.1 (aviso de mudança para o Firebase Hosting, no branch `versao-5.3.1`) só será publicada depois do Enforce do App Check em 31/10; ela sairá renumerada como 5.3.3, para as versões seguirem a ordem de publicação. O número 5.3.1 não será usado.
+
 ## 5.3.0 — 26/10/2026 **Preparação do Firebase Hosting (planejado, não publicado)**
 
 - **Firebase Hosting configurado, sem deploy:** `firebase.json` ganhou a seção `hosting` para servir o app em `https://mb-controle-f70b6.web.app` (endereço planejado, ainda não publicado). O GitHub Pages continua sendo o endereço oficial durante a transição. Publica-se a própria raiz do repositório com uma lista de exclusão: saem só os 19 arquivos do app (HTML, CSS, JS, `manifest`, `sw.js`, `icons/` e `screenshots/`, que o manifest usa na tela de instalação); documentação, testes, notas locais, `.git`, `.github`, `.claude`, logs, `.env`, `.zip`/`.7z`, APK/AAB e arquivos de assinatura nunca vão. `.well-known/assetlinks.json` fica liberado para quando o TWA mudar de domínio.
