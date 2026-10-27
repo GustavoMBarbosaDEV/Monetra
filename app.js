@@ -333,8 +333,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.3.0";
+const VERSAO="5.3.2";
+const APK_URL="https://github.com/gustavombarbosadev/Monetra/releases/latest/download/Monetra.apk";
 const NOVIDADES=[
+  "Na página inicial, quem abre pelo celular Android vê o botão Baixar o app para Android, que baixa sempre a versão mais nova do APK.",
   "Atualização de segurança em 31/10: de 29 a 31/10 o app pede um backup dos seus dados, só por precaução. Nada será apagado.",
   "Preparação para um novo endereço do Monetra, com mais proteções do servidor. Por enquanto nada muda: continue usando o endereço de sempre."
 ];
@@ -1879,6 +1881,8 @@ const logoM=(px,id)=>`<svg class="logom" viewBox="90 120 340 270" width="${px}" 
 function viewApresentacao(){
   const inApp=/FBAN|FBAV|FB_IAB|Instagram|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|Twitter/i.test(navigator.userAgent);
   const entrarBtn=`<button class="ap-btn pri" type="button" ${inApp?'data-apres="entrar"':'data-login="1"'}>Entrar com Google <span aria-hidden="true">→</span></button>`;
+  // A apresentação não aparece com o app instalado (appInstalado), então o APK/TWA nunca mostra este link.
+  const apk=/Android/i.test(navigator.userAgent)?`<a class="ap-apk" href="${APK_URL}" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Baixar o app para Android</a>`:"";
   const palavras="Controle seu dinheiro. Viva seus planos.".split(" ").map((w,i)=>{ const m=w.match(/^(.*?)([.,!?]?)$/)||["",w,""], dest=m[1].toLowerCase()==="dinheiro";
     return `<span class="ap-w" style="--i:${i}">${dest?`<span class="ap-dest">${esc(m[1])}</span>${esc(m[2])}`:esc(w)}</span>`; }).join(" ");
   const linha=[3900,3487,3487,3449,1949,1349,1349,1349,1349,1119,1055,695,695,695,599,509,464,412];
@@ -1903,6 +1907,7 @@ function viewApresentacao(){
         <h1 class="ap-tit">${palavras}</h1>
         <p class="ap-sub">Saldo do mês, contas fixas, cartões, metas e previsão, num app leve que funciona no celular e no computador.</p>
         <div class="ap-acoes">${entrarBtn}<button class="ap-btn sec" type="button" data-apres="criar">Criar conta grátis</button></div>
+        ${apk}
         <ul class="ap-checks"><li>Sem anúncios</li><li>Seus dados só seus</li><li>Funciona sem internet</li></ul>
         <p class="ap-termos">Ao entrar, você lê e decide se aceita os <button class="link" type="button" data-termos="ler">termos de privacidade</button>.</p>
       </div>
@@ -1924,7 +1929,8 @@ function viewApresentacao(){
   </div>
   <section class="ap-fim ap-revela"><div class="ap-aurora fraca" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="ap-logo">${logoM(84,"lmf")}</div><h2>Comece pelo mês de hoje</h2><p>Abra no navegador ou instale no Android. Leva um minuto.</p>
-    <div class="ap-acoes centro">${entrarBtn}<button class="ap-btn sec" type="button" data-apres="entrar">Já tenho conta</button></div></section>
+    <div class="ap-acoes centro">${entrarBtn}<button class="ap-btn sec" type="button" data-apres="entrar">Já tenho conta</button></div>
+    ${apk}</section>
   <footer class="ap-rod"><span>${logoM(22,"lmr")}<b>Monetra</b></span><span>Feito por Gustavo Martins Barbosa</span></footer>
   </div>`;
 }
