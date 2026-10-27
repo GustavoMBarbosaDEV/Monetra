@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.3.4 — 27/10/2026 **Fim do aviso de backup urgente**
+
+- **App Check obrigatório já ativo:** o Enforce do App Check foi aplicado em 27/10/2026 no Cloud Firestore e no Authentication, antes do dia 31/10 planejado. Por isso o aviso urgente de backup de 29 a 31/10 (`BK_URGENTE`, criado na 5.2.2) não faz mais sentido e foi removido: a faixa no mês atual, o item em Avisos e a notificação “Backup urgente”. Nenhum dado foi ou será apagado.
+- **Continua igual:** o lembrete mensal de backup e os botões de backup (inclusive no aviso de mudança de endereço).
+
 ## 5.3.3 — 27/10/2026 **Novo endereço: monetraapp.web.app**
 
 - **Endereço definitivo:** o app passa a ser publicado em `https://monetraapp.web.app`, um site próprio do Firebase Hosting no mesmo projeto (`mb-controle-f70b6`), sem nome pessoal no endereço. O `mb-controle-f70b6.web.app` (5.3.0 a 5.3.2) deixa de ser o destino da mudança.

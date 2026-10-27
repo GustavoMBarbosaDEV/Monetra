@@ -333,7 +333,7 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.3.3";
+const VERSAO="5.3.4";
 const NOVIDADES=[
   "O Monetra mudou de endereço: agora é monetraapp.web.app. Seus lançamentos na nuvem continuam; no endereço novo, entre com a mesma conta Google. PIN e preferências precisam ser configurados de novo.",
   "Na página inicial, quem abre pelo celular Android vê o botão Baixar o app para Android, que baixa sempre a versão mais nova do APK."
@@ -1393,13 +1393,13 @@ function avisos(){
   Object.keys(pedidosG||{}).forEach(g=>(pedidosG[g]||[]).forEach(p=>itens.push({tipo:"pedido",g,p})));
   pendencias().forEach(x=>itens.push({tipo:"conta",x}));
   alertasOrcamento(todayKey).forEach(a=>itens.push({tipo:"orc",a}));
-  const bkL=lembreteBackup(); if(bkL&&(bkL.local||bkL.urgente)) itens.push({tipo:"backup",b:bkL});
+  const bkL=lembreteBackup(); if(bkL&&bkL.local) itens.push({tipo:"backup",b:bkL});
   (state.config.dividas||[]).filter(x=>!quitada(x)&&x.venc&&diasAte(x.venc)<=1).forEach(x=>itens.push({tipo:"divida",x}));
   const n=itens.length;
   let rep=[]; try{ rep=assinaturas().repetidos; }catch(e){}
   rep.forEach(r=>itens.push({tipo:"dica",r}));
   try{ aumentos().forEach(a=>itens.push({tipo:"aumento",a})); }catch(e){}
-  if(bkL&&!bkL.local&&!bkL.urgente) itens.push({tipo:"backup",b:bkL});
+  if(bkL&&!bkL.local) itens.push({tipo:"backup",b:bkL});
   const rs=avisoSemana(); if(rs) itens.push({tipo:"semana",r:rs});
   const mesAt=kM(todayKey), anoR=mesAt===12?kY(todayKey):mesAt===1?kY(todayKey)-1:null;
   if(anoR&&anosRetro().includes(anoR)) itens.push({tipo:"retro",ano:anoR});
@@ -1420,7 +1420,6 @@ function listaAvisos(){
     if(it.tipo==="divida"){ const x=it.x, dd=diasAte(x.venc), cls=dd<0?"atraso":dd===0?"hoje":"amanha";
       grupos.conta.push(linha("pagar "+cls,ICON.grupo,x.tipo==="receber"?esc(x.pessoa)+" te deve "+brl(restaDiv(x)):"Você deve "+brl(restaDiv(x))+" a "+esc(x.pessoa),dd<0?"combinado para "+dataCurta(x.venc)+" (passou)":dd===0?"combinado para hoje":"combinado para amanhã",`<button class="btn ghost mini" type="button" data-avdiv="${esc(x.id)}">Ver</button>`)); }
     if(it.tipo==="orc"){ const a=it.a; grupos.orc.push(linha("orc "+(a.nivel==="passou"?"atraso":"amanha"),`<i class="bola" style="background:${catColor(a.id)}"></i>`,esc(textoAlerta(a)),"limite de "+brl(a.o)+" em "+esc(abrMes(todayKey)),`<button class="btn ghost mini" type="button" data-avmes="1">Ver mês</button>`)); }
-    if(it.tipo==="backup"&&it.b.urgente){ grupos.conta.push(linha("pagar hoje",ICON_ALERTA,"Backup urgente: atualização de segurança em 31/10","Baixe uma cópia dos seus dados antes da atualização. Nada será apagado; é só por precaução.",`<span class="bkbtns"><button class="btn mini" type="button" data-avbackup="1">Baixar</button></span>`)); return; }
     if(it.tipo==="backup"){ const b=it.b; (b.local?grupos.conta:grupos.dica).push(linha(b.local?"pagar amanha":"dica",ICON.check,"Hora de fazer um backup",(b.dias===null?"Você ainda não baixou nenhum backup":"Último backup há "+b.dias+" dias")+(b.local?" · sem login, seus dados ficam só neste aparelho":" · uma cópia sua, além da nuvem"),`<span class="bkbtns"><button class="btn mini" type="button" data-avbackup="1">Baixar</button><button class="btn ghost mini" type="button" data-avbackupdepois="1">Depois</button></span>`)); }
     if(it.tipo==="semana"){ const r=it.r; grupos.dica.push(linha("pedido",ICON.ano||ICON.mais,"Sua semana: "+brl(r.tot),esc(textoVarSemana(r))+(r.subiu?" · mais subiu: "+esc(catName(r.subiu.id)):""),`<button class="btn mini" type="button" data-avsemana="${r.fim}">Ver</button>`)); }
     if(it.tipo==="retro") grupos.dica.push(linha("pedido",ICON.ano||ICON.mais,"Sua retrospectiva de "+it.ano+" está pronta","quanto entrou, saiu e seus recordes do ano",`<button class="btn mini" type="button" data-avretro="${it.ano}">Ver</button>`));
@@ -1456,7 +1455,7 @@ function verificaLembretes(forcar){
   alertasOrcamento(todayKey).forEach(a=>{ const chave=["orc",a.id,todayKey,a.nivel].join(":"); if(vistos[chave]) return; vistos[chave]=hoje;
     mostraNotif(a.nivel==="passou"?"Limite estourado: "+a.nome:a.nivel==="ritmo"?"Ritmo alto: "+a.nome:"Atenção ao limite: "+a.nome, textoAlerta(a)+" Toque para ver.",chave); });
   const rsN=avisoSemana(); if(rsN){ const chave="semana:"+rsN.fim; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Resumo da semana: "+brl(rsN.tot),textoVarSemana(rsN)+(rsN.subiu?". Mais subiu: "+catName(rsN.subiu.id):"")+". Toque para ver.",chave); } }
-  const bkN=lembreteBackup(); if(bkN){ const chave="backup:"+todayKey; if(!vistos[chave]){ vistos[chave]=hoje; if(bkN.urgente) mostraNotif("Backup urgente","Atualização de segurança em 31/10. Baixe uma cópia dos seus dados por precaução: toque para abrir o Monetra.",chave); else mostraNotif("Hora de fazer um backup",(bkN.dias===null?"Você ainda não baixou nenhum backup.":"Último backup há "+bkN.dias+" dias.")+" Toque para abrir o Monetra.",chave); } }
+  const bkN=lembreteBackup(); if(bkN){ const chave="backup:"+todayKey; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Hora de fazer um backup",(bkN.dias===null?"Você ainda não baixou nenhum backup.":"Último backup há "+bkN.dias+" dias.")+" Toque para abrir o Monetra.",chave); } }
   for(const k in vistos) if(vistos[k]<shiftKey(hoje.slice(0,7),-2)) delete vistos[k];
   try{ localStorage.setItem("mb.notif.vistos",JSON.stringify(vistos)); }catch(e){}
 }
@@ -1502,12 +1501,9 @@ const chaveBk=()=>"mb.backup."+(uid||"local");
 function infoBackup(){ try{ return JSON.parse(localStorage.getItem(chaveBk())||"{}")||{}; }catch(e){ return {}; } }
 function salvaInfoBackup(o){ try{ localStorage.setItem(chaveBk(),JSON.stringify(Object.assign(infoBackup(),o))); }catch(e){} }
 function nLancamentos(){ let n=0; Object.values(state.months||{}).forEach(m=>{ n+=((m&&m.gastos)||[]).length+((m&&m.avulsos)||[]).length; }); return n+state.config.fixos.length+state.config.parcelas.length; }
-const BK_URGENTE={de:"2026-10-29",ate:"2026-10-31"};
-function backupUrgente(){ const hj=hojeISO(), bk=infoBackup(); return hj>=BK_URGENTE.de&&hj<=BK_URGENTE.ate&&!(bk.ultimo&&bk.ultimo>=BK_URGENTE.de); }
 function lembreteBackup(){
   if(mode==="login"||!state.loaded||(mode==="cloud"&&aberto!=="pessoal")) return null;
   const bk=infoBackup(), hj=hojeISO(), n=nLancamentos();
-  if(n>0&&backupUrgente()) return {dias:bk.ultimo?entreDias(bk.ultimo,hj):null,local:mode!=="cloud",n,urgente:true};
   if(n<10) return null;
   if(bk.depois&&bk.depois>hj) return null;
   const dias=bk.ultimo?entreDias(bk.ultimo,hj):null;
@@ -2406,8 +2402,7 @@ function viewMes(){
   const k=ui.month, m=getMonth(k), c=calc(k), cats=state.config.categorias, isCur=k===todayKey;
   const prevK=shiftKey(k,-1), prev=MESES.includes(prevK)&&ativo(prevK)&&ativo(k)?calc(prevK):null;
   const acum=acumulado(k), cx=caixinhaAte(k), ini=inicioKey();
-  const bkU=k===todayKey&&lembreteBackup();
-  const aviso=(bkU&&bkU.urgente?`<div class="note bkurg" role="alert"><span><b>Backup urgente:</b> em 31/10 o Monetra recebe uma atualização de segurança. Por precaução, baixe agora uma cópia dos seus dados. Nada será apagado.</span><button class="btn mini" type="button" data-bkurgente="1">Baixar backup</button></div>`:"")+avisoCompart()+(!ini?`<div class="note info">Seu controle ainda não começou. Informe o <b>salário deste mês</b> no card Receitas (ou lance uma receita) e os cálculos passam a contar a partir deste mês.</div>`
+  const aviso=avisoCompart()+(!ini?`<div class="note info">Seu controle ainda não começou. Informe o <b>salário deste mês</b> no card Receitas (ou lance uma receita) e os cálculos passam a contar a partir deste mês.</div>`
     :k<ini?`<div class="note info">Este mês é anterior ao início do seu controle (${esc(nomeMes(ini).toLowerCase())}). Aqui só conta o que você lançar à mão; salário padrão, rendas e contas fixas não entram.</div>`:"");
   const varDesp=prev?variacao(c.despesas,prev.despesas):"";
   const mesN=NOMES[kM(k)-1].toLowerCase(), varS=prev&&Math.abs(prev.saldo)>0.5?(c.saldo-prev.saldo)/Math.abs(prev.saldo):null;
