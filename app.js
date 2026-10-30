@@ -337,10 +337,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.4.6";
+const VERSAO="5.4.7";
 const NOVIDADES=[
-  "A tela inicial abre mais leve: o app só carrega a parte de sincronização depois que você entra na conta, e a verificação de segurança só quando você toca em Entrar.",
-  "Para quem já está logado, nada muda: seus dados carregam logo depois da abertura, como sempre."
+  "No celular, a barrinha de rolagem da lateral não aparece mais ao rolar a tela.",
+  "Desde a 5.4.6, a tela inicial abre mais leve: a sincronização só carrega depois que você entra na conta."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
