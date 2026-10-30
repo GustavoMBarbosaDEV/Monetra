@@ -1,8 +1,8 @@
-const V = "5.4.4";
+const V = "5.4.5";
 const CACHE = "monetra-" + V;
 const SHELL = ["./", "index.html", ...["style.css", "boot.css", "pre.js", "boot.js", "app.js"].map(f => f + "?v=" + V), "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png",
-  ...["inter-latin-400", "inter-latin-500", "inter-latin-600", "inter-latin-700", "inter-latin-800", "sora-latin-600", "sora-latin-700"].map(f => "fonts/fontsource-5.3.0/" + f + "-normal.woff2")];
+  "fonts/fontsource-variable-5.3.0/inter-latin-wght-normal.woff2", "fonts/fontsource-variable-5.3.0/sora-latin-wght-normal.woff2"];
 const ESPERA_NAVEGACAO = 3000;
 const FORA = /^\/(__|baixar)(\/|$)/;
 const SEM_AVISO = /^monetra-(?:[0-4]\.|5\.[0-3]\.|5\.4\.[01]$)/;

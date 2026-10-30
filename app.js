@@ -337,10 +337,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.4.4";
+const VERSAO="5.4.5";
 const NOVIDADES=[
-  "O Monetra carrega mais rápido nas próximas visitas: os arquivos que não mudam ficam guardados no aparelho, e cada versão nova é baixada uma vez só.",
-  "Imagens e fontes mais leves e vindas do próprio app, para gastar menos internet."
+  "Fontes ainda mais leves: o app baixa cerca de 70 KB a menos na primeira visita, com o mesmo visual.",
+  "Desde a 5.4.4 o Monetra abre mais rápido e avisa “Nova versão disponível · Atualizar” quando houver novidade."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";

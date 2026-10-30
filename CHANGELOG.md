@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.5 — 30/10/2026 **Fontes variáveis**
+
+- **Inter e Sora variáveis:** um arquivo woff2 latino por família (`@fontsource-variable/inter` e `/sora` 5.3.0, OFL-1.1) em `fonts/fontsource-variable-5.3.0/`, no lugar dos 7 arquivos de peso fixo da 5.4.3. Os mesmos pesos continuam disponíveis (Inter 100–900, Sora 100–800). Na primeira visita, as fontes passam de 155 KiB para 82 KiB, o mesmo patamar de quando vinham do Google Fonts.
+- `preload` e `SHELL` do service worker apontam para os arquivos novos.
+- **Removido** `fonts/fontsource-5.3.0/` (os 7 arquivos de peso fixo da 5.4.3).
+
 ## 5.4.4 — 30/10/2026 **Cache longo e publicação minificada**
 
 - **`?v=` nos arquivos do app:** `index.html` carrega `style.css`, `boot.css`, `pre.js`, `boot.js` e `app.js` com `?v=VERSAO`, e o `SHELL` do service worker usa os mesmos endereços (`const V` no `sw.js` dá nome ao cache e ao `?v=`).
