@@ -12,6 +12,17 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.0 — 30/10/2026 **Firebase 13 servido pelo próprio app**
+
+- **Firebase JS SDK 10.12.2 → 13.1.0:** as notas de mudança das versões 11, 12 e 13 não alteram nenhuma função usada pelo app (login por popup/redirect, `persistentLocalCache`, transações, `ReCaptchaEnterpriseProvider` etc.). Mudança que importa: desde a 12 o SDK exige **ES2020** (navegadores muito antigos, como Safari anterior ao 14 e Chrome anterior ao 80, deixam de ter login/sincronização). Na 13.1.0 a sessão salva só é limpa quando o token expirou ou a conta foi desativada.
+- **SDK em `vendor/firebase-13.1.0/`:** gerado com esbuild por `ferramentas/vendor-firebase.mjs` a partir do npm (versão fixa em `ferramentas/package.json`). São os mesmos quatro módulos de antes (`firebase-app.js`, `-auth.js`, `-firestore.js`, `-app-check.js`) com só as funções que o app usa e um núcleo comum (`nucleo-*.js`), cerca de 207 KiB com gzip contra 260 KiB do mesmo SDK no gstatic. Licenças no `LICENSE` da pasta.
+- **CSP:** sai o `www.gstatic.com` do `connect-src` (o service worker não busca mais o SDK lá fora) e o `script-src` fica restrito a `https://www.gstatic.com/recaptcha/`, que o reCAPTCHA do App Check ainda usa. O ramo do gstatic saiu do `sw.js`. Meta do `index.html` e cabeçalho do `firebase.json` continuam iguais.
+- **Repositório:**
+  - todas as Actions fixadas pelo SHA do commit, com a versão em comentário (o Dependabot continua atualizando);
+  - novo workflow **OpenSSF Scorecard** (`scorecard.yml`), semanal e a cada push na `main`;
+  - novo workflow **Versões do Firebase e do pdf.js** (`versoes.yml`), semanal: compara `FB_V` e a pasta `vendor/pdfjs-*` com o npm e abre uma issue (sem repetir) quando houver versão nova;
+  - Dependabot também em `ferramentas/` (sem o pacote `firebase`, que só muda junto com o `vendor/`).
+
 ## 5.3.6 — 27/10/2026 **Importar extrato em PDF**
 
 - **PDF na importação:** Ajustes → Importar extrato do banco aceita `.pdf`, além de OFX e CSV. O texto é extraído no próprio aparelho com o pdf.js 6.3.289 (build `legacy`, para Safari/iOS e Android mais antigos), guardado em `vendor/pdfjs-6.3.289/` com a licença Apache-2.0 e carregado só quando o arquivo escolhido é PDF. Nada vem de CDN e a CSP não mudou (`isEvalSupported:false`, worker em módulo do próprio site).

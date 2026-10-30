@@ -12,3 +12,11 @@ updates:
       interval: weekly
     commit-message:
       prefix: "Dependências"
+  - package-ecosystem: npm
+    directory: "/ferramentas"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "Dependências"
+    ignore:
+      - dependency-name: "firebase"

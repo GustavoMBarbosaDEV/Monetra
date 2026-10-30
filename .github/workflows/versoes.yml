@@ -1,0 +1,51 @@
+name: Versões do Firebase e do pdf.js
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Comparar com o npm e abrir issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ok() { [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; }
+          fb_app=$(grep -oE 'const FB_V="[0-9.]+"' app.js | cut -d'"' -f2)
+          pdf_app=$(ls -d vendor/pdfjs-* 2>/dev/null | sed 's#.*/pdfjs-##' | sort -V | tail -1)
+          fb_npm=$(npm view firebase version)
+          pdf_npm=$(npm view pdfjs-dist version)
+          for v in "$fb_app" "$pdf_app" "$fb_npm" "$pdf_npm"; do ok "$v" || { echo "::error::versão inesperada: $v"; exit 1; }; done
+          echo "Firebase: app $fb_app, npm $fb_npm"
+          echo "pdf.js: app $pdf_app, npm $pdf_npm"
+          abre() {
+            local titulo="$1" corpo="$2"
+            local n
+            n=$(gh issue list --state open --limit 100 --json title --jq "[.[] | select(.title == \"$titulo\")] | length")
+            if [ "$n" = "0" ]; then gh issue create --title "$titulo" --body "$corpo"; else echo "Já existe issue aberta: $titulo"; fi
+          }
+          if [ "$fb_app" != "$fb_npm" ]; then
+            abre "Versão nova do Firebase JS SDK: $fb_npm (o app usa $fb_app)" "O npm tem o Firebase JS SDK **$fb_npm** e o app usa **$fb_app** (\`FB_V\` em \`app.js\`).
+
+          Antes de atualizar, leia as notas de mudança: https://firebase.google.com/support/release-notes/js
+
+          Como atualizar: veja \"Bibliotecas de terceiros (vendor/)\" no DESENVOLVIMENTO.md e teste login, modo local, sincronização, compartilhado e offline."
+          fi
+          if [ "$pdf_app" != "$pdf_npm" ]; then
+            abre "Versão nova do pdf.js: $pdf_npm (o app usa $pdf_app)" "O npm tem o pdf.js (\`pdfjs-dist\`) **$pdf_npm** e o app usa **$pdf_app** (\`vendor/pdfjs-$pdf_app\`).
+
+          Notas de mudança: https://github.com/mozilla/pdf.js/releases
+
+          Como atualizar: veja \"Bibliotecas de terceiros (vendor/)\" no DESENVOLVIMENTO.md e teste a importação de extrato em PDF (com e sem senha)."
+          fi
