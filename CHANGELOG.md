@@ -12,6 +12,20 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.2 — 30/10/2026 **Service worker: abre pelo cache e avisa versão nova**
+
+- **Arquivos do app** (HTML, CSS, JS, ícones, `vendor/`): abrem pelo cache e se atualizam em segundo plano (stale-while-revalidate).
+- **Navegação:** espera até 3 s pela rede; sem resposta, abre pelo cache. A página é guardada sempre na chave `./`, sem a query string (um `?convite=…` nunca fica salvo).
+- **Nunca entram no cache:** outros domínios (Firestore, login, reCAPTCHA, App Check), os caminhos reservados do Firebase (`/__/`), o `/baixar` e qualquer resposta que não seja 200 do próprio site.
+- **Versão nova:** sem `skipWaiting` automático. O app mostra "Nova versão disponível · Atualizar" (`role="status"`, anunciado ao leitor de tela, foco visível, sem animação com movimento reduzido); ao tocar, o service worker novo assume e a página recarrega uma vez. O app também procura atualização quando volta para a frente.
+- **Ao ativar:** apaga os caches antigos do Monetra.
+- **Robustez:** se o armazenamento de cache do navegador falhar, o service worker instala mesmo assim e busca tudo da rede, em vez de deixar o app sem resposta.
+
+## 5.4.1 — 30/10/2026 **pdf.js 6.4.299**
+
+- **Leitor de PDF:** pdf.js 6.3.289 → **6.4.299** (build `legacy`), em `vendor/pdfjs-6.4.299/`, com a licença Apache-2.0. `PDFJS_DIR` no `app.js` aponta para a pasta nova.
+- **Testado** com os mesmos PDFs de exemplo da 5.3.6 (fatura Nubank, extratos Itaú, Caixa e Inter com senha, PDF escaneado), importação, lançamentos repetidos e CSV: resultado idêntico ao da versão anterior.
+
 ## 5.4.0 — 30/10/2026 **Firebase 13 servido pelo próprio app**
 
 - **Firebase JS SDK 10.12.2 → 13.1.0:** as notas de mudança das versões 11, 12 e 13 não alteram nenhuma função usada pelo app (login por popup/redirect, `persistentLocalCache`, transações, `ReCaptchaEnterpriseProvider` etc.). Mudança que importa: desde a 12 o SDK exige **ES2020** (navegadores muito antigos, como Safari anterior ao 14 e Chrome anterior ao 80, deixam de ter login/sincronização). Na 13.1.0 a sessão salva só é limpa quando o token expirou ou a conta foi desativada.
