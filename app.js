@@ -337,10 +337,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.4.0";
+const VERSAO="5.4.2";
 const NOVIDADES=[
-  "Atualização de segurança: o login e a sincronização usam a versão mais nova do Firebase, agora servida pelo próprio Monetra, sem depender de outro site para carregar.",
-  "Nada muda no uso: seus dados, o login com Google e o modo offline continuam iguais."
+  "O app abre mais rápido: as telas vêm direto do aparelho e se atualizam em segundo plano. Sem internet, ele abre em até 3 segundos com o que já tem.",
+  "Quando sair uma versão nova, aparece o aviso “Nova versão disponível · Atualizar”: você escolhe a hora de atualizar."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -3175,7 +3175,7 @@ function parseCSV(t){
   linhas.slice(hi+1).forEach(l=>{ const c=linhaCSV(l,sep), d=dataCSV(c[iD]), v=numCSV(c[iV]); if(!d||!isFinite(v)||v===0) return; itens.push({data:d,valor:v,desc:(iDesc>=0?c[iDesc]:"").replace(/\s+/g," "),fitid:iId>=0?c[iId]:""}); });
   return {itens,cartao};
 }
-const PDFJS_DIR="vendor/pdfjs-6.3.289/";
+const PDFJS_DIR="vendor/pdfjs-6.4.299/";
 /** @type {Promise<any>|null} */
 let pdfjsProm=null;
 function carregaPdfjs(){
@@ -4382,9 +4382,33 @@ setInterval(()=>verificaLembretes(true),30*60000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ verificaLembretes(true); if(ui.tab==="mes"&&!ui.sheet) render(); } });
 setInterval(()=>{ const d=new Date(); if(keyOf(d.getFullYear(),d.getMonth()+1)!==todayKey&&!ui.sheet&&!dirty.size) location.reload(); },60000);
 
+/** @type {ServiceWorkerRegistration|null} */
+let swReg=null;
+function avisoNovaVersao(){
+  if(document.getElementById("novaversao")) return;
+  const el=document.createElement("div"); el.id="novaversao"; el.className="novaversao"+(semMovimento()?"":" entra"); el.setAttribute("role","status");
+  el.innerHTML=`<span>Nova versão disponível</span><button type="button" class="btn mini" data-atualizar="1">Atualizar</button>`;
+  document.body.appendChild(el);
+  el.addEventListener("click",ev=>{ const b=ev.target instanceof Element&&ev.target.closest("[data-atualizar]"); if(!(b instanceof HTMLButtonElement)) return;
+    b.disabled=true; b.textContent="Atualizando…"; vibra(14); const w=swReg&&swReg.waiting; if(w) w.postMessage({tipo:"atualizar"}); else location.reload(); });
+  anunciar("Nova versão do Monetra disponível. Toque em Atualizar para usar.");
+}
+function vigiaAtualizacao(){
+  if(!("serviceWorker" in navigator)) return;
+  const sw=navigator.serviceWorker, tinhaControle=!!sw.controller; let recarregando=false;
+  sw.addEventListener("controllerchange",()=>{ if(!tinhaControle||recarregando) return; recarregando=true; location.reload(); });
+  sw.getRegistration().then(reg=>{ if(!reg) return; swReg=reg;
+    const pronto=()=>{ if(reg.waiting&&sw.controller) avisoNovaVersao(); };
+    pronto();
+    reg.addEventListener("updatefound",()=>{ const n=reg.installing; if(n) n.addEventListener("statechange",()=>{ if(n.state==="installed") pronto(); }); });
+    document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") reg.update().catch(()=>{}); });
+  }).catch(()=>{});
+}
+
 travar();
 migraPin().catch(()=>{});
 render();
 init();
+vigiaAtualizacao();
 })();
 
