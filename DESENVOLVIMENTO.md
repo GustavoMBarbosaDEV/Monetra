@@ -164,9 +164,13 @@ Endereço oficial: `https://monetraapp.web.app` (site `monetraapp`, desde a 5.3.
 Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_ANTIGOS` no `app.js`): `gustavombarbosadev.github.io/Monetra` (GitHub Pages, branch `main`) e o site padrão `mb-controle-f70b6.web.app` (5.3.0 a 5.3.2).
 
 - **Dois sites no `firebase.json`:** `hosting` é uma lista com uma configuração para `monetraapp` e outra para `mb-controle-f70b6`, iguais (arquivos, `ignore`, `/baixar`, cabeçalhos e cache). Mudou uma? **Mude a outra igual.**
-- **Deploy pela CLI (neste PC):** `.\testes-regras\node_modules\.bin\firebase.cmd login` uma vez; depois
-  `.\testes-regras\node_modules\.bin\firebase.cmd deploy --only hosting:monetraapp --project mb-controle-f70b6`.
-  Para o site antigo (só para o aviso de mudança chegar a quem ainda está nele): `--only hosting:mb-controle-f70b6`. O `--only hosting:...` não mexe nas regras do Firestore.
+- **Versão nova:** `cd ferramentas && npm run bump -- X.Y.Z` (troca `VERSAO`, `const V` do `sw.js` e os `?v=` do `index.html`); depois escreva NOVIDADES no `app.js` e a entrada no `CHANGELOG.md`.
+- **O que vai ao ar:** o Firebase Hosting publica só a pasta `dist/`, montada por `ferramentas/build.mjs` a partir de uma lista fixa de arquivos (arquivo novo do app? acrescente em `ARQUIVOS` ou `PASTAS` no script). `app.js`, `boot.js`, `pre.js`, `style.css` e `boot.css` saem minificados; a raiz do repositório continua legível e é o que o GitHub Pages serve.
+- **Deploy pela CLI (neste PC):** `.\testes-regras\node_modules\.bin\firebase.cmd login` uma vez; depois, a cada publicação:
+  1. `cd ferramentas && npm ci && npm run build`;
+  2. `.\testes-regras\node_modules\.bin\firebase.cmd deploy --only hosting:monetraapp,hosting:mb-controle-f70b6 --project mb-controle-f70b6`.
+  O `--only hosting:...` não mexe nas regras do Firestore. O `hosting.yml` faz o mesmo build antes do deploy automático.
+- **Cache:** `vendor/`, `fonts/`, `icons/` e os arquivos com `?v=` ficam um ano no navegador (`immutable`). Por isso as pastas de `vendor/` e `fonts/` têm a versão no nome, e um ícone novo precisa de nome novo.
 - **`/baixar`:** redirecionamento 302 para `https://github.com/gustavombarbosadev/Monetra/releases/latest/download/Monetra.apk`, o APK da Release mais nova. O botão **Baixar o app para Android** da apresentação usa `https://monetraapp.web.app/baixar` (`APK_URL`).
 - **O que é publicado:** a raiz do repositório, menos o que está em `ignore`. Saem só os arquivos do app e o `.well-known/assetlinks.json` (20 hoje). Para conferir a lista exata antes de publicar:
   `node -e "const {listFiles}=require('./testes-regras/node_modules/firebase-tools/lib/listFiles.js');console.log(listFiles('.',require('./firebase.json').hosting[0].ignore).join('
