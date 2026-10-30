@@ -180,6 +180,9 @@ Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_
 
 ## Bibliotecas de terceiros (vendor/)
 
+- **Firebase JS SDK** (`FB_V` em `app.js`), em `vendor/firebase-<versão>/`, gerado por `ferramentas/vendor-firebase.mjs`. **Atualizar:** troque a versão de `firebase` em `ferramentas/package.json` **e** o `FB_V` no `app.js`, rode `cd ferramentas && npm install && node vendor-firebase.mjs`, apague a pasta antiga do `vendor/`, leia as notas de mudança (https://firebase.google.com/support/release-notes/js) e teste login, modo local, sincronização, compartilhado e offline. Se o app passar a usar outra função do SDK, acrescente o nome na lista `MODULOS` do script.
+- O workflow `versoes.yml` abre uma issue toda semana em que o npm tiver versão nova do Firebase ou do pdf.js.
+
 - **pdf.js 6.3.289** (build `legacy`), em `vendor/pdfjs-6.3.289/`: `pdf.min.mjs`, `pdf.worker.min.mjs` e `LICENSE` (Apache-2.0). Usado só na importação de extrato em PDF e carregado sob demanda (`carregaPdfjs()` em `app.js`). Não entra no `SHELL` do `sw.js` (são ~1,8 MB); o service worker guarda os arquivos na primeira vez que forem usados.
 - **Atualizar:** `npm pack pdfjs-dist@<versão>` numa pasta temporária, copie `legacy/build/pdf.min.mjs`, `legacy/build/pdf.worker.min.mjs` e `LICENSE` para uma pasta nova `vendor/pdfjs-<versão>/`, troque `PDFJS_DIR` no `app.js`, apague a pasta antiga e teste a importação com PDFs reais e com senha. A pasta leva a versão no nome para nenhum cache antigo misturar arquivos.
 

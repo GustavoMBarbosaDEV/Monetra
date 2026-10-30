@@ -1,0 +1,13 @@
+{
+  "name": "monetra-ferramentas",
+  "private": true,
+  "description": "Scripts do Monetra: gerar o SDK do Firebase em vendor/, trocar a versão e montar a pasta dist/ para o Firebase Hosting",
+  "type": "module",
+  "scripts": {
+    "vendor-firebase": "node vendor-firebase.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "firebase": "13.1.0"
+  }
+}

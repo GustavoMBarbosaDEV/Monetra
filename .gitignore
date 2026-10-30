@@ -32,5 +32,6 @@ serviceAccount*.json
 
 # dependências e saídas dos testes das regras
 node_modules/
+ferramentas/.entradas/
 firebase-debug.log
 firestore-debug.log

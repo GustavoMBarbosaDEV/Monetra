@@ -337,10 +337,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.3.6";
+const VERSAO="5.4.0";
 const NOVIDADES=[
-  "Importar extrato agora aceita PDF, além de OFX e CSV: em Ajustes → Importar extrato do banco, escolha o PDF do extrato ou da fatura do cartão. Se o PDF tiver senha, o app pede na hora e não guarda.",
-  "O PDF é lido no seu aparelho e você confere tudo antes de importar, com a categoria sugerida e os lançamentos repetidos desmarcados. PDF escaneado (foto) não dá para ler: nesse caso use OFX ou CSV."
+  "Atualização de segurança: o login e a sincronização usam a versão mais nova do Firebase, agora servida pelo próprio Monetra, sem depender de outro site para carregar.",
+  "Nada muda no uso: seus dados, o login com Google e o modo offline continuam iguais."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -877,12 +877,12 @@ async function encerraSessao(msg){
   setTimeout(()=>location.reload(),150);
 }
 let aberto="pessoal", eu={}, euCarregado=false, grupoDoc=null, pedidosG={}, unsubs=[], unsubsFixos=[], seqEspaco=0, perdendo={};
-const FB_V="10.12.2";
+const FB_V="13.1.0";
 async function init(){
   const cfg=window.FIREBASE_CONFIG;
   if(!cfg||!cfg.apiKey||/COLE|SUA_/i.test(cfg.apiKey)){ mode="local"; loadLocal(); state.loaded=true; setStatus("Modo local (sem login)",""); render(); return; }
   try{
-    const base="https://www.gstatic.com/firebasejs/"+FB_V+"/";
+    const base=new URL("vendor/firebase-"+FB_V+"/",document.baseURI).href;
     const [A,U,F]=await Promise.all([import(base+"firebase-app.js"),import(base+"firebase-auth.js"),import(base+"firebase-firestore.js")]);
     const app=A.initializeApp(cfg);
     if(window.APPCHECK_SITE_KEY){ try{ const C=await import(base+"firebase-app-check.js"); C.initializeAppCheck(app,{provider:new C.ReCaptchaEnterpriseProvider(window.APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true}); }catch(e){ console.warn("App Check não iniciou",e); } }
