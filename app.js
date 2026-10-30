@@ -337,10 +337,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.4.5";
+const VERSAO="5.4.6";
 const NOVIDADES=[
-  "Fontes ainda mais leves: o app baixa cerca de 70 KB a menos na primeira visita, com o mesmo visual.",
-  "Desde a 5.4.4 o Monetra abre mais rápido e avisa “Nova versão disponível · Atualizar” quando houver novidade."
+  "A tela inicial abre mais leve: o app só carrega a parte de sincronização depois que você entra na conta, e a verificação de segurança só quando você toca em Entrar.",
+  "Para quem já está logado, nada muda: seus dados carregam logo depois da abertura, como sempre."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -882,20 +882,52 @@ async function init(){
   const cfg=window.FIREBASE_CONFIG;
   if(!cfg||!cfg.apiKey||/COLE|SUA_/i.test(cfg.apiKey)){ mode="local"; loadLocal(); state.loaded=true; setStatus("Modo local (sem login)",""); render(); return; }
   try{
-    const base=new URL("vendor/firebase-"+FB_V+"/",document.baseURI).href;
-    const [A,U,F]=await Promise.all([import(base+"firebase-app.js"),import(base+"firebase-auth.js"),import(base+"firebase-firestore.js")]);
-    const app=A.initializeApp(cfg);
-    if(window.APPCHECK_SITE_KEY){ try{ const C=await import(base+"firebase-app-check.js"); C.initializeAppCheck(app,{provider:new C.ReCaptchaEnterpriseProvider(window.APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true}); }catch(e){ console.warn("App Check não iniciou",e); } }
-    const auth=U.getAuth(app);
-    let db; try{ db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})}); }catch(e){ db=F.getFirestore(app); }
-    fb={...U,...F,db,auth};
-    U.getRedirectResult(auth).then(r=>{ if(r) boasVindas(r); }).catch(e=>{ loginErro=traduzErro(e); render(); });
+    fbBase=new URL("vendor/firebase-"+FB_V+"/",document.baseURI).href;
+    const [A,U]=await Promise.all([import(fbBase+"firebase-app.js"),import(fbBase+"firebase-auth.js")]);
+    fbApp=A.initializeApp(cfg);
+    const redirecao=redirectPendente(cfg.apiKey);
+    if(redirecao||await sessaoSalva(cfg.apiKey)) await iniciaAppCheck();
+    const auth=U.getAuth(fbApp);
+    fb={...U,auth};
+    if(redirecao) U.getRedirectResult(auth).then(r=>{ if(r) boasVindas(r); }).catch(e=>{ loginErro=traduzErro(e); render(); });
     U.onAuthStateChanged(auth,user=>{
       pararEspaco(); dirty.clear();
       if(!user){ if(travado) destravar(); zeraFila(); unsubsFixos.forEach(f=>{ try{f()}catch(e){} }); unsubsFixos=[]; authUser=null; uid=null; aberto="pessoal"; eu={}; euCarregado=false; grupoDoc=null; pedidosG={}; mode="login"; resetState(); state.loaded=true; closeSheet(); render(); return; }
-      authUser=user; uid=user.uid; mode="cloud"; abrirEspaco();
+      authUser=user; uid=user.uid; mode="cloud"; resetState(); state.loaded=false; render();
+      Promise.all([iniciaAppCheck(),carregaFirestore()]).then(()=>{ if(authUser===user) abrirEspaco(); })
+        .catch(e=>{ console.error(e); setStatus("Sem conexão com o servidor","err"); render(); });
     });
   }catch(e){ console.error(e); mode="local"; loadLocal(); state.loaded=true; setStatus("Sem conexão com o login — modo local","err"); render(); }
+}
+/** @type {any} */
+let fbApp=null;
+let fbBase="";
+/** @type {Promise<void>|null} */
+let appCheckProm=null;
+/** @type {Promise<void>|null} */
+let firestoreProm=null;
+function iniciaAppCheck(){
+  if(!fbApp||!window.APPCHECK_SITE_KEY) return Promise.resolve();
+  if(!appCheckProm) appCheckProm=import(fbBase+"firebase-app-check.js").then(C=>{ C.initializeAppCheck(fbApp,{provider:new C.ReCaptchaEnterpriseProvider(window.APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true}); }).catch(e=>{ appCheckProm=null; console.warn("App Check não iniciou",e); });
+  return appCheckProm;
+}
+function carregaFirestore(){
+  if(!firestoreProm) firestoreProm=import(fbBase+"firebase-firestore.js").then(F=>{ let db; try{ db=F.initializeFirestore(fbApp,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})}); }catch(e){ db=F.getFirestore(fbApp); } Object.assign(fb,F,{db}); }).catch(e=>{ firestoreProm=null; throw e; });
+  return firestoreProm;
+}
+/** @param {string} chave */
+function redirectPendente(chave){ try{ return !!sessionStorage.getItem("firebase:pendingRedirect:"+chave+":[DEFAULT]"); }catch(e){ return false; } }
+/** @param {string} chave */
+async function sessaoSalva(chave){
+  const k="firebase:authUser:"+chave+":[DEFAULT]";
+  try{ if(localStorage.getItem(k)) return true; }catch(e){}
+  try{
+    if(!indexedDB.databases) return true;
+    const dbs=await indexedDB.databases(); if(!dbs.some(d=>d.name==="firebaseLocalStorageDb")) return false;
+    return await new Promise(ok=>{ const req=indexedDB.open("firebaseLocalStorageDb");
+      req.onerror=()=>ok(true); req.onblocked=()=>ok(true);
+      req.onsuccess=()=>{ const db=req.result; try{ const g=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").get(k); g.onsuccess=()=>{ ok(!!g.result); db.close(); }; g.onerror=()=>{ ok(true); db.close(); }; }catch(e){ ok(true); db.close(); } }; });
+  }catch(e){ return true; }
 }
 const docsPath=()=>aberto==="pessoal"?["users",uid,"docs"]:["grupos",aberto,"docs"];
 function pararEspaco(){ if(unsub){ unsub(); unsub=null; } unsubs.forEach(f=>{ try{f()}catch(e){} }); unsubs=[]; }
@@ -1130,6 +1162,7 @@ function acaoComp(a,id){
 function traduzErro(e){ const c=e&&e.code||""; if(c.includes("unauthorized-domain")) return "Este endereço ainda não foi autorizado no Firebase (Authentication → Configurações → Domínios autorizados)."; if(c.includes("popup-closed")||c.includes("cancelled")) return ""; if(c.includes("network")) return "Sem internet. Tente de novo."; return "Não foi possível entrar ("+c+")."; }
 async function entrar(){
   loginErro=""; const p=new fb.GoogleAuthProvider(); p.setCustomParameters({prompt:"select_account"});
+  iniciaAppCheck();
   try{ const r=await fb.signInWithPopup(fb.auth,p); boasVindas(r); }
   catch(e){ const c=e.code||""; if(c.includes("popup-blocked")||c.includes("operation-not-supported")){ await fb.signInWithRedirect(fb.auth,p); } else { loginErro=traduzErro(e); render(); } }
 }
@@ -4404,6 +4437,8 @@ function vigiaAtualizacao(){
     document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") reg.update().catch(()=>{}); });
   }).catch(()=>{});
 }
+
+["pointerdown","focusin","keydown"].forEach(t=>document.addEventListener(t,ev=>{ if(mode==="login"&&ev.target instanceof Element&&ev.target.closest("[data-login],[data-apres]")) iniciaAppCheck(); },{capture:true,passive:true}));
 
 travar();
 migraPin().catch(()=>{});

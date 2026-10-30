@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.6 — 30/10/2026 **Firestore e App Check sob demanda**
+
+- **Sem login (primeira visita, apresentação, tela de login):** ao abrir, carregam só `firebase-app` e `firebase-auth`. O Firestore (o maior módulo do SDK) só carrega depois do login; o App Check e o reCAPTCHA Enterprise só quando a pessoa encosta, foca ou usa o teclado em "Entrar"/"Criar conta" (`pointerdown`/`focusin`/`keydown`) e de novo ao tocar em entrar; o `getRedirectResult` (e o iframe de login) só roda quando há um login por redirecionamento pendente.
+- **Já logado:** como o App Check é obrigatório (Enforce) também no Authentication, ele é iniciado **antes** do `getAuth` sempre que há sessão salva. A detecção não chama o servidor: lê a chave `firebase:authUser:…` que o próprio Firebase guarda (localStorage ou o banco `firebaseLocalStorageDb`, que só é aberto se já existir, para não criá-lo por engano). Na dúvida (navegador sem `indexedDB.databases`, erro de leitura), trata como logado e inicia o App Check antes.
+- **Depois do login:** o app mostra o esqueleto, carrega App Check e Firestore em paralelo e abre o espaço. Falha ao carregar mostra "Sem conexão com o servidor".
+- **Testado** sem login com a configuração real (Chrome, `localhost:5500`): na abertura nenhum pedido ao Firestore, App Check, reCAPTCHA ou iframe de login; ao encostar em "Entrar", App Check e reCAPTCHA carregam. O caminho com conta real (login, dados, compartilhado, offline, sair e entrar de novo) foi conferido pelo Gustavo antes da publicação.
+
 ## 5.4.5 — 30/10/2026 **Fontes variáveis**
 
 - **Inter e Sora variáveis:** um arquivo woff2 latino por família (`@fontsource-variable/inter` e `/sora` 5.3.0, OFL-1.1) em `fonts/fontsource-variable-5.3.0/`, no lugar dos 7 arquivos de peso fixo da 5.4.3. Os mesmos pesos continuam disponíveis (Inter 100–900, Sora 100–800). Na primeira visita, as fontes passam de 155 KiB para 82 KiB, o mesmo patamar de quando vinham do Google Fonts.
