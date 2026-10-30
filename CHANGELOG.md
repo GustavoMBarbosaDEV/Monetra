@@ -12,6 +12,25 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.4 — 30/10/2026 **Cache longo e publicação minificada**
+
+- **`?v=` nos arquivos do app:** `index.html` carrega `style.css`, `boot.css`, `pre.js`, `boot.js` e `app.js` com `?v=VERSAO`, e o `SHELL` do service worker usa os mesmos endereços (`const V` no `sw.js` dá nome ao cache e ao `?v=`).
+- **Cabeçalhos no Firebase Hosting (dois sites):** `public, max-age=31536000, immutable` para `vendor/`, `fonts/`, `icons/` e os cinco arquivos com `?v=`; `no-cache` continua em `/`, `index.html`, `sw.js`, `firebase-config.js`, `manifest.webmanifest` e `.well-known/`. As pastas `vendor/` e `fonts/` levam a versão no nome; um ícone novo precisa de **nome novo**.
+- **`ferramentas/bump.mjs X.Y.Z`** (`npm run bump -- X.Y.Z`): troca `VERSAO`, a versão do `sw.js` e os `?v=` do `index.html` de uma vez e recusa se algum lugar não bater. NOVIDADES e CHANGELOG continuam à mão. (O Python não está instalado no PC; por isso o script é em Node.)
+- **`ferramentas/build.mjs`** (`npm run build`): monta `dist/` a partir de uma lista fixa de arquivos (nada fora dela vai ao ar), minifica `app.js`, `boot.js`, `pre.js` (esbuild, ES2020), `style.css` e `boot.css`, e confere se as versões batem. O Firebase Hosting passa a publicar `dist/`; o código na raiz continua legível e é o que o GitHub Pages serve. Ganho com gzip: `app.js` −11%, CSS −2%.
+- **`hosting.yml`:** monta `dist/` (Node 20, `npm ci` em `ferramentas/`) antes do deploy. Deploy pela CLI: `cd ferramentas && npm run build` antes do `firebase deploy`.
+- **Atualização de quem está numa versão antiga:** se o aparelho tiver o cache de uma versão anterior ao aviso "Nova versão disponível" (até a 5.4.1, como a 5.3.6 que estava no Firebase), o service worker novo assume sozinho uma única vez; daí em diante vale o aviso. Sem isso, o app instalado (que quase nunca é fechado de todo) ficaria preso na versão antiga.
+- **Removido** `vendor/pdfjs-6.3.289/` (substituído pela 6.4.299 na 5.4.1).
+- **Testado** com o build minificado: importação de PDF (4 bancos, senha, escaneado, repetidos, CSV) igual à versão legível; service worker com `?v=`, aviso de versão nova, rede lenta (3,1 s) e offline.
+
+## 5.4.3 — 30/10/2026 **Fontes e imagens no próprio site**
+
+- **Imagens:** PNGs de `icons/` e `screenshots/` recomprimidos sem perda com oxipng (nível 6); mesmos nomes, mesmas dimensões e pixels idênticos (conferido decodificando antes e depois). Ícones 547 → 489 KB (−11%), screenshots 488 → 349 KB (−28%).
+- **Fontes:** Inter (400, 500, 600, 700, 800) e Sora (600, 700) em woff2, só o subconjunto latino (cobre todos os acentos do português), em `fonts/fontsource-5.3.0/` com as licenças OFL-1.1. `@font-face` com `font-display: swap` no `style.css`, `preload` da Inter 400 no `index.html`. O navegador baixa só os pesos que cada tela usa. As fontes entram no `SHELL` do service worker para o app abrir offline com a fonte certa.
+- **Sem Google Fonts:** saíram o `preconnect` e o CSS do Google Fonts do `index.html`, e `fonts.googleapis.com`/`fonts.gstatic.com` da CSP (`style-src`, `style-src-elem`, `font-src`). Abrir o app não avisa mais nenhum servidor de fontes.
+- **`Cross-Origin-Resource-Policy: same-origin`** em todas as respostas do Firebase Hosting (dois sites): outros sites não conseguem embutir os arquivos do Monetra. O app só usa arquivos do próprio site, então nada muda para quem usa.
+- **CSP:** a meta do `index.html` e o cabeçalho dos dois sites continuam iguais (fora `frame-ancestors` e `upgrade-insecure-requests`, que só valem no cabeçalho).
+
 ## 5.4.2 — 30/10/2026 **Service worker: abre pelo cache e avisa versão nova**
 
 - **Arquivos do app** (HTML, CSS, JS, ícones, `vendor/`): abrem pelo cache e se atualizam em segundo plano (stale-while-revalidate).

@@ -4,6 +4,8 @@
   "description": "Scripts do Monetra: gerar o SDK do Firebase em vendor/, trocar a versão e montar a pasta dist/ para o Firebase Hosting",
   "type": "module",
   "scripts": {
+    "build": "node build.mjs",
+    "bump": "node bump.mjs",
     "vendor-firebase": "node vendor-firebase.mjs"
   },
   "devDependencies": {

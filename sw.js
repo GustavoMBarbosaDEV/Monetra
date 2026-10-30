@@ -1,11 +1,15 @@
-const CACHE = "monetra-5.4.2";
-const SHELL = ["./", "index.html", "style.css", "boot.css", "pre.js", "boot.js", "app.js", "firebase-config.js", "manifest.webmanifest",
-  "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png"];
+const V = "5.4.4";
+const CACHE = "monetra-" + V;
+const SHELL = ["./", "index.html", ...["style.css", "boot.css", "pre.js", "boot.js", "app.js"].map(f => f + "?v=" + V), "firebase-config.js", "manifest.webmanifest",
+  "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png",
+  ...["inter-latin-400", "inter-latin-500", "inter-latin-600", "inter-latin-700", "inter-latin-800", "sora-latin-600", "sora-latin-700"].map(f => "fonts/fontsource-5.3.0/" + f + "-normal.woff2")];
 const ESPERA_NAVEGACAO = 3000;
 const FORA = /^\/(__|baixar)(\/|$)/;
+const SEM_AVISO = /^monetra-(?:[0-4]\.|5\.[0-3]\.|5\.4\.[01]$)/;
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u => c.add(new Request(u, { cache: "reload" })).catch(() => null)))).catch(() => null));
+  e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u => c.add(new Request(u, { cache: "reload" })).catch(() => null)))).catch(() => null)
+    .then(() => caches.keys()).then(ks => { if (ks.some(k => SEM_AVISO.test(k))) return self.skipWaiting(); }).catch(() => null));
 });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("monetra-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
