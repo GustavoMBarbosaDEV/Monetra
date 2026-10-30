@@ -12,6 +12,10 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.7 — 30/10/2026 **Sem barra de rolagem no celular**
+
+- **Telas de toque** (`@media (pointer:coarse)`): a barra de rolagem da página fica escondida (`scrollbar-width:none` e `::-webkit-scrollbar`), como já acontecia com os seletores de mês e de controle. A rolagem continua igual. No computador (mouse) a barra continua visível.
+
 ## 5.4.6 — 30/10/2026 **Firestore e App Check sob demanda**
 
 - **Sem login (primeira visita, apresentação, tela de login):** ao abrir, carregam só `firebase-app` e `firebase-auth`. O Firestore (o maior módulo do SDK) só carrega depois do login; o App Check e o reCAPTCHA Enterprise só quando a pessoa encosta, foca ou usa o teclado em "Entrar"/"Criar conta" (`pointerdown`/`focusin`/`keydown`) e de novo ao tocar em entrar; o `getRedirectResult` (e o iframe de login) só roda quando há um login por redirecionamento pendente.
