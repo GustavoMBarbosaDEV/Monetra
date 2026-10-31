@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.9 — 31/10/2026 **Correções apontadas pelo CodeQL**
+
+- **Service worker:** a mensagem "atualizar" só é aceita de janelas do próprio site (`e.source.url` com a mesma origem); antes não havia verificação de origem (CodeQL #14). O botão "Atualizar" continua igual.
+- **Taxas (`lerTaxa`):** passa a usar o mesmo leitor de números do app (`numCSV`) e a tirar todos os `%`; antes só a primeira ocorrência de `%` e de `,` era trocada (CodeQL #2). Agora `1.234,5` vira 1234,5 em vez de inválido; os demais valores dão o mesmo resultado.
+- **CodeQL #5** (leitor de PDF, linha que remove dias da semana para reconhecer cabeçalhos de data) é falso positivo: o texto não vai para a tela nem para o HTML.
+
 ## 5.4.8 — 31/10/2026 **Segurança: App Check sem localhost e deploy só com checks verdes**
 
 - **App Check em testes locais:** em `localhost`/`127.0.0.1` o app liga o token de depuração do App Check (`FIREBASE_APPCHECK_DEBUG_TOKEN`); o SDK mostra o token no console e ele é registrado em Firebase Console → App Check → Apps → Gerenciar tokens de depuração. Assim `localhost` pode sair da chave do reCAPTCHA: com ele liberado, qualquer pessoa conseguia gerar tokens válidos do App Check numa página no próprio computador. Fora de `localhost` nada muda.

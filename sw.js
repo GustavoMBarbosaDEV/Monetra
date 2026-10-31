@@ -1,4 +1,4 @@
-const V = "5.4.8";
+const V = "5.4.9";
 const CACHE = "monetra-" + V;
 const SHELL = ["./", "index.html", ...["style.css", "boot.css", "pre.js", "boot.js", "app.js"].map(f => f + "?v=" + V), "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png",
@@ -15,6 +15,8 @@ self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("monetra-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener("message", e => {
+  const origem = e.source && "url" in e.source ? new URL(e.source.url).origin : e.origin;
+  if (origem !== location.origin) return;
   if (e.data && e.data.tipo === "atualizar") self.skipWaiting();
 });
 

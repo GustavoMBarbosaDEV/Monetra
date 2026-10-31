@@ -337,10 +337,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.4.8";
+const VERSAO="5.4.9";
 const NOVIDADES=[
-  "Mais segurança nos bastidores: a verificação que impede robôs de usar o Monetra ficou mais rígida, e cada atualização só vai ao ar depois de passar por todas as checagens automáticas.",
-  "Nada muda no uso do app."
+  "Taxas de rendimento e IPCA aceitam número com separador de milhar (ex.: 1.234,5).",
+  "Correções de segurança apontadas pela análise automática do código."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -2697,7 +2697,7 @@ function cardPatrimonio(){
 const TAXAS_PAD={ipca:4.5,cdi:14.9};
 const taxas=(()=>{ const t=Object.assign({},TAXAS_PAD); try{ const x=JSON.parse(localStorage.getItem("mb.taxas")||"{}"); ["ipca","cdi"].forEach(k=>{ if(typeof x[k]==="number"&&isFinite(x[k])&&x[k]>-20&&x[k]<100) t[k]=x[k]; }); }catch(e){} return t; })();
 function salvaTaxas(){ try{ localStorage.setItem("mb.taxas",JSON.stringify(taxas)); }catch(e){} }
-const lerTaxa=t=>{ const x=String(t||"").trim().replace("%","").replace(",","."); const n=Number(x); return x!==""&&isFinite(n)?n:NaN; };
+const lerTaxa=t=>{ const x=String(t||"").replace(/%/g,"").trim(); return x===""?NaN:numCSV(x); };
 const pctTxt=v=>v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})+"%";
 const campoTaxa=(id,v,lab)=>`<label class="f taxa">${lab}<span class="taxain"><input class="in num" id="${id}" inputmode="decimal" value="${esc(String(v).replace(".",","))}" aria-describedby="${id}-d"><span aria-hidden="true">% ao ano</span></span></label>`;
 const poupAA=()=>taxas.cdi>8.5?6.17:Math.max(0,taxas.cdi*0.7);
