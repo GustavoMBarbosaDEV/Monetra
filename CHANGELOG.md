@@ -12,6 +12,10 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.10 — 31/10/2026 **Leitor de PDF sem o alerta do CodeQL**
+
+- **CodeQL #5:** a linha do leitor de PDF que decide se uma linha é só um cabeçalho de data (ex.: "Segunda, 12 de outubro de 2026") deixou de usar `replace` com regex para apagar os dias da semana e passou a separar as palavras e ignorar uma lista fixa (`PDF_SO_DATA`). Mesmo resultado em todos os casos testados e na bateria de PDFs (Nubank, Itaú, Caixa, Inter com senha, escaneado, repetidos, CSV).
+
 ## 5.4.9 — 31/10/2026 **Correções apontadas pelo CodeQL**
 
 - **Service worker:** a mensagem "atualizar" só é aceita de janelas do próprio site (`e.source.url` com a mesma origem); antes não havia verificação de origem (CodeQL #14). O botão "Atualizar" continua igual.
