@@ -337,10 +337,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.4.9";
+const VERSAO="5.4.10";
 const NOVIDADES=[
-  "Taxas de rendimento e IPCA aceitam número com separador de milhar (ex.: 1.234,5).",
-  "Correções de segurança apontadas pela análise automática do código."
+  "Ajuste interno no leitor de extratos em PDF, apontado pela análise automática de segurança. A importação continua igual.",
+  "Desde a 5.4.9, as taxas de rendimento e IPCA aceitam número com separador de milhar (ex.: 1.234,5)."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -3240,6 +3240,7 @@ const MES3={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,
 const RE_DATA_N=/(^|[^\d])(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?(?![\d\/])/;
 const RE_DATA_M=/(^|[^\da-z])(\d{1,2})(?:\s*(?:de\s+|\/|-)?\s*)(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*\.?(?:\s*(?:de\s+|\/|-)?\s*(\d{4}))?(?![a-z])/;
 const RE_VALOR_PDF=/(^|[^\d.,\w$])((?:US\$|USD|U\$)\s?)?([-−–+]?)\s?(R\$)?\s?([-−–]?)\s?(\d[\d.]*,\d{2})(?![\d])(\s?\(?[DC]\)?(?![a-zà-ú]))?/gi;
+const PDF_SO_DATA=new Set(["segunda","terca","quarta","quinta","sexta","sabado","domingo","feira","hoje","ontem"]);
 const RE_PDF_IGNORA=/\bsaldo\b|\btotal\b|subtotal|limite (total|disponivel|de credito)|pagamento minimo|valor minimo|melhor dia|vencimento|fechamento|fatura anterior|encargos (do|financeiros)|^data\b|lancamentos? futuros|^resumo|^periodo|^pagina|^agencia|^conta\b|\bcpf\b|\bcnpj\b/;
 /** @param {string} dd @param {string} mm @param {string|undefined} aa @param {number} anoRef */
 function dataPDF(dd,mm,aa,anoRef){
@@ -3284,7 +3285,7 @@ function parsePDF(linhas){
   const temSinal=ls.some(x=>x.vs.some(v=>v.sinal));
   ls.forEach(({l,n,dt,vs})=>{
     if(/total de saidas|^saidas\b|saidas do dia/.test(n)) sinalCtx=-1; else if(/total de entradas|^entradas\b|entradas do dia/.test(n)) sinalCtx=1;
-    if(dt&&!vs.length){ const resto=n.slice(0,dt.ini)+n.slice(dt.fim); if(!/[a-z]{3}/.test(resto.replace(/\b(segunda|terca|quarta|quinta|sexta|sabado|domingo)(-feira)?\b|\bde\b|\bhoje\b|\bontem\b/g,""))) dataCtx=dt.iso; return; }
+    if(dt&&!vs.length){ const resto=n.slice(0,dt.ini)+n.slice(dt.fim); if(!resto.split(/[^a-z]+/).some(w=>w.length>=3&&!PDF_SO_DATA.has(w))) dataCtx=dt.iso; return; }
     if(dt&&RE_PDF_IGNORA.test(n)&&vs.length){ dataCtx=dt.iso; return; }
     if(!vs.length||RE_PDF_IGNORA.test(n)) return;
     const data=dt?dt.iso:dataCtx; if(!data) return;
