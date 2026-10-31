@@ -337,10 +337,10 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.4.7";
+const VERSAO="5.4.8";
 const NOVIDADES=[
-  "No celular, a barrinha de rolagem da lateral não aparece mais ao rolar a tela.",
-  "Desde a 5.4.6, a tela inicial abre mais leve: a sincronização só carrega depois que você entra na conta."
+  "Mais segurança nos bastidores: a verificação que impede robôs de usar o Monetra ficou mais rígida, e cada atualização só vai ao ar depois de passar por todas as checagens automáticas.",
+  "Nada muda no uso do app."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -908,6 +908,7 @@ let appCheckProm=null;
 let firestoreProm=null;
 function iniciaAppCheck(){
   if(!fbApp||!window.APPCHECK_SITE_KEY) return Promise.resolve();
+  if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */(self).FIREBASE_APPCHECK_DEBUG_TOKEN=true;
   if(!appCheckProm) appCheckProm=import(fbBase+"firebase-app-check.js").then(C=>{ C.initializeAppCheck(fbApp,{provider:new C.ReCaptchaEnterpriseProvider(window.APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true}); }).catch(e=>{ appCheckProm=null; console.warn("App Check não iniciou",e); });
   return appCheckProm;
 }
