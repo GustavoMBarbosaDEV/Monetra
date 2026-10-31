@@ -12,6 +12,12 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.4.8 — 31/10/2026 **Segurança: App Check sem localhost e deploy só com checks verdes**
+
+- **App Check em testes locais:** em `localhost`/`127.0.0.1` o app liga o token de depuração do App Check (`FIREBASE_APPCHECK_DEBUG_TOKEN`); o SDK mostra o token no console e ele é registrado em Firebase Console → App Check → Apps → Gerenciar tokens de depuração. Assim `localhost` pode sair da chave do reCAPTCHA: com ele liberado, qualquer pessoa conseguia gerar tokens válidos do App Check numa página no próprio computador. Fora de `localhost` nada muda.
+- **Deploy automático só com checks verdes:** o `hosting.yml` espera os outros checks do mesmo commit (gitleaks e CodeQL obrigatórios; Regras do Firestore e Scorecard quando rodam) e cancela o deploy se algum falhar ou se o tempo acabar.
+- **Permissões dos workflows:** `security-events: write` (CodeQL) e `issues: write` (verificador de versões) saíram do topo do workflow e ficaram só no job que precisa (OpenSSF Scorecard, Token-Permissions).
+
 ## 5.4.7 — 30/10/2026 **Sem barra de rolagem no celular**
 
 - **Telas de toque** (`@media (pointer:coarse)`): a barra de rolagem da página fica escondida (`scrollbar-width:none` e `::-webkit-scrollbar`), como já acontecia com os seletores de mês e de controle. A rolagem continua igual. No computador (mouse) a barra continua visível.

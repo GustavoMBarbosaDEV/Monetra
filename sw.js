@@ -1,4 +1,4 @@
-const V = "5.4.7";
+const V = "5.4.8";
 const CACHE = "monetra-" + V;
 const SHELL = ["./", "index.html", ...["style.css", "boot.css", "pre.js", "boot.js", "app.js"].map(f => f + "?v=" + V), "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png",

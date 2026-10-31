@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  checks: read
 
 concurrency:
   group: firebase-hosting
@@ -28,6 +29,25 @@ jobs:
           else
             echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Esperar os outros checks deste commit passarem
+        if: steps.cred.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 75); do
+            runs=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" --jq '[.check_runs[] | select(.name != "deploy" and .name != "build" and .name != "report-build-status")]')
+            total=$(echo "$runs" | jq 'length')
+            essenciais=$(echo "$runs" | jq '[.[] | select(.name == "gitleaks" or (.name | startswith("analisar")))] | length')
+            pendentes=$(echo "$runs" | jq '[.[] | select(.status != "completed")] | length')
+            falhas=$(echo "$runs" | jq -r '.[] | select(.status == "completed" and (.conclusion | IN("success", "skipped", "neutral") | not)) | .name + ": " + .conclusion')
+            if [ -n "$falhas" ]; then echo "::error::Deploy cancelado: algum check falhou."; echo "$falhas"; exit 1; fi
+            if [ "$essenciais" -ge 2 ] && [ "$pendentes" = "0" ]; then echo "Todos os $total checks passaram."; exit 0; fi
+            echo "Aguardando: $pendentes pendente(s), $essenciais essencial(is) encontrado(s)..."; sleep 20
+          done
+          echo "::error::Tempo esgotado esperando os checks."; exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.cred.outputs.ok == 'true'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
