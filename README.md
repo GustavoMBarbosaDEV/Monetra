@@ -46,6 +46,10 @@ Encontrou uma falha? Veja como relatar no [SECURITY.md](SECURITY.md).
 
 O histórico de novidades fica no [CHANGELOG.md](CHANGELOG.md) e no app, em **Perfil → Novidades**.
 
+## Licença
+
+Todos os direitos reservados. O código está aqui para consulta; copiar, modificar ou publicar depende de autorização. Detalhes e licenças dos componentes de terceiros no [LICENSE](LICENSE).
+
 ---
 
 Feito por Gustavo M. Barbosa.

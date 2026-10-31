@@ -1,0 +1,30 @@
+Copyright (c) 2026 Gustavo Martins Barbosa. Todos os direitos reservados.
+
+O código-fonte, o design, os textos, as imagens e a marca "Monetra" deste
+repositório pertencem a Gustavo Martins Barbosa.
+
+O código está publicado para consulta. Sem autorização prévia e por escrito
+do autor, não é permitido copiar, modificar, distribuir, sublicenciar, vender
+ou publicar este software, no todo ou em parte, nem criar obras derivadas
+dele. Pedidos de autorização: https://github.com/GustavoMBarbosaDEV
+
+Componentes de terceiros incluídos neste repositório continuam sob as próprias
+licenças, que acompanham cada um:
+- vendor/firebase-*/  Firebase JavaScript SDK (Apache-2.0), idb (ISC), tslib (0BSD)
+- vendor/pdfjs-*/     pdf.js (Apache-2.0)
+- fonts/              Inter e Sora (SIL Open Font License 1.1)
+
+O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA DE
+QUALQUER TIPO, EXPRESSA OU IMPLÍCITA. EM NENHUMA HIPÓTESE O AUTOR SERÁ
+RESPONSÁVEL POR QUALQUER RECLAMAÇÃO, DANO OU OUTRA RESPONSABILIDADE
+DECORRENTE DO USO DO SOFTWARE.
+
+---
+
+Copyright (c) 2026 Gustavo Martins Barbosa. All rights reserved.
+
+This source code is published for reference only. No permission is granted
+to copy, modify, distribute, sublicense, sell or publish it, in whole or in
+part, or to create derivative works, without the author's prior written
+permission. Third-party components listed above remain under their own
+licenses.
