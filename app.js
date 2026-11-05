@@ -2117,8 +2117,7 @@ const appInstalado=()=>{ try{ return matchMedia("(display-mode: standalone)").ma
 const mostraApresentacao=()=>!ui.verLogin&&!appInstalado();
 const logoM=(px,id)=>`<svg class="logom" viewBox="90 120 340 270" width="${px}" height="${Math.round(px*.8)}" aria-hidden="true"><defs><linearGradient id="${id}W" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--lgw1,#fff)"/><stop offset="1" stop-color="var(--lgw2,#C9D2CD)"/></linearGradient><linearGradient id="${id}G" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2BE08A"/><stop offset="1" stop-color="#0BA86A"/></linearGradient></defs><path class="l1" d="M100 135 L292 268 L257 302 L158 232 L158 378 L100 342 Z" fill="url(#${id}W)"/><path class="l2" d="M257 250 L413 135 L413 190 L292 272 Z" fill="url(#${id}G)"/><path class="l3" d="M358 222 L413 190 L413 345 L358 378 Z" fill="url(#${id}G)"/><rect class="r1" x="195" y="352" width="32" height="24" rx="2" fill="url(#${id}G)"/><rect class="r2" x="245" y="325" width="32" height="51" rx="2" fill="url(#${id}G)"/><rect class="r3" x="295" y="293" width="32" height="83" rx="2" fill="url(#${id}G)"/></svg>`;
 function viewApresentacao(){
-  const inApp=/FBAN|FBAV|FB_IAB|Instagram|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|Twitter/i.test(navigator.userAgent);
-  const entrarBtn=`<button class="ap-btn pri" type="button" ${inApp?'data-apres="criar"':'data-login="1"'} data-ev="cta_clique" data-evlocal="landing">Começar grátis <span aria-hidden="true">→</span></button>`;
+  const entrarBtn=`<button class="ap-btn pri" type="button" data-apres="criar" data-ev="cta_clique" data-evlocal="landing">Começar grátis <span aria-hidden="true">→</span></button>`;
   const apk=/Android/i.test(navigator.userAgent)?`<a class="ap-apk" href="obrigado?c=apk" data-ev="cta_clique" data-evlocal="landing-apk"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Baixar o app para Android</a>`:"";
   const palavras="Controle seu dinheiro. Viva seus planos.".split(" ").map((w,i)=>{ const m=w.match(/^(.*?)([.,!?]?)$/)||["",w,""], dest=m[1].toLowerCase()==="dinheiro";
     return `<span class="ap-w" style="--i:${i}">${dest?`<span class="ap-dest">${esc(m[1])}</span>${esc(m[2])}`:esc(w)}</span>`; }).join(" ");
@@ -2177,7 +2176,7 @@ function viewApresentacao(){
     <div class="ap-acoes centro">${entrarBtn}<button class="ap-btn sec" type="button" data-apres="entrar">Já tenho conta</button></div>
     ${apk}</section>
   <footer class="ap-rod"><span>${logoM(22,"lmr")}<b>Monetra</b></span><nav class="ap-links" aria-label="Rodapé"><a href="faq">Perguntas frequentes</a><a href="privacidade">Privacidade</a><a href="termos">Termos de uso</a><a href="obrigado?c=apk" data-ev="cta_clique" data-evlocal="rodape-apk">Baixar para Android</a><a href="faq#contato">Contato</a></nav><span>Feito por Gustavo Martins Barbosa</span></footer>
-  <div class="ap-fixo"><button class="ap-btn pri" type="button" ${inApp?'data-apres="criar"':'data-login="1"'} data-ev="cta_clique" data-evlocal="fixo">Começar grátis</button>${apk?`<a class="ap-btn sec" href="obrigado?c=apk" data-ev="cta_clique" data-evlocal="fixo-apk">Baixar app</a>`:""}</div>
+  <div class="ap-fixo"><button class="ap-btn pri" type="button" data-apres="criar" data-ev="cta_clique" data-evlocal="fixo">Começar grátis</button>${apk?`<a class="ap-btn sec" href="obrigado?c=apk" data-ev="cta_clique" data-evlocal="fixo-apk">Baixar app</a>`:""}</div>
   </div>`;
 }
 let apObs=null;
