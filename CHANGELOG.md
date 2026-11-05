@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.6.0 — 05/11/2026 **Site, SEO e conversão**
+
+- **Páginas estáticas:** `faq`, `privacidade` (LGPD: o que guarda, onde fica, cookies, direitos, como apagar), `termos`, `obrigado` (`?c=apk` inicia o download com instruções de instalação; `?c=cadastro`) e `404`. Títulos e descrições únicos, trilha (breadcrumbs) com BreadcrumbList, rodapé com links cruzados. `cleanUrls` no Firebase Hosting.
+- **SEO:** `robots.txt`, `sitemap.xml`, `canonical`, Open Graph e Twitter Card com imagem 1200x630 (`img/og-monetra.png`), schemas SoftwareApplication (FinanceApplication), Organization, WebSite e FAQPage.
+- **Analytics (GA4) com consentimento:** `site.js` só carrega o Google Analytics depois do aceite no aviso de cookies e só se `measurementId` existir em `firebase-config.js` (sem ele, nada aparece). Eventos: `cta_clique`, `sign_up`, `apk_download`, `salario_caiu`, `conversao`. CSP liberada para `googletagmanager.com` e `google-analytics.com`.
+- **Landing:** botão principal "Começar grátis", "Já tenho conta", FAQ com 5 perguntas, contato "respondemos em até 24h" (aparece quando `CONTATO_EMAIL`/`CONTATO_WHATS` forem preenchidos), seções de cases e avaliações que só aparecem com conteúdo real (`CASES`, `AVALIACOES`), barra fixa no celular e botão do APK passando pela página de obrigado. Pedido de avaliação no sininho depois de 30 lançamentos (só com contato preenchido).
+- **Service worker:** só a página do app (raiz) passa pelo cache de navegação; as páginas estáticas vão direto à rede, para não ocuparem o lugar do app no cache.
+
 ## 5.5.0 — 05/11/2026 **Meu salário caiu**
 
 - **Aguardando salário:** no mês atual, com salário padrão cadastrado e ainda não recebido, o Início troca o card do saldo pelo total a pagar no mês (contas fixas, parcelas fora do cartão, faturas e dívidas "a pagar"), com o que já foi pago, os gastos feitos antes do salário e o botão **Meu salário caiu**. O card "Contas do mês" lista tudo, com vencidas e as que vencem em até 3 dias em destaque e o botão Paguei. A previsão do fim do mês não aparece nessa fase.

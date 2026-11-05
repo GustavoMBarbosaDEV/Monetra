@@ -340,11 +340,11 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.5.0";
+const VERSAO="5.6.0";
 const NOVIDADES=[
-  "Novo fluxo do salário: até ele cair, o Início mostra só o que você tem para pagar no mês, com as contas vencidas e próximas em destaque.",
-  "Caiu? Toque em “Meu salário caiu” e veja o saldo em conta e o saldo livre (o que sobra depois das contas). Dá para receber em duas partes.",
-  "Em Ajustes → Renda e saldos, escolha quando o salário cai (dia útil, dia fixo ou quinzenal). No dia, o sininho pergunta se ele caiu."
+  "Novas páginas no site: Perguntas frequentes, Política de privacidade e Termos de uso, com links no rodapé e no login.",
+  "A página inicial ganhou o botão “Começar grátis” e, no celular, uma barra fixa para começar ou baixar o app.",
+  "Estatísticas de visitas só com a sua permissão: o aviso de cookies deixa aceitar ou recusar, e dá para mudar na página de privacidade."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -1524,7 +1524,13 @@ function avisos(){
   const rs=avisoSemana(); if(rs) itens.push({tipo:"semana",r:rs});
   const mesAt=kM(todayKey), anoR=mesAt===12?kY(todayKey):mesAt===1?kY(todayKey)-1:null;
   if(anoR&&anosRetro().includes(anoR)) itens.push({tipo:"retro",ano:anoR});
+  if(pedeAvaliacao()) itens.push({tipo:"avaliar"});
   return {itens,n};
+}
+function pedeAvaliacao(){
+  if(!linkContato("x")||mode==="login"||!state.loaded||nLancamentos()<30) return false;
+  const i=inicioKey(); if(!i||entre(i,todayKey)<1) return false;
+  try{ const v=Number(localStorage.getItem("mb.avaliar")||0); return v!==1&&Date.now()>v; }catch(e){ return false; }
 }
 function botaoSino(){
   const n=avisos().n;
@@ -1544,6 +1550,7 @@ function listaAvisos(){
     if(it.tipo==="orc"){ const a=it.a; grupos.orc.push(linha("orc "+(a.nivel==="passou"?"atraso":"amanha"),`<i class="bola" style="background:${catColor(a.id)}"></i>`,esc(textoAlerta(a)),"limite de "+brl(a.o)+" em "+esc(abrMes(todayKey)),`<button class="btn ghost mini" type="button" data-avmes="1">Ver mês</button>`)); }
     if(it.tipo==="backup"){ const b=it.b; (b.local?grupos.conta:grupos.dica).push(linha(b.local?"pagar amanha":"dica",ICON.check,"Hora de fazer um backup",(b.dias===null?"Você ainda não baixou nenhum backup":"Último backup há "+b.dias+" dias")+(b.local?" · sem login, seus dados ficam só neste aparelho":" · uma cópia sua, além da nuvem"),`<span class="bkbtns"><button class="btn mini" type="button" data-avbackup="1">Baixar</button><button class="btn ghost mini" type="button" data-avbackupdepois="1">Depois</button></span>`)); }
     if(it.tipo==="semana"){ const r=it.r; grupos.dica.push(linha("pedido",ICON.ano||ICON.mais,"Sua semana: "+brl(r.tot),esc(textoVarSemana(r))+(r.subiu?" · mais subiu: "+esc(catName(r.subiu.id)):""),`<button class="btn mini" type="button" data-avsemana="${r.fim}">Ver</button>`)); }
+    if(it.tipo==="avaliar") grupos.dica.push(linha("dica",ICON.mais,"Está gostando do Monetra?","Conte em uma frase como está sendo. Com sua permissão, ela pode aparecer no site.",`<span class="bkbtns"><a class="btn mini" href="${esc(linkContato("Minha avaliação do Monetra: "))}" target="_blank" rel="noopener" data-avaliar="1">Avaliar</a><button class="btn ghost mini" type="button" data-avaliar="0">Agora não</button></span>`));
     if(it.tipo==="retro") grupos.dica.push(linha("pedido",ICON.ano||ICON.mais,"Sua retrospectiva de "+it.ano+" está pronta","quanto entrou, saiu e seus recordes do ano",`<button class="btn mini" type="button" data-avretro="${it.ano}">Ver</button>`));
     if(it.tipo==="dica"){ const r=it.r; grupos.dica.push(linha("dica",ICON.mais,"“"+esc(r.nome)+"” parece uma assinatura",r.meses.size+" dos últimos 4 meses · média "+brl(r.media),`<button class="btn ghost mini" type="button" data-avassin="1">Ver</button>`)); }
     if(it.tipo==="aumento"){ const a=it.a; grupos.dica.push(linha("dica",ICON_ALERTA,"“"+esc(a.nome)+"” ficou "+esc(pctTxt(a.p*100))+" mais caro","de "+brl(a.de)+" para "+brl(a.para),`<button class="btn ghost mini" type="button" data-avassin="1">Ver</button>`)); }
@@ -2013,8 +2020,8 @@ const mostraApresentacao=()=>!ui.verLogin&&!appInstalado();
 const logoM=(px,id)=>`<svg class="logom" viewBox="90 120 340 270" width="${px}" height="${Math.round(px*.8)}" aria-hidden="true"><defs><linearGradient id="${id}W" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--lgw1,#fff)"/><stop offset="1" stop-color="var(--lgw2,#C9D2CD)"/></linearGradient><linearGradient id="${id}G" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2BE08A"/><stop offset="1" stop-color="#0BA86A"/></linearGradient></defs><path class="l1" d="M100 135 L292 268 L257 302 L158 232 L158 378 L100 342 Z" fill="url(#${id}W)"/><path class="l2" d="M257 250 L413 135 L413 190 L292 272 Z" fill="url(#${id}G)"/><path class="l3" d="M358 222 L413 190 L413 345 L358 378 Z" fill="url(#${id}G)"/><rect class="r1" x="195" y="352" width="32" height="24" rx="2" fill="url(#${id}G)"/><rect class="r2" x="245" y="325" width="32" height="51" rx="2" fill="url(#${id}G)"/><rect class="r3" x="295" y="293" width="32" height="83" rx="2" fill="url(#${id}G)"/></svg>`;
 function viewApresentacao(){
   const inApp=/FBAN|FBAV|FB_IAB|Instagram|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|Twitter/i.test(navigator.userAgent);
-  const entrarBtn=`<button class="ap-btn pri" type="button" ${inApp?'data-apres="entrar"':'data-login="1"'}>Entrar com Google <span aria-hidden="true">→</span></button>`;
-  const apk=/Android/i.test(navigator.userAgent)?`<a class="ap-apk" href="${APK_URL}" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Baixar o app para Android</a>`:"";
+  const entrarBtn=`<button class="ap-btn pri" type="button" ${inApp?'data-apres="criar"':'data-login="1"'} data-ev="cta_clique" data-evlocal="landing">Começar grátis <span aria-hidden="true">→</span></button>`;
+  const apk=/Android/i.test(navigator.userAgent)?`<a class="ap-apk" href="obrigado?c=apk" data-ev="cta_clique" data-evlocal="landing-apk"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Baixar o app para Android</a>`:"";
   const palavras="Controle seu dinheiro. Viva seus planos.".split(" ").map((w,i)=>{ const m=w.match(/^(.*?)([.,!?]?)$/)||["",w,""], dest=m[1].toLowerCase()==="dinheiro";
     return `<span class="ap-w" style="--i:${i}">${dest?`<span class="ap-dest">${esc(m[1])}</span>${esc(m[2])}`:esc(w)}</span>`; }).join(" ");
   const linha=[3900,3487,3487,3449,1949,1349,1349,1349,1349,1119,1055,695,695,695,599,509,464,412];
@@ -2038,10 +2045,10 @@ function viewApresentacao(){
         <div class="ap-logo">${logoM(64,"lmh")}</div>
         <h1 class="ap-tit">${palavras}</h1>
         <p class="ap-sub">Saldo do mês, contas fixas, cartões, metas e previsão, num app leve que funciona no celular e no computador.</p>
-        <div class="ap-acoes">${entrarBtn}<button class="ap-btn sec" type="button" data-apres="criar">Criar conta grátis</button></div>
+        <div class="ap-acoes">${entrarBtn}<button class="ap-btn sec" type="button" data-apres="entrar">Já tenho conta</button></div>
         ${apk}
         <ul class="ap-checks"><li>Sem anúncios</li><li>Seus dados só seus</li><li>Funciona sem internet</li></ul>
-        <p class="ap-termos">Ao entrar, você lê e decide se aceita os <button class="link" type="button" data-termos="ler">termos de privacidade</button>.</p>
+        <p class="ap-termos">Ao entrar, você lê e decide se aceita a <a href="privacidade">política de privacidade</a> e os <a href="termos">termos de uso</a>.</p>
       </div>
       <div class="ap-celwrap"><div class="ap-par">${celular}</div></div>
     </div>
@@ -2059,11 +2066,18 @@ function viewApresentacao(){
     ${rec(icq("tendencia",16),"Previsão do mês","Saiba antes de estourar","Pelo ritmo de gastos, o Monetra avisa em que dia uma categoria vai passar do limite e quanto deve sobrar no fim do mês.",`<div class="ap-vcard"><div class="ap-ct"><b>Lazer / Restaurantes</b><span>R$ 308 / R$ 450</span></div><div class="track"><div style="width:68%;--dot:var(--warn)"></div></div><p class="ap-aviso">No ritmo de hoje, chega a R$ 530,44 e estoura no dia 27</p></div>`,true)}
     ${rec(ICON.cadeado,"Seus dados são seus","Privado por padrão","Login com Google, regras no servidor que só deixam o dono ler e gravar, e bloqueio com PIN ou digital no aparelho.",`<div class="ap-vcard ap-vlock"><span>${ICON.cadeado}</span></div>`,false)}
   </div>
+  ${CASES.length?`<section class="ap-deps ap-revela"><h2>Quem usa o Monetra</h2><div class="ap-depl">${CASES.map(x=>`<figure class="ap-dep"><blockquote>${esc(x.texto)}</blockquote><figcaption>${x.foto?`<img src="${esc(x.foto)}" alt="" width="40" height="40" loading="lazy">`:""}<b>${esc(x.nome)}</b>${x.cidade?`<span>${esc(x.cidade)}</span>`:""}</figcaption></figure>`).join("")}</div></section>`:""}
+  ${AVALIACOES.length?`<section class="ap-deps ap-revela"><h2>O que dizem do Monetra</h2><div class="ap-depl">${AVALIACOES.map(x=>`<figure class="ap-dep"><blockquote>${esc(x.texto)}</blockquote><figcaption>${x.foto?`<img src="${esc(x.foto)}" alt="" width="40" height="40" loading="lazy">`:""}<b>${esc(x.nome)}</b>${x.cidade?`<span>${esc(x.cidade)}</span>`:""}</figcaption></figure>`).join("")}</div></section>`:""}
+  <section class="ap-faq ap-revela" id="faq"><h2>Perguntas frequentes</h2>
+    ${FAQ.map(([q,a])=>`<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}
+    <p><a href="faq">Ver todas as perguntas</a></p></section>
+  ${CONTATO_EMAIL||CONTATO_WHATS?`<section class="ap-faq ap-revela" id="contato"><h2>Fale com a gente</h2><p>Respondemos em até 24h, em dias úteis. Atendimento online para todo o Brasil.</p><ul class="ap-contato">${CONTATO_EMAIL?`<li>E-mail: <a href="mailto:${esc(CONTATO_EMAIL)}">${esc(CONTATO_EMAIL)}</a></li>`:""}${CONTATO_WHATS?`<li>WhatsApp: <a href="https://wa.me/${esc(CONTATO_WHATS)}" rel="noopener">abrir conversa</a></li>`:""}</ul></section>`:""}
   <section class="ap-fim ap-revela"><div class="ap-aurora fraca" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="ap-logo">${logoM(84,"lmf")}</div><h2>Comece pelo mês de hoje</h2><p>Abra no navegador ou instale no Android. Leva um minuto.</p>
     <div class="ap-acoes centro">${entrarBtn}<button class="ap-btn sec" type="button" data-apres="entrar">Já tenho conta</button></div>
     ${apk}</section>
-  <footer class="ap-rod"><span>${logoM(22,"lmr")}<b>Monetra</b></span><span>Feito por Gustavo Martins Barbosa</span></footer>
+  <footer class="ap-rod"><span>${logoM(22,"lmr")}<b>Monetra</b></span><nav class="ap-links" aria-label="Rodapé"><a href="faq">Perguntas frequentes</a><a href="privacidade">Privacidade</a><a href="termos">Termos de uso</a><a href="obrigado?c=apk" data-ev="cta_clique" data-evlocal="rodape-apk">Baixar para Android</a><a href="faq#contato">Contato</a></nav><span>Feito por Gustavo Martins Barbosa</span></footer>
+  <div class="ap-fixo"><button class="ap-btn pri" type="button" ${inApp?'data-apres="criar"':'data-login="1"'} data-ev="cta_clique" data-evlocal="fixo">Começar grátis</button>${apk?`<a class="ap-btn sec" href="obrigado?c=apk" data-ev="cta_clique" data-evlocal="fixo-apk">Baixar app</a>`:""}</div>
   </div>`;
 }
 let apObs=null;
@@ -2092,7 +2106,8 @@ function viewLogin(){
   ${/FBAN|FBAV|FB_IAB|Instagram|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|Twitter/i.test(navigator.userAgent)?`<div class="note">Você abriu o link dentro de outro app (Instagram, Facebook…), e o Google não permite entrar por aqui. Toque nos <b>três pontinhos</b> e escolha <b>Abrir no navegador</b> (Chrome ou Safari).<br><button class="link" type="button" data-copialink="1">Copiar link</button></div>`:""}
   ${loginErro?`<p class="note">${esc(loginErro)}</p>`:""}
   <p class="hint">${novo?"Já tem conta? Clique em Entrar.":"Primeira vez aqui? Clique em Criar conta."} Seus dados ficam salvos na nuvem e aparecem em qualquer aparelho onde você entrar.</p>
-  <p class="hint">Ao entrar, você vai ler e decidir se aceita os <button class="link" type="button" data-termos="ler">termos de privacidade</button>.</p></div>`;
+  <p class="hint">Ao entrar, você vai ler e decidir se aceita os <button class="link" type="button" data-termos="ler">termos de privacidade</button>.</p>
+  <p class="hint"><a href="privacidade">Política de privacidade</a> · <a href="termos">Termos de uso</a> · <a href="faq">Ajuda</a></p></div>`;
 }
 
 function donut(itens,total,centro,sub,clicavel){
@@ -3208,6 +3223,20 @@ function viewPerfil(){
 }
 
 const TERMOS_V="1.1", TERMOS_DATA="17/10/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
+const CONTATO_EMAIL="", CONTATO_WHATS="";
+/** @typedef {{nome:string,cidade?:string,texto:string,foto?:string}} Depoimento */
+/** @type {Depoimento[]} */
+const CASES=[];
+/** @type {Depoimento[]} */
+const AVALIACOES=[];
+const FAQ=[
+  ["O Monetra é grátis?","Sim. O Monetra é grátis, sem anúncios e sem plano pago. Você usa todas as funções sem pagar nada."],
+  ["Meus dados estão seguros?","Você entra com a sua conta e só ela lê e altera os seus lançamentos: regras no servidor do Google Firebase bloqueiam qualquer outra pessoa. O app nunca pede senha de banco nem número de cartão, e você pode ativar bloqueio com PIN ou digital. Seus dados não são vendidos nem usados para publicidade."],
+  ["Funciona no iPhone?","Funciona. Abra monetraapp.web.app no Safari, toque em Compartilhar e depois em Adicionar à Tela de Início. O Monetra abre pelo ícone como um aplicativo. Não há versão na App Store."],
+  ["Como instalo o APK no Android?","Toque em Baixar para Android e abra o arquivo Monetra.apk quando o download terminar. Se o celular pedir, permita instalar apps desta fonte (o navegador ou o gerenciador de arquivos) e toque em Instalar. Se preferir, abra o site no Chrome e use o menu ⋮ → Instalar app. As atualizações chegam sozinhas."],
+  ["Como funciona o “Meu salário caiu”?","Até o salário cair, o Início mostra só o que você tem para pagar no mês, com as contas vencidas e as próximas em destaque. Quando o dinheiro entrar, toque em Meu salário caiu e confirme o valor: o app passa a mostrar o saldo em conta e o saldo livre, que é o que sobra depois das contas do mês. Dá para receber em duas partes, e o dia esperado se ajusta em Ajustes."]
+];
+const linkContato=txt=>CONTATO_WHATS?"https://wa.me/"+CONTATO_WHATS+"?text="+encodeURIComponent(txt):CONTATO_EMAIL?"mailto:"+CONTATO_EMAIL+"?subject="+encodeURIComponent("Monetra")+"&body="+encodeURIComponent(txt):"";
 const meusTermos=()=>mode==="cloud"?eu.termos:state.config.termos;
 const precisaTermos=()=>{ const t=meusTermos(); return mode!=="login"&&state.loaded&&!(t&&t.v===TERMOS_V); };
 const dataBR=iso=>{ const d=new Date(iso); return isNaN(d.getTime())?"":d.toLocaleDateString("pt-BR"); };
@@ -3256,7 +3285,7 @@ function viewTermos(pedir){
 function acaoTermos(a){
   if(a==="ler"){ ui.lerTermos=true; render(); window.scrollTo({top:0}); return; }
   if(a==="fechar"){ ui.lerTermos=false; render(); window.scrollTo({top:0}); return; }
-  if(a==="aceitar"){ const t={v:TERMOS_V,em:new Date().toISOString()}; if(mode==="cloud") salvaEu({termos:t}); else { state.config.termos=t; save("config"); } ui.recusouTermos=false; ui.lerTermos=false; render(); toast("Termos aceitos. Bom controle!"); return; }
+  if(a==="aceitar"){ const t={v:TERMOS_V,em:new Date().toISOString()}, primeira=mode==="cloud"&&!meusTermos(); if(primeira&&window.mbEvento){ window.mbEvento("sign_up",{method:"google"}); window.mbEvento("conversao",{tipo:"cadastro"}); } if(mode==="cloud") salvaEu({termos:t}); else { state.config.termos=t; save("config"); } ui.recusouTermos=false; ui.lerTermos=false; render(); toast("Termos aceitos. Bom controle!"); return; }
   if(a==="recusar"){
     if(mode==="cloud"&&fb){ encerraSessao("Para usar o Monetra é preciso aceitar os termos de privacidade. Seus dados não foram alterados."); return; }
     ui.recusouTermos=true; render(); return;
@@ -3933,7 +3962,7 @@ function salvarSheet(outro){
     const faltaAntes=ant.filter(x=>x.falta).map(x=>x.id); ant.forEach(x=>{ delete x.falta; });
     const av=marcaPor({id:uidGen(),dia,valor:v,desc:ant.length?"Salário (outra parte)":"Salário",sal:true}); if(falta) av.falta=true; if(ct) av.contaId=ct;
     m.salario=0; m.avulsos.push(av); save(k); closeSheet(); render(); vibra(20);
-    anunciar("Salário de "+brl(v)+" registrado.");
+    anunciar("Salário de "+brl(v)+" registrado."); if(window.mbEvento) window.mbEvento("salario_caiu",{partes:ant.length+1});
     toast((ant.length?"Outra parte de ":"Salário de ")+brl(v)+" registrado."+(falta?" Aviso de novo quando a outra parte cair.":""),"Desfazer",()=>{ const a=getMonth(k); a.avulsos=a.avulsos.filter(x=>x.id!==av.id); marcaApagado(k,av.id); a.avulsos.forEach(x=>{ if(faltaAntes.includes(x.id)) x.falta=true; }); if(!a.avulsos.some(x=>x.sal)) a.salario=antes; save(k); render(); toast("Desfeito."); });
     return;
   }
@@ -4145,7 +4174,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-avsal],[data-salextra],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-avsal],[data-avaliar],[data-salextra],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -4167,6 +4196,7 @@ function bindSheet(r){
     if(b.dataset.simtaxa){ const t=document.getElementById("s-simtaxa"); if(t){ t.value=b.dataset.simtaxa; atualizaSim(); } return; }
     if(b.dataset.simdiv){ const x=(state.config.dividas||[]).find(d=>d.id===b.dataset.simdiv), el=document.getElementById("s-simsaldo"); if(x&&el){ el.value=moneyInput(restaDiv(x)); atualizaSim(); } return; }
     if(b.dataset.avsemana){ openSheet("semana",null,{fim:b.dataset.avsemana}); return; }
+    if(b.dataset.avaliar){ try{ localStorage.setItem("mb.avaliar",b.dataset.avaliar==="1"?"1":String(Date.now()+30*864e5)); }catch(e){} setTimeout(()=>renderSheet(),50); return; }
     if(b.dataset.avsal){ openSheet("salario",null,{mes:todayKey}); return; }
     if(b.dataset.salextra){ openSheet("avulso",null,{mes:k}); return; }
     if(b.dataset.mesano){ ui.sheet.ano=(Number(ui.sheet.ano)||kY(ui.month))+Number(b.dataset.mesano); renderSheet(); return; }
