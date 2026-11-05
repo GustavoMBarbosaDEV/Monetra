@@ -4,6 +4,7 @@ window.FIREBASE_CONFIG = {
   projectId: "mb-controle-f70b6",
   storageBucket: "mb-controle-f70b6.firebasestorage.app",
   messagingSenderId: "707200429440",
-  appId: "1:707200429440:web:c86a3b6adabdae48f0a565"
+  appId: "1:707200429440:web:c86a3b6adabdae48f0a565",
+  measurementId: "G-8B1WG1Q5SV"
 };
 window.APPCHECK_SITE_KEY = "6LfwxwEuAAAAAFTdSqAaXAEQx8X-CxN8VUzeLtmo";
