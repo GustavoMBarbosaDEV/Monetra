@@ -1,5 +1,6 @@
 // Gera vendor/firebase-<versão>/ a partir do pacote "firebase" do npm (versão fixa no package.json).
 // Uso: cd ferramentas && npm ci && node vendor-firebase.mjs
+// Mudou a lista MODULOS sem trocar a versão? Suba FB_REV no app.js: vendor/ tem cache immutable e o ?r= força o download novo.
 // Saem quatro módulos ES (app, auth, firestore, app-check) com as mesmas funções que o app.js usa,
 // mais pedaços comuns: o núcleo do Firebase fica num arquivo só, compartilhado pelos quatro.
 import { build } from "esbuild";
@@ -18,7 +19,9 @@ if (!fbv || fbv[1] !== versao) {
 
 const MODULOS = {
   "firebase-app": ["firebase/app", ["initializeApp"]],
-  "firebase-auth": ["firebase/auth", ["getAuth", "onAuthStateChanged", "getRedirectResult", "signInWithPopup", "signInWithRedirect", "signOut", "GoogleAuthProvider", "reauthenticateWithPopup", "deleteUser", "getAdditionalUserInfo"]],
+  "firebase-auth": ["firebase/auth", ["getAuth", "onAuthStateChanged", "getRedirectResult", "signInWithPopup", "signInWithRedirect", "signOut", "GoogleAuthProvider", "reauthenticateWithPopup", "deleteUser", "getAdditionalUserInfo",
+    "OAuthProvider", "EmailAuthProvider", "createUserWithEmailAndPassword", "signInWithEmailAndPassword", "sendEmailVerification", "sendPasswordResetEmail",
+    "sendSignInLinkToEmail", "isSignInWithEmailLink", "signInWithEmailLink", "signInAnonymously", "linkWithPopup", "linkWithRedirect", "linkWithCredential", "useDeviceLanguage", "reload"]],
   "firebase-firestore": ["firebase/firestore", ["initializeFirestore", "getFirestore", "persistentLocalCache", "persistentMultipleTabManager", "clearIndexedDbPersistence", "terminate", "collection", "doc", "getDoc", "getDocs", "setDoc", "updateDoc", "deleteDoc", "deleteField", "onSnapshot", "runTransaction"]],
   "firebase-app-check": ["firebase/app-check", ["initializeAppCheck", "ReCaptchaEnterpriseProvider"]],
 };
