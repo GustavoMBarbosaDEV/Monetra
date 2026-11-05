@@ -1559,3 +1559,13 @@ button.ptlin:hover b{color:var(--accent)}
 @media (max-width:760px){.novaversao{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:no-preference){.novaversao.entra{animation:novaEntra .2s ease-out}@keyframes novaEntra{from{opacity:0;translate:0 10px}}}
 @media (pointer:coarse){html{scrollbar-width:none}html::-webkit-scrollbar{display:none;width:0;height:0}}
+.hsal .salcaiu{margin-top:14px;min-height:50px;font-size:16px;font-weight:700;border-radius:14px;width:100%}
+.tema-claro .hsal .salcaiu{background:#fff;color:#04261A}
+.hsal .hs-sub+.hs-sub{margin-top:4px}
+.hsal .hs-sub .link{font-size:inherit;padding:2px 0}
+.tema-claro .hsal .link{color:#fff;text-decoration:underline}
+.csal .v{font-weight:600;white-space:nowrap}
+.csal.atraso .t small{color:var(--bad);font-weight:600}
+.csal.breve .t small{color:var(--warn);font-weight:600}
+.csal.pago .t b{text-decoration:line-through;color:var(--muted)}
+.csal.pago .v{color:var(--muted)}

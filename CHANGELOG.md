@@ -12,6 +12,16 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.5.0 — 05/11/2026 **Meu salário caiu**
+
+- **Aguardando salário:** no mês atual, com salário padrão cadastrado e ainda não recebido, o Início troca o card do saldo pelo total a pagar no mês (contas fixas, parcelas fora do cartão, faturas e dívidas "a pagar"), com o que já foi pago, os gastos feitos antes do salário e o botão **Meu salário caiu**. O card "Contas do mês" lista tudo, com vencidas e as que vencem em até 3 dias em destaque e o botão Paguei. A previsão do fim do mês não aparece nessa fase.
+- **Meu salário caiu:** valor (vem do salário padrão), dia e conta; opção "ainda vou receber outra parte" (adiantamento/quinzena). Grava receitas do mês marcadas como salário (`sal: true`) e zera o salário do mês (`salario: 0`), então versões antigas do app mostram o mesmo total. Desfazer e editar pelo próprio card.
+- **Salário recebido:** saldo em conta (saldo acumulado + o que ainda não foi pago no mês), falta pagar e **saldo livre** (saldo em conta menos as contas pendentes). No mês seguinte o Início volta para Aguardando salário.
+- **Gastos antes do salário** contam no mês normalmente e saem do saldo quando o salário cai.
+- **Quando o salário cai** (Ajustes → Renda e saldos): Nº dia útil (sem fins de semana e feriados nacionais fixos), dia fixo ou quinzenal, e opção para desligar a tela. Novo campo `salarioDia` na config, só gravado quando alterado; **as regras do Firestore precisam ser publicadas antes desta versão.**
+- **Sininho e notificação** no dia previsto: "Seu salário caiu? Toque para confirmar" (e de novo para a outra parte).
+- Tutorial atualizado.
+
 ## 5.4.10 — 31/10/2026 **Leitor de PDF sem o alerta do CodeQL**
 
 - **CodeQL #5:** a linha do leitor de PDF que decide se uma linha é só um cabeçalho de data (ex.: "Segunda, 12 de outubro de 2026") deixou de usar `replace` com regex para apagar os dias da semana e passou a separar as palavras e ignorar uma lista fixa (`PDF_SO_DATA`). Mesmo resultado em todos os casos testados e na bateria de PDFs (Nubank, Itaú, Caixa, Inter com senha, escaneado, repetidos, CSV).

@@ -35,6 +35,8 @@
  * @property {ValorOrig} [orig]
  * @property {string} [ir]
  * @property {string} [pagou]
+ * @property {boolean} [sal]
+ * @property {boolean} [falta]
  */
 /**
  * @typedef {Object} ItemMes
@@ -230,6 +232,7 @@
  * @property {Cartao[]} cartoes
  * @property {Conta[]} contas
  * @property {string|null} contaSalario
+ * @property {{tipo:string,dia:number,dia2:number,off:boolean}|null} salarioDia
  * @property {Categoria[]} categorias
  * @property {Fixo[]} fixos
  */
@@ -337,10 +340,11 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.4.10";
+const VERSAO="5.5.0";
 const NOVIDADES=[
-  "Ajuste interno no leitor de extratos em PDF, apontado pela análise automática de segurança. A importação continua igual.",
-  "Desde a 5.4.9, as taxas de rendimento e IPCA aceitam número com separador de milhar (ex.: 1.234,5)."
+  "Novo fluxo do salário: até ele cair, o Início mostra só o que você tem para pagar no mês, com as contas vencidas e próximas em destaque.",
+  "Caiu? Toque em “Meu salário caiu” e veja o saldo em conta e o saldo livre (o que sobra depois das contas). Dá para receber em duas partes.",
+  "Em Ajustes → Renda e saldos, escolha quando o salário cai (dia útil, dia fixo ou quinzenal). No dia, o sininho pergunta se ele caiu."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -444,7 +448,7 @@ const ICON={
 };
 
 /** @returns {Config} */
-function defaultConfig(){ return {desafios:[],viagens:[],dividas:[],termos:null,salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
+function defaultConfig(){ return {desafios:[],viagens:[],dividas:[],termos:null,salarioPadrao:0,saldoInicial:0,saldoCaixinha:0,ate:PADRAO_ATE,inicio:null,parcelas:[],rendas:[],metas:[],cartoes:[],contas:[],contaSalario:null,salarioDia:null,categorias:DEFAULT_CATS.map((n,i)=>({id:"c"+(i+1),nome:n,orcamento:0})),fixos:[]}; }
 /** @type {{config:Config, months:Object<string,Mes>, loaded:boolean}} */
 const state={config:defaultConfig(), months:{}, loaded:false};
 let MESES=[];
@@ -538,7 +542,8 @@ function normConfig(d){
   const viagens=Array.isArray(d?.viagens)?d.viagens.filter(x=>x&&x.id).map(x=>({id:String(x.id),nome:String(x.nome||"Viagem"),moeda:/^[A-Z]{3}$/.test(x.moeda||"")?x.moeda:"USD",cotacao:Number(x.cotacao)>0?Number(x.cotacao):1,taxa:Math.max(0,Number(x.taxa)||0),inicio:iso(x.inicio),fim:iso(x.fim),orcamento:Math.max(0,Number(x.orcamento)||0)})):[];
   const desafios=Array.isArray(d?.desafios)?d.desafios.filter(x=>x&&x.id&&iso(x.inicio)).map(x=>({id:String(x.id),nome:String(x.nome||"Desafio").slice(0,50),tipo:x.tipo==="max"?"max":"sem",cat:x.cat?String(x.cat):null,palavras:String(x.palavras||"").slice(0,80),dias:Math.min(365,Math.max(1,Math.round(Number(x.dias)||30))),inicio:x.inicio,valor:Number(x.valor)>0?Number(x.valor):0})):[];
   const termos=d?.termos&&typeof d.termos.v==="string"?{v:d.termos.v,em:String(d.termos.em||"")}:null;
-  return {desafios, viagens, dividas, termos, salarioPadrao:Number(d?.salarioPadrao)||0, saldoInicial:Number(d?.saldoInicial)||0, saldoCaixinha:Number(d?.saldoCaixinha)||0, ate, inicio, categorias:cats, fixos, parcelas, rendas, cartoes, contas, contaSalario, metas};
+  const sd=d?.salarioDia, salarioDia=sd&&typeof sd==="object"&&!Array.isArray(sd)?{tipo:["util","fixo","quinz"].includes(sd.tipo)?sd.tipo:"util",dia:Math.min(31,Math.max(1,Math.round(Number(sd.dia))||5)),dia2:Math.min(31,Math.max(1,Math.round(Number(sd.dia2))||20)),off:sd.off===true}:null;
+  return {desafios, viagens, dividas, termos, salarioPadrao:Number(d?.salarioPadrao)||0, saldoInicial:Number(d?.saldoInicial)||0, saldoCaixinha:Number(d?.saldoCaixinha)||0, ate, inicio, categorias:cats, fixos, parcelas, rendas, cartoes, contas, contaSalario, salarioDia, metas};
 }
 function getMonth(k){ if(!state.months[k]) state.months[k]=normMonth({}); else state.months[k]=Object.assign(normMonth({}),state.months[k]); return state.months[k]; }
 const catIndex=id=>state.config.categorias.findIndex(c=>c.id===id);
@@ -671,7 +676,7 @@ const soma=(arr,f)=>arr.reduce((a,x)=>a+(Number(f?f(x):x.valor)||0),0);
  */
 function calc(k){
   const m=normMonth(state.months[k]||{});
-  const salario=m.salario??(ativo(k)?state.config.salarioPadrao:0);
+  const salario=m.avulsos.some(x=>x.sal)?0:m.salario??(ativo(k)?state.config.salarioPadrao:0);
   const avulsos=soma(m.avulsos), rendas=soma(rendasDoMes(k).filter(r=>!r.pular));
   const lista=despesasDoMes(k), despesas=soma(lista);
   const fixos=fixosDoMes(k).filter(f=>!f.pular);
@@ -813,6 +818,7 @@ async function flush(id){
       const snap=await tx.get(ref), body=clone(local0);
       mudou=snap.exists()?mescla(body,id==="config"?normConfig(snap.data()):normMonth(snap.data()),id):false;
       if(id==="config"&&Array.isArray(body.desafios)&&!body.desafios.length) delete body.desafios;
+      if(id==="config"&&!body.salarioDia) delete body.salarioDia;
       tx.set(ref,body); corpo=body;
     });
     ok=true;
@@ -1250,6 +1256,80 @@ function cardLembretes(){
   if(rit.length) partes.push(rit.length===1?`${esc(rit[0].nome)} estoura o limite no dia ${rit[0].diaEstoura}`:`${rit.length} categorias em ritmo de estourar o limite`);
   return `<button type="button" class="faixa ${cls}" data-avisos="1"><span class="fx-ic">${ICON.sino}</span><span class="fx-t">${partes.map(p=>`<span class="fx-l">${p}</span>`).join("")}</span><span class="fx-ver">Ver</span></button>`;
 }
+const FERIADOS=["01-01","04-21","05-01","09-07","10-12","11-02","11-15","11-20","12-25"];
+const cfgSal=()=>Object.assign({tipo:"util",dia:5,dia2:20,off:false},state.config.salarioDia||{});
+function diaUtil(k,n){ const dim=diasMes(k); let c=0;
+  for(let d=1;d<=dim;d++){ const w=new Date(kY(k),kM(k)-1,d).getDay(); if(w===0||w===6||FERIADOS.includes(pad2(kM(k))+"-"+pad2(d))) continue; if(++c>=n) return d; }
+  return dim; }
+function diasSalario(k){ const s=cfgSal(), dim=diasMes(k);
+  if(s.tipo==="fixo") return [Math.min(s.dia,dim)];
+  if(s.tipo==="quinz") return [Math.min(s.dia,dim),Math.min(s.dia2,dim)];
+  return [diaUtil(k,s.dia)]; }
+const salRecebido=k=>((state.months[k]||{}).avulsos||[]).filter(x=>x.sal);
+function faseSalario(k){
+  if(mode==="login"||!state.loaded||k!==todayKey||!ativo(k)||cfgSal().off||!(state.config.salarioPadrao>0)) return null;
+  if(salRecebido(k).length) return "recebido";
+  return typeof (state.months[k]||{}).salario==="number"?null:"espera";
+}
+function avisoSalario(){
+  const k=todayKey, f=faseSalario(k), hoje=today.getDate(), ds=diasSalario(k);
+  if(f==="espera") return hoje>=ds[0]?{parte:1}:null;
+  if(f!=="recebido") return null;
+  const r=salRecebido(k), u=r[r.length-1];
+  if(!u.falta) return null;
+  return hoje>=(ds.length>1?ds[1]:u.dia+1)?{parte:2}:null;
+}
+function contasSalario(k){
+  const dim=diasMes(k), m=state.months[k], hoje=today.getDate(), out=[];
+  fixosDoMes(k).filter(f=>!f.pular).forEach(f=>out.push({tipo:"fixo",id:f.id,nome:f.desc,valor:f.valor,dia:f.dia,pago:f.pago}));
+  parcelasDoMes(k).filter(p=>!p.cartao).forEach(p=>out.push({tipo:"parc",id:p.id,nome:(p.desc||"Parcela")+" ("+p.idx+"/"+p.n+")",valor:p.valor,dia:p.dia,pago:p.pago}));
+  cartoesOk().forEach(cc=>{ const t=soma(faturaDoMes(k,cc.id)); if(t>0) out.push({tipo:"fat",id:cc.id,nome:"Fatura "+cc.nome,valor:t,dia:Math.min(cc.vence,dim),pago:faturaPaga(m,cc.id)}); });
+  (state.config.dividas||[]).filter(x=>x.tipo==="pagar"&&!quitada(x)&&x.venc&&x.venc.slice(0,7)<=k).forEach(x=>out.push({tipo:"div",id:x.id,nome:"Dívida com "+x.pessoa,valor:restaDiv(x),dia:x.venc.slice(0,7)<k?0:Number(x.venc.slice(8,10)),pago:false,div:true}));
+  return out.map(x=>Object.assign(x,{dd:x.dia?x.dia-hoje:-1})).sort((a,b)=>Number(a.pago)-Number(b.pago)||a.dia-b.dia);
+}
+function linhaContaSal(x,k){
+  const cls=x.pago?"pago":x.dd<0?"atraso":x.dd<=3?"breve":"";
+  const quando=x.pago?"paga":x.dd<0?(x.dia?"venceu dia "+pad2(x.dia):"atrasada"):x.dd===0?"vence hoje":x.dd===1?"vence amanhã":x.dd<=3?"vence em "+x.dd+" dias":"vence dia "+pad2(x.dia);
+  const acao=x.div?`<button class="btn ghost mini" type="button" data-edit="divida" data-id="${esc(x.id)}">Ver</button>`
+    :`<button class="btn ${x.pago?"ghost ":""}mini" type="button" data-pagar="${esc(x.tipo+"|"+x.id+"|"+k)}" aria-label="${esc((x.pago?"Marcar como não paga: ":"Paguei: ")+x.nome)}">${x.pago?"Desfazer":"Paguei"}</button>`;
+  return `<div class="aviso csal ${cls}"><span class="t"><b>${esc(x.nome)}</b><small>${esc(quando)}</small></span><span class="v num">${brl(x.valor)}</span>${acao}</div>`;
+}
+function heroSalario(k,fase,olho){
+  const mesN=NOMES[kM(k)-1].toLowerCase(), cs=contasSalario(k), pend=cs.filter(x=>!x.pago), aPagar=soma(pend), hoje=today.getDate();
+  const auras=`<i class="hs-aura" aria-hidden="true"></i><i class="hs-aura b2" aria-hidden="true"></i>`;
+  if(fase==="espera"){
+    const d0=diasSalario(k)[0], prev=hoje<d0?"previsto para o dia "+pad2(d0):hoje===d0?"previsto para hoje":"previsto desde o dia "+pad2(d0);
+    const pago=soma(cs.filter(x=>x.pago)), antes=soma(((state.months[k]||{}).gastos||[]).filter(g=>!noCartao(g)));
+    return `<div class="heroSaldo hsal espera ${hoje>d0?"sd-warn":"sd-ok"}">${auras}
+    <div class="hs-top"><span class="hs-lab"><span class="lab">Aguardando salário</span>${olho}</span><span class="hs-dir"><span class="hs-selo"><i></i>${esc(prev)}</span></span></div>
+    <b class="hs-val" data-v="${aPagar}">${valorGrande(aPagar)}</b>
+    <div class="hs-sub">${aPagar>0?"para pagar em "+esc(mesN):"nada para pagar em "+esc(mesN)}${pago>0?` · já pago <b>${brl(pago)}</b>`:""}</div>
+    ${antes>0?`<div class="hs-sub">Você já gastou <b>${brl(antes)}</b> antes do salário. Isso sai do saldo quando ele cair.</div>`:""}
+    <button type="button" class="btn salcaiu" data-salcaiu="1">Meu salário caiu <span aria-hidden="true">💰</span></button>
+  </div>`;
+  }
+  const r=salRecebido(k), u=r[r.length-1], acum=acumulado(k);
+  const livre=Math.round((acum-soma(pend.filter(x=>x.div)))*100)/100, conta=Math.round((acum+soma(pend.filter(x=>!x.div)))*100)/100;
+  return `<div class="heroSaldo hsal ${conta<0?"neg sd-bad":livre<0?"sd-warn":"sd-ok"}">${auras}
+    <div class="hs-top"><span class="hs-lab"><span class="lab">Saldo em conta</span>${olho}</span><span class="hs-dir"><span class="hs-selo"><i></i>${u.falta?"falta uma parte":"salário recebido"}</span></span></div>
+    <b class="hs-val" data-v="${conta}">${valorGrande(conta)}</b>
+    <div class="hs-sub">${r.length>1?"Salário de <b>"+brl(soma(r))+"</b> em "+r.length+" partes":"Salário de <b>"+brl(u.valor)+"</b> caiu dia "+pad2(u.dia)} · <button type="button" class="link" data-edit="avulso" data-id="${esc(u.id)}">Editar</button> · <button type="button" class="link" data-saldesfaz="1">Desfazer</button></div>
+    <div class="hs-duo"><div class="hs-mini"><span class="lab">Falta pagar</span><b data-v="${aPagar}">${valorGrande(aPagar)}</b></div><div class="hs-mini"><span class="lab">Saldo livre</span><b class="${livre<0?"neg":""}" data-v="${livre}">${valorGrande(livre)}</b></div></div>
+    ${u.falta?`<button type="button" class="btn salcaiu" data-salcaiu="1">A outra parte caiu <span aria-hidden="true">💰</span></button>`:""}
+  </div>`;
+}
+function cardContasSal(k,fase){
+  const mesN=NOMES[kM(k)-1].toLowerCase(), cs=contasSalario(k), lista=fase==="espera"?cs:cs.filter(x=>!x.pago);
+  const vazio=fase==="espera"?`<p class="hint">Nenhuma conta para ${esc(mesN)}. Cadastre contas fixas, parcelas e cartões em Ajustes para ver aqui o que pagar.</p>`:`<p class="hint">Tudo pago em ${esc(mesN)}. O saldo livre é seu.</p>`;
+  return `<div class="card csalcard"><div class="cardhead"><h2>${fase==="espera"?"Contas de "+esc(mesN):"Falta pagar"}</h2><span class="num muted">${brl(soma(cs.filter(x=>!x.pago)))}</span></div>
+    ${lista.length?`<div>${lista.map(x=>linhaContaSal(x,k)).join("")}</div>`:vazio}
+    ${fase==="recebido"?`<p class="hint">Saldo livre é o saldo em conta menos o que ainda falta pagar no mês.</p>`:""}</div>`;
+}
+function desfazSal(k){
+  const m=getMonth(k), tirados=m.avulsos.filter(x=>x.sal), antes=m.salario; if(!tirados.length) return;
+  m.avulsos=m.avulsos.filter(x=>!x.sal); tirados.forEach(x=>marcaApagado(k,x.id)); m.salario=null; save(k); render();
+  toast("Salário desfeito.","Refazer",()=>{ const a=getMonth(k); tirados.forEach(x=>{ desmarcaApagado(k,x.id); if(!a.avulsos.some(y=>y.id===x.id)) a.avulsos.push(x); }); a.salario=antes; save(k); render(); toast("Salário de volta."); });
+}
 const PINKEY="mb.pin", PINLEN=4;
 function pinCfg(){ try{ const c=JSON.parse(localStorage.getItem(PINKEY)||"null"); return c&&c.hash?c:null; }catch(e){ return null; } }
 function salvaPinCfg(c){ try{ if(c) localStorage.setItem(PINKEY,JSON.stringify(c)); else localStorage.removeItem(PINKEY); }catch(e){} }
@@ -1375,7 +1455,7 @@ function passosTutorial(){
   const AJ=tecla?"na aba <b>Ajustes</b> (no topo)":"em <b>Perfil → Ajustes</b>";
   return [
     {ic:"logo",t:"Bem-vindo ao Monetra",d:`Seu controle financeiro, <b>grátis e sem anúncios</b>. Em poucos passos você vê o básico e onde fica cada função.`+L(nuvem?"Seus dados ficam na sua conta e aparecem em qualquer aparelho.":"Sem login, os dados ficam só neste aparelho.","Dá para rever este tutorial depois em <b>Perfil → Tutorial</b>.")},
-    {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, role até o card <b>Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.",`Já tem dinheiro na conta? Informe o <b>saldo inicial</b> ${AJ} → <b>Contas</b>.`)},
+    {ic:"mes",t:"1. Comece pelo salário",d:`No <b>Início</b>, role até o card <b>Receitas</b> e informe o <b>salário deste mês</b>. O controle começa a contar a partir daí.`+L("Com o salário padrão cadastrado, o Início fica em <b>Aguardando salário</b>: mostra só o que pagar no mês. Quando ele cair, toque em <b>Meu salário caiu</b> e veja o saldo em conta e o <b>saldo livre</b>.","Recebeu algo a mais? Use o atalho <b>Receita</b>, logo abaixo do saldo.",`Já tem dinheiro na conta? Informe o <b>saldo inicial</b> ${AJ} → <b>Contas</b>.`)},
     {ic:"mais",t:"2. Lance seus gastos",d:`Toque no <b>+</b> no centro da barra de baixo${tecla?" (ou aperte <b>N</b> no teclado)":""}, digite o valor e escolha a <b>categoria</b> e a <b>forma de pagamento</b>.`+L("Mais rápido: escreva <b>45 ifood pix</b> ou <b>120 mercado ontem</b> no campo rápido e aperte Enter. Prefere falar? Toque no <b>microfone</b> do campo.","Comprou parcelado? Ligue <b>Compra parcelada</b> (ou escreva <b>3x</b>).","<b>Segure o +</b> para escolher: despesa, receita, transferência ou por voz.","Despesa dedutível (saúde, educação…)? Escolha o tipo em <b>Imposto de Renda</b> e o resumo do ano aparece em Relatórios.","Errou? Toque no lançamento para editar, ou em <b>Desfazer</b>.","No celular, deslize o lançamento: para a <b>esquerda</b> apaga; para a <b>direita</b> repete hoje (no crédito, marca como paga).","No celular, a janela fecha no <b>X</b> ou arrastando o topo dela para baixo.")},
     {ic:"ajustes",t:"3. Contas fixas e cartões",d:`${tecla?"Na aba <b>Ajustes</b>":"Em <b>Perfil → Ajustes</b>"}, cadastre o que se repete todo mês e os seus cartões.`+L("<b>Contas fixas</b> (aluguel, internet) entram sozinhas todo mês; marque como paga.","<b>Cartões</b>: compras no crédito vão para a fatura certa, até a última parcela.","<b>Categorias</b>: com ícone, cor, limite por mês (a sobra pode passar para o mês seguinte) e subcategorias.")},
     {ic:"cofre",t:"4. Metas e desafios",d:`Na aba <b>Metas</b> ficam as metas de economia, os desafios e as conquistas.`+L("Crie <b>metas</b> com valor e prazo: o anel mostra quanto já guardou e o app diz quanto guardar por mês.","<b>Quanto renderia</b>: veja quanto a caixinha e as metas renderiam no CDI ou na poupança.","Topa um desafio? Ex.: <b>30 dias sem delivery</b>. O app acompanha sozinho.")},
@@ -1435,6 +1515,7 @@ function avisos(){
   alertasOrcamento(todayKey).forEach(a=>itens.push({tipo:"orc",a}));
   const bkL=lembreteBackup(); if(bkL&&bkL.local) itens.push({tipo:"backup",b:bkL});
   (state.config.dividas||[]).filter(x=>!quitada(x)&&x.venc&&diasAte(x.venc)<=1).forEach(x=>itens.push({tipo:"divida",x}));
+  const salA=avisoSalario(); if(salA) itens.unshift({tipo:"salario",parte:salA.parte});
   const n=itens.length;
   let rep=[]; try{ rep=assinaturas().repetidos; }catch(e){}
   rep.forEach(r=>itens.push({tipo:"dica",r}));
@@ -1455,6 +1536,7 @@ function listaAvisos(){
   const linha=(cls,ic,titulo,sub,acao)=>`<div class="aviso ${cls}"><span class="ic">${ic}</span><span class="t"><b>${titulo}</b><small>${sub}</small></span>${acao||""}</div>`;
   const grupos={pedido:[],conta:[],orc:[],dica:[]};
   itens.forEach(it=>{
+    if(it.tipo==="salario") grupos.conta.push(linha("pedido",icq("seta-cima",18),it.parte===2?"A outra parte do salário caiu?":"Seu salário caiu?","Toque para confirmar e ver o saldo do mês",`<button class="btn mini" type="button" data-avsal="1">Confirmar</button>`));
     if(it.tipo==="pedido"){ const nome=((eu.grupos||{})[it.g]||{}).nome||""; grupos.pedido.push(linha("pedido",ICON.grupo,esc(primeiroNome(it.p.nome))+" quer entrar em “"+esc(nome)+"”",esc(it.p.email||""),`<button class="btn mini" type="button" data-avgrupo="${esc(it.g)}">Ver pedido</button>`)); }
     if(it.tipo==="conta"){ const x=it.x, e=estadoPend(x); grupos.conta.push(linha("pagar "+e.cls,x.dd<0?ICON_ALERTA:ICON_RELOGIO,esc(x.nome)+" · "+brl(x.valor),esc(e.txt)+(x.dd>=0?" · "+fmtData(x.data):""),`<button class="btn mini" type="button" data-avpagar="${x.tipo}|${esc(x.id)}|${x.k}">Paguei</button>`)); }
     if(it.tipo==="divida"){ const x=it.x, dd=diasAte(x.venc), cls=dd<0?"atraso":dd===0?"hoje":"amanha";
@@ -1494,6 +1576,7 @@ function verificaLembretes(forcar){
   });
   alertasOrcamento(todayKey).forEach(a=>{ const chave=["orc",a.id,todayKey,a.nivel].join(":"); if(vistos[chave]) return; vistos[chave]=hoje;
     mostraNotif(a.nivel==="passou"?"Limite estourado: "+a.nome:a.nivel==="ritmo"?"Ritmo alto: "+a.nome:"Atenção ao limite: "+a.nome, textoAlerta(a)+" Toque para ver.",chave); });
+  const salN=avisoSalario(); if(salN){ const chave="salario:"+todayKey+":"+salN.parte; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif(salN.parte===2?"A outra parte do salário caiu?":"Seu salário caiu?","Toque para confirmar no Monetra e ver o saldo do mês.",chave); } }
   const rsN=avisoSemana(); if(rsN){ const chave="semana:"+rsN.fim; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Resumo da semana: "+brl(rsN.tot),textoVarSemana(rsN)+(rsN.subiu?". Mais subiu: "+catName(rsN.subiu.id):"")+". Toque para ver.",chave); } }
   const bkN=lembreteBackup(); if(bkN){ const chave="backup:"+todayKey; if(!vistos[chave]){ vistos[chave]=hoje; mostraNotif("Hora de fazer um backup",(bkN.dias===null?"Você ainda não baixou nenhum backup.":"Último backup há "+bkN.dias+" dias.")+" Toque para abrir o Monetra.",chave); } }
   for(const k in vistos) if(vistos[k]<shiftKey(hoje.slice(0,7),-2)) delete vistos[k];
@@ -2436,31 +2519,33 @@ function garanteVisivel(id){
   return el;
 }
 function viewMes(){
-  const k=ui.month, m=getMonth(k), c=calc(k), cats=state.config.categorias, isCur=k===todayKey;
+  const k=ui.month, m=getMonth(k), c=calc(k), cats=state.config.categorias, isCur=k===todayKey, fase=faseSalario(k);
   const prevK=shiftKey(k,-1), prev=MESES.includes(prevK)&&ativo(prevK)&&ativo(k)?calc(prevK):null;
   const acum=acumulado(k), cx=caixinhaAte(k), ini=inicioKey();
   const aviso=avisoCompart()+(!ini?`<div class="note info">Seu controle ainda não começou. Informe o <b>salário deste mês</b> no card Receitas (ou lance uma receita) e os cálculos passam a contar a partir deste mês.</div>`
     :k<ini?`<div class="note info">Este mês é anterior ao início do seu controle (${esc(nomeMes(ini).toLowerCase())}). Aqui só conta o que você lançar à mão; salário padrão, rendas e contas fixas não entram.</div>`:"");
   const varDesp=prev?variacao(c.despesas,prev.despesas):"";
   const mesN=NOMES[kM(k)-1].toLowerCase(), varS=prev&&Math.abs(prev.saldo)>0.5?(c.saldo-prev.saldo)/Math.abs(prev.saldo):null;
-  const pv=c.receitas>0?previsaoMes(k,c):null, alTop=isCur?alertasOrcamento(k).find(a=>a.diaEstoura||a.nivel==="passou"):null;
+  const pv=c.receitas>0&&fase!=="espera"?previsaoMes(k,c):null, alTop=isCur?alertasOrcamento(k).find(a=>a.diaEstoura||a.nivel==="passou"):null;
   const notaTxt=pv?(pv.ritmo>0?`No ritmo atual, ${mesN} termina com <b class="nowrap">≈&nbsp;${brl(pv.saldo)}</b>.`:`Sem gastos do dia a dia até agora: ${mesN} termina com <b>${brl(pv.saldo)}</b> se continuar assim.`):c.porDia!==null&&c.receitas>0?`Você pode gastar <b>${brl(c.porDia)}</b> por dia ${isCur?"até o fim do mês":"neste mês"}.`:"";
   const notaAl=alTop?(alTop.nivel==="passou"?` ${esc(alTop.nome)} passou do limite.`:` ${esc(alTop.nome)} estoura o limite no dia ${alTop.diaEstoura}.`):"";
   const saude=c.saldo<0?"bad":(c.receitas>0&&c.saldo<c.receitas*0.05)?"warn":(c.receitas>0||c.despesas>0)?"ok":"";
   const selo={ok:"mês saudável",warn:"mês apertado",bad:"mês no vermelho"}[saude];
-  const tiles=`<div class="heroSaldo ${c.saldo<0?"neg":""} ${saude?"sd-"+saude:""}"><i class="hs-aura" aria-hidden="true"></i><i class="hs-aura b2" aria-hidden="true"></i>
-    <div class="hs-top"><span class="hs-lab"><span class="lab">Saldo de ${esc(mesN)}</span><button type="button" class="olhobtn ${privado?"on":""}" data-privado="1" aria-pressed="${privado}" aria-label="Esconder valores" title="${privado?"Mostrar os valores":"Esconder os valores"}">${privado?ICON.olhoX:ICON.olho}</button></span><span class="hs-dir">${selo?`<span class="hs-selo"><i></i>${selo}</span>`:""}${temFala()?`<button type="button" class="ouvir ${falando?"on":""}" data-ouvir="1" aria-pressed="${falando}" aria-label="${falando?"Parar a leitura do resumo":"Ouvir resumo do mês"}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3l4.5-4v13L7 14.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="ov-t">${falando?"Parar":"Ouvir"}</span></button>`:""}</span></div>
+  const olho=`<button type="button" class="olhobtn ${privado?"on":""}" data-privado="1" aria-pressed="${privado}" aria-label="Esconder valores" title="${privado?"Mostrar os valores":"Esconder os valores"}">${privado?ICON.olhoX:ICON.olho}</button>`;
+  const tiles=(fase?heroSalario(k,fase,olho):`<div class="heroSaldo ${c.saldo<0?"neg":""} ${saude?"sd-"+saude:""}"><i class="hs-aura" aria-hidden="true"></i><i class="hs-aura b2" aria-hidden="true"></i>
+    <div class="hs-top"><span class="hs-lab"><span class="lab">Saldo de ${esc(mesN)}</span>${olho}</span><span class="hs-dir">${selo?`<span class="hs-selo"><i></i>${selo}</span>`:""}${temFala()?`<button type="button" class="ouvir ${falando?"on":""}" data-ouvir="1" aria-pressed="${falando}" aria-label="${falando?"Parar a leitura do resumo":"Ouvir resumo do mês"}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3l4.5-4v13L7 14.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="ov-t">${falando?"Parar":"Ouvir"}</span></button>`:""}</span></div>
     <b class="hs-val" data-v="${c.saldo}">${valorGrande(c.saldo)}</b>
     <div class="hs-sub">${varS!==null?`<span class="${varS>=0?"hs-up":"hs-down"}">${varS>=0?"▲":"▼"} ${Math.round(Math.abs(varS)*100)}%</span> vs ${esc(NOMES[kM(prevK)-1].toLowerCase())} · `:""}acumulado <b>${brl(acum)}</b></div>
     ${graficoSaldo(serieSaldo(k),k)}
     <div class="hs-duo"><div class="hs-mini"><span class="lab">Receitas</span><b data-v="${c.receitas}">${valorGrande(c.receitas)}</b></div><div class="hs-mini"><span class="lab">Despesas</span><b data-v="${c.despesas}">${valorGrande(c.despesas)}</b></div></div>
-  </div>
+  </div>`)+`
   <div class="qa">
     <button type="button" class="q" data-novo="gasto"><span class="qi">${icq("seta-baixo")}</span>Despesa</button>
     <button type="button" class="q" data-novo="avulso"><span class="qi">${icq("seta-cima")}</span>Receita</button>
     ${contasMov().length>1?`<button type="button" class="q" data-novo="transf"><span class="qi">${icq("troca")}</span>Transferir</button>`:`<button type="button" class="q" data-novo="fixo"><span class="qi">${icq("repete")}</span>Conta fixa</button>`}
     <button type="button" class="q" data-novo="caixinha" data-cxtipo="guardar"><span class="qi">${icq("cofre")}</span>Caixinha</button>
   </div>
+  ${fase?cardContasSal(k,fase):""}
 <!--LEMB-->
   ${notaTxt||notaAl?`<div class="nota"><span class="ni">${icq("tendencia",17)}</span><span>${notaTxt}${notaAl}${pv&&pv.cartao>0?`<small>e mais ≈ ${brl(pv.cartao)} no cartão até o fim do mês (fatura de ${esc(abrMes(shiftKey(k,1)))})</small>`:""}</span></div>`:""}
   ${(()=>{ const comLim=cats.filter(ct=>ct.orcamento>0), base=comLim.length?comLim:cats.filter(ct=>(c.porCat[ct.id]||0)>0).sort((a,b)=>(c.porCat[b.id]||0)-(c.porCat[a.id]||0)).slice(0,4);
@@ -3080,6 +3165,11 @@ function viewPerfil(){
   <div class="grid"><div class="col"><div class="card"><h2>Renda e saldos</h2>
     <label class="f money">Salário / renda fixa padrão (todo mês)<input class="in num" id="cfSal" inputmode="numeric" value="${esc(moneyInput(cf.salarioPadrao))}" placeholder="0,00"></label>
     <p class="hint">Entra automaticamente a partir do mês em que seu controle começa. Se um mês for diferente, ajuste no Início.</p>
+    ${(()=>{ const sd=cfgSal(); return `<div class="row"><label class="f">Quando o salário cai<select class="in" id="cfSalTipo">${[["util","Dia útil do mês"],["fixo","Dia fixo"],["quinz","Quinzenal (duas partes)"]].map(([v,l])=>`<option value="${v}" ${sd.tipo===v?"selected":""}>${l}</option>`).join("")}</select></label>
+      <label class="f narrow">${sd.tipo==="util"?"Qual dia útil":sd.tipo==="quinz"?"1ª parte, dia":"Dia"}<input class="in num" id="cfSalDia" type="number" min="1" max="${sd.tipo==="util"?20:31}" inputmode="numeric" value="${sd.dia}"></label>
+      ${sd.tipo==="quinz"?`<label class="f narrow">2ª parte, dia<input class="in num" id="cfSalDia2" type="number" min="1" max="31" inputmode="numeric" value="${sd.dia2}"></label>`:""}</div>
+    <label class="switch"><input type="checkbox" id="cfSalModo" ${sd.off?"":"checked"}><span></span>Tela “Aguardando salário” no Início</label>
+    <p class="hint">Até o salário cair, o Início mostra só o que pagar no mês. No dia previsto${sd.tipo==="util"?" ("+sd.dia+"º dia útil, sem contar fins de semana e feriados nacionais)":""}, o sininho pergunta se ele caiu.</p>`; })()}
     <div class="f"><span>Outras rendas que se repetem todo mês</span>
     ${rendas.length?`<div>${rendas.map(r=>`<button type="button" class="item" data-edit="renda" data-id="${esc(r.id)}" style="--dot:var(--good)"><span class="pill">dia ${pad2(r.dia||1)}</span><span class="desc"><b>${esc(r.nome)}</b>${r.desde>todayKey?`<small>começa em ${esc(abrMes(r.desde))}</small>`:""}</span><span class="v pos">${brl(r.valor)}</span></button>`).join("")}</div>`:`<p class="hint">Ex.: bolsa, pensão, aluguel que você recebe.</p>`}
     <button class="btn ghost" type="button" data-novo="renda">+ Renda fixa</button></div>
@@ -3457,7 +3547,7 @@ function renderSheet(){
   document.body.classList.add("sheet-open"); const _ap=document.getElementById("app"); if(_ap) _ap.inert=true;
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
   if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="catmes"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="radiogroup" aria-label="Tipo de lançamento">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -3487,6 +3577,14 @@ function renderSheet(){
       ${selConta(it?it.contaId:null,"Entra na conta")}
       ${novo?`<label class="switch"><input type="checkbox" id="s-repete"><span></span>Recebo esse valor todo mês</label><p class="hint">Ligado, vira uma renda fixa que entra sozinha a partir deste mês.</p>`:""}`;
     botoes=novo?`<button class="btn" type="submit">Salvar</button>`:`${apagar}<button class="btn" type="submit">Salvar</button>`;
+  }else if(s.tipo==="salario"){
+    const rec=salRecebido(k), cf=cfgSal(), ja=soma(rec), padrao=state.config.salarioPadrao, resto=Math.max(0,Math.round((padrao-ja)*100)/100);
+    const sug=rec.length?(resto||null):cf.tipo==="quinz"?Math.round(padrao/2*100)/100:padrao;
+    corpo=`${valorCampo(sug,"Quanto caiu na conta")}<div class="row"><label class="f">Dia${selDia(k,k===todayKey?today.getDate():1)}</label></div>
+      ${selConta(state.config.contaSalario,"Caiu na conta")}
+      <label class="switch"><input type="checkbox" id="s-falta" ${!rec.length&&cf.tipo==="quinz"?"checked":""}><span></span>Ainda vou receber outra parte (adiantamento ou quinzena)</label>
+      <p class="hint">${rec.length?"Já recebido em "+esc(abrMes(k))+": "+brl(ja)+".":"Valor do salário padrão. Mude se caiu diferente."} Ganhou um extra (bônus, freela)? <button class="link" type="button" data-salextra="1">Lance como receita</button>.</p>`;
+    botoes=`<button class="btn" type="submit">Confirmar</button>`;
   }else if(s.tipo==="caixinha"){
     const tp=it?it.tipo:(s.cxTipo||"guardar");
     corpo=`<div class="seg" role="radiogroup" aria-label="Tipo"><input type="radio" name="s-cxtipo" id="s-cxG" value="guardar" ${tp==="guardar"?"checked":""}><label for="s-cxG">Guardar</label><input type="radio" name="s-cxtipo" id="s-cxR" value="retirar" ${tp==="retirar"?"checked":""}><label for="s-cxR">Retirar</label></div>
@@ -3828,6 +3926,17 @@ function salvarSheet(outro){
   if(s.tipo==="busca") return;
   if(s.tipo==="pin"){ salvarPin(); return; }
   if(s.tipo==="retro") return;
+  if(s.tipo==="salario"){
+    const v=parseMoney((document.getElementById("s-valor")||{}).value); if(!(v>0)) return erroSheet("Digite quanto caiu na conta.","s-valor");
+    const m=getMonth(k), dia=Number(valSel("s-dia"))||1, ct=valSel("s-conta")||state.config.contaSalario, ant=m.avulsos.filter(x=>x.sal), antes=m.salario;
+    const falta=!!(/** @type {HTMLInputElement|null} */(document.getElementById("s-falta"))||{checked:false}).checked;
+    const faltaAntes=ant.filter(x=>x.falta).map(x=>x.id); ant.forEach(x=>{ delete x.falta; });
+    const av=marcaPor({id:uidGen(),dia,valor:v,desc:ant.length?"Salário (outra parte)":"Salário",sal:true}); if(falta) av.falta=true; if(ct) av.contaId=ct;
+    m.salario=0; m.avulsos.push(av); save(k); closeSheet(); render(); vibra(20);
+    anunciar("Salário de "+brl(v)+" registrado.");
+    toast((ant.length?"Outra parte de ":"Salário de ")+brl(v)+" registrado."+(falta?" Aviso de novo quando a outra parte cair.":""),"Desfazer",()=>{ const a=getMonth(k); a.avulsos=a.avulsos.filter(x=>x.id!==av.id); marcaApagado(k,av.id); a.avulsos.forEach(x=>{ if(faltaAntes.includes(x.id)) x.falta=true; }); if(!a.avulsos.some(x=>x.sal)) a.salario=antes; save(k); render(); toast("Desfeito."); });
+    return;
+  }
   if(s.tipo==="viagem"){
     const nome=((document.getElementById("s-nome")||{}).value||"").trim(); if(!nome) return erroSheet("Dê um nome para a viagem.","s-nome");
     const inicio=(document.getElementById("s-vini")||{}).value||"", fim=(document.getElementById("s-vfim")||{}).value||"";
@@ -4036,7 +4145,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-avsal],[data-salextra],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -4058,6 +4167,8 @@ function bindSheet(r){
     if(b.dataset.simtaxa){ const t=document.getElementById("s-simtaxa"); if(t){ t.value=b.dataset.simtaxa; atualizaSim(); } return; }
     if(b.dataset.simdiv){ const x=(state.config.dividas||[]).find(d=>d.id===b.dataset.simdiv), el=document.getElementById("s-simsaldo"); if(x&&el){ el.value=moneyInput(restaDiv(x)); atualizaSim(); } return; }
     if(b.dataset.avsemana){ openSheet("semana",null,{fim:b.dataset.avsemana}); return; }
+    if(b.dataset.avsal){ openSheet("salario",null,{mes:todayKey}); return; }
+    if(b.dataset.salextra){ openSheet("avulso",null,{mes:k}); return; }
     if(b.dataset.mesano){ ui.sheet.ano=(Number(ui.sheet.ano)||kY(ui.month))+Number(b.dataset.mesano); renderSheet(); return; }
     if(b.dataset.messel){ ui.sheet.sel=b.dataset.messel; ui.sheet.ano=kY(b.dataset.messel); renderSheet(); return; }
     if(b.dataset.mesok){ const k=ui.sheet.sel||ui.month; closeSheet(); goMonth(k); window.scrollTo({top:0}); return; }
@@ -4106,6 +4217,7 @@ function bindSheet(r){
       else if(s.tipo==="viagem") apagarItem("config","viagens",id,"Viagem excluída (os gastos continuam no mês).");
       else if(s.tipo==="desafio") apagarItem("config","desafios",id,"Desafio excluído.");
       else if(s.tipo==="meta") apagarItem("config","metas",id,"Meta excluída (o dinheiro guardado volta para a caixinha geral).");
+      else if(s.tipo==="avulso"&&getMonth(k).avulsos.some(x=>x.id===id&&x.sal)){ if(salRecebido(k).length===1) desfazSal(k); else apagarItem(k,"avulsos",id,"Parte do salário apagada."); }
       else apagarItem(k,s.tipo==="gasto"?"gastos":s.tipo==="avulso"?"avulsos":"caixinha",id,"Lançamento apagado.");
       return;
     }
@@ -4282,6 +4394,8 @@ app.addEventListener("click",e=>{
   if(d.pago){ const o=getMonth(ui.month).fixos[d.pago]||{}; marcaPago("fixo",d.pago,ui.month,!o.pago); return; }
   if(d.gpago){ const g=getMonth(d.mes||ui.month).gastos.find(x=>x.id===d.gpago); if(g) marcaGastoPago(d.mes||ui.month,d.gpago,!g.pago); return; }
   if(d.pagar){ pagarPend(d.pagar); return; }
+  if(d.salcaiu){ openSheet("salario",null,{mes:todayKey}); return; }
+  if(d.saldesfaz){ desfazSal(todayKey); return; }
   if(d.avisos){ openSheet("avisos"); return; }
   if(d.semana){ openSheet("semana",null,{fim:ultimoDomingo()}); return; }
   if(d.caldia){ openSheet("dia",null,{dia:Number(d.caldia)}); return; }
@@ -4311,6 +4425,11 @@ app.addEventListener("change",e=>{
   if(t.id==="cfSal"||t.id==="cfSaldo"||t.id==="cfCx"){ const v=money(); if(isNaN(v)){ toast("Valor inválido. Use, por exemplo, 2.800,00"); return; } state.config[{cfSal:"salarioPadrao",cfSaldo:"saldoInicial",cfCx:"saldoCaixinha"}[t.id]]=v;
     if(t.id==="cfSal"&&v>0&&!inicioKey()){ state.config.inicio=MESES.includes(todayKey)?todayKey:MESES[0]; toast("Controle começa em "+nomeMes(state.config.inicio).toLowerCase()+"."); }
     save("config"); render(); return; }
+  if(t.id==="cfSalTipo"||t.id==="cfSalDia"||t.id==="cfSalDia2"||t.id==="cfSalModo"){ const sd=cfgSal();
+    if(t.id==="cfSalTipo"){ sd.tipo=t.value; if(sd.tipo==="util") sd.dia=Math.min(sd.dia,20); }
+    else if(t.id==="cfSalModo") sd.off=!t.checked;
+    else { const n=Math.round(Number(t.value)); if(!(n>=1&&n<=31)){ toast("Use um dia entre 1 e 31."); render(); return; } sd[t.id==="cfSalDia"?"dia":"dia2"]=sd.tipo==="util"&&t.id==="cfSalDia"?Math.min(n,20):n; }
+    state.config.salarioDia=sd; save("config"); render(); return; }
   if(t.id==="cfInicio"){ state.config.inicio=t.value||null; save("config"); if(!mesesVisiveis().includes(ui.month)) ui.month=todayKey; render(); return; }
   if(t.dataset.catname){ const c=state.config.categorias.find(c=>c.id===t.dataset.catname); if(c){ c.nome=t.value.trim()||"Sem nome"; save("config"); render(); } return; }
   if(t.dataset.catorc){ const c=state.config.categorias.find(c=>c.id===t.dataset.catorc), v=money(); if(c&&!isNaN(v)){ c.orcamento=Math.max(0,v); save("config"); render(); } return; }
