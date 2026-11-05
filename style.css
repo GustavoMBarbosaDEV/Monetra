@@ -1596,3 +1596,10 @@ button.ptlin:hover b{color:var(--accent)}
 .consent div{display:flex;gap:8px;justify-content:flex-end}
 .consent button{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-weight:700;cursor:pointer}
 .consent button[data-consent="sim"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.lgprov{display:flex;flex-direction:column;gap:10px;width:100%}
+.lgprov .btn.google{justify-content:center;width:100%;min-height:48px}
+.lgsep{display:flex;align-items:center;gap:10px;width:100%;color:var(--muted);font-size:13px;margin:4px 0}
+.lgsep::before,.lgsep::after{content:"";flex:1;height:1px;background:var(--line)}
+.lgform{display:flex;flex-direction:column;gap:10px;width:100%}
+.lglinks{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;width:100%}
+.lgpe a{color:var(--accent)}

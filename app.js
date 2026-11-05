@@ -272,6 +272,9 @@
  */
 /**
  * @typedef {Object} UI
+ * @property {string} [lgEmail]
+ * @property {string} [lgAviso]
+ * @property {string} [linkHref]
  * @property {Object<string,boolean>} abre
  * @property {string} tab
  * @property {MesKey|null} month
@@ -340,11 +343,11 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.6.0";
+const VERSAO="5.7.0";
 const NOVIDADES=[
-  "Novas páginas no site: Perguntas frequentes, Política de privacidade e Termos de uso, com links no rodapé e no login.",
-  "A página inicial ganhou o botão “Começar grátis” e, no celular, uma barra fixa para começar ou baixar o app.",
-  "Estatísticas de visitas só com a sua permissão: o aviso de cookies deixa aceitar ou recusar, e dá para mudar na página de privacidade."
+  "Novas formas de entrar: Microsoft, e-mail e senha (com “esqueci a senha”) e link de acesso por e-mail, sem senha.",
+  "Quer só conhecer? Toque em “Testar sem criar conta” e crie a conta depois, sem perder os lançamentos.",
+  "Em Perfil → Formas de entrar, ligue mais de um login à mesma conta. Os termos de privacidade foram atualizados para explicar isso."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -843,6 +846,7 @@ function loadLocal(){
   try{ const raw=localStorage.getItem(LSKEY); if(raw){ const d=JSON.parse(raw); if(d.config){ state.config=normConfig(d.config); buildMeses(); } if(d.months) for(const k in d.months) if(mesValido(k)) state.months[k]=normMonth(d.months[k]); } }catch(e){}
 }
 function resetState(){ state.config=defaultConfig(); state.months={}; buildMeses(); }
+let sairAnon=0;
 let fb=null, authUser=null, unsub=null, loginErro=(()=>{ try{ const m=sessionStorage.getItem("mb.loginErro")||""; sessionStorage.removeItem("mb.loginErro"); return m; }catch(e){ return ""; } })();
 if(loginErro){ const m=loginErro; setTimeout(()=>{ toast(m); anunciar(m); },1200); }
 const CHAVES_DA_PESSOA=["mb.backup.","mb.conq.","mb.notif.vistos","mb.pin","mb.pin.erros"];
@@ -853,8 +857,11 @@ function limpaDadosDaPessoa(){
 async function excluirConta(){
   const F=fb, user=F&&F.auth.currentUser, meu=uid; if(!user||!meu) throw new Error("Entre na sua conta para excluí-la.");
   const ultimo=Date.parse((user.metadata&&user.metadata.lastSignInTime)||"")||0;
-  if(Date.now()-ultimo>4*60*1000){ try{ await F.reauthenticateWithPopup(user,new F.GoogleAuthProvider()); }
-    catch(e){ throw new Error(String(e&&e.code||"").includes("popup")?"O Google precisa confirmar que é você. Permita a janela do Google e tente de novo.":"O Google não confirmou o login. Nada foi apagado."); } }
+  if(!user.isAnonymous&&Date.now()-ultimo>4*60*1000){ const pid=((user.providerData||[]).find(p=>p.providerId==="google.com"||p.providerId==="microsoft.com")||{}).providerId;
+    if(!pid) throw new Error("Por segurança, saia, entre de novo (com senha ou link por e-mail) e exclua a conta logo em seguida. Nada foi apagado.");
+    const quem=pid==="google.com"?"O Google":"A Microsoft";
+    try{ await F.reauthenticateWithPopup(user,provedor(pid==="google.com"?"google":"microsoft")); }
+    catch(e){ throw new Error(String(e&&e.code||"").includes("popup")?quem+" precisa confirmar que é você. Permita a janela e tente de novo.":quem+" não confirmou o login. Nada foi apagado."); } }
   seqEspaco++; pararEspaco(); zeraFila(); setStatus("Excluindo sua conta…","saving");
   for(const g of meusGrupos()){
     try{
@@ -883,19 +890,22 @@ async function encerraSessao(msg){
   setTimeout(()=>location.reload(),150);
 }
 let aberto="pessoal", eu={}, euCarregado=false, grupoDoc=null, pedidosG={}, unsubs=[], unsubsFixos=[], seqEspaco=0, perdendo={};
-const FB_V="13.1.0";
+const FB_V="13.1.0", FB_REV="2";
 async function init(){
   const cfg=window.FIREBASE_CONFIG;
   if(!cfg||!cfg.apiKey||/COLE|SUA_/i.test(cfg.apiKey)){ mode="local"; loadLocal(); state.loaded=true; setStatus("Modo local (sem login)",""); render(); return; }
   try{
     fbBase=new URL("vendor/firebase-"+FB_V+"/",document.baseURI).href;
-    const [A,U]=await Promise.all([import(fbBase+"firebase-app.js"),import(fbBase+"firebase-auth.js")]);
+    const [A,U]=await Promise.all([import(fbBase+"firebase-app.js?r="+FB_REV),import(fbBase+"firebase-auth.js?r="+FB_REV)]);
     fbApp=A.initializeApp(cfg);
     const redirecao=redirectPendente(cfg.apiKey);
-    if(redirecao||await sessaoSalva(cfg.apiKey)) await iniciaAppCheck();
+    const viaLink=/[?&]oobCode=/.test(location.search);
+    if(redirecao||viaLink||await sessaoSalva(cfg.apiKey)) await iniciaAppCheck();
     const auth=U.getAuth(fbApp);
+    try{ U.useDeviceLanguage(auth); }catch(e){}
     fb={...U,auth};
-    if(redirecao) U.getRedirectResult(auth).then(r=>{ if(r) boasVindas(r); }).catch(e=>{ loginErro=traduzErro(e); render(); });
+    if(redirecao) U.getRedirectResult(auth).then(r=>{ if(r) aposLogin(r); }).catch(e=>{ loginErro=traduzErro(e); render(); });
+    if(viaLink&&U.isSignInWithEmailLink(auth,location.href)){ const href=location.href; auth.authStateReady().then(()=>concluiLink(href,"")); }
     U.onAuthStateChanged(auth,user=>{
       pararEspaco(); dirty.clear();
       if(!user){ if(travado) destravar(); zeraFila(); unsubsFixos.forEach(f=>{ try{f()}catch(e){} }); unsubsFixos=[]; authUser=null; uid=null; aberto="pessoal"; eu={}; euCarregado=false; grupoDoc=null; pedidosG={}; mode="login"; resetState(); state.loaded=true; closeSheet(); render(); return; }
@@ -915,11 +925,11 @@ let firestoreProm=null;
 function iniciaAppCheck(){
   if(!fbApp||!window.APPCHECK_SITE_KEY) return Promise.resolve();
   if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */(self).FIREBASE_APPCHECK_DEBUG_TOKEN=true;
-  if(!appCheckProm) appCheckProm=import(fbBase+"firebase-app-check.js").then(C=>{ C.initializeAppCheck(fbApp,{provider:new C.ReCaptchaEnterpriseProvider(window.APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true}); }).catch(e=>{ appCheckProm=null; console.warn("App Check não iniciou",e); });
+  if(!appCheckProm) appCheckProm=import(fbBase+"firebase-app-check.js?r="+FB_REV).then(C=>{ C.initializeAppCheck(fbApp,{provider:new C.ReCaptchaEnterpriseProvider(window.APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true}); }).catch(e=>{ appCheckProm=null; console.warn("App Check não iniciou",e); });
   return appCheckProm;
 }
 function carregaFirestore(){
-  if(!firestoreProm) firestoreProm=import(fbBase+"firebase-firestore.js").then(F=>{ let db; try{ db=F.initializeFirestore(fbApp,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})}); }catch(e){ db=F.getFirestore(fbApp); } Object.assign(fb,F,{db}); }).catch(e=>{ firestoreProm=null; throw e; });
+  if(!firestoreProm) firestoreProm=import(fbBase+"firebase-firestore.js?r="+FB_REV).then(F=>{ let db; try{ db=F.initializeFirestore(fbApp,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})}); }catch(e){ db=F.getFirestore(fbApp); } Object.assign(fb,F,{db}); }).catch(e=>{ firestoreProm=null; throw e; });
   return firestoreProm;
 }
 /** @param {string} chave */
@@ -1166,16 +1176,104 @@ function acaoComp(a,id){
   if(a==="sair"){ if(dois("confSair","Toque de novo em “Sair” para confirmar.")) sairDoGrupo(); return; }
   if(a==="excluir"){ if(dois("confExc","Toque de novo para excluir. Todos os lançamentos deste controle compartilhado serão apagados.")) excluirGrupo(); return; }
 }
-function traduzErro(e){ const c=e&&e.code||""; if(c.includes("unauthorized-domain")) return "Este endereço ainda não foi autorizado no Firebase (Authentication → Configurações → Domínios autorizados)."; if(c.includes("popup-closed")||c.includes("cancelled")) return ""; if(c.includes("network")) return "Sem internet. Tente de novo."; return "Não foi possível entrar ("+c+")."; }
-async function entrar(){
-  loginErro=""; const p=new fb.GoogleAuthProvider(); p.setCustomParameters({prompt:"select_account"});
+function traduzErro(e){ const c=e&&e.code||"";
+  if(c.includes("unauthorized-domain")) return "Este endereço ainda não foi autorizado no Firebase (Authentication → Configurações → Domínios autorizados).";
+  if(c.includes("popup-closed")||c.includes("cancelled")) return "";
+  if(c.includes("network")) return "Sem internet. Tente de novo.";
+  if(c.includes("invalid-credential")||c.includes("wrong-password")||c.includes("user-not-found")||c.includes("invalid-login")) return "E-mail ou senha incorretos.";
+  if(c.includes("email-already-in-use")) return "Este e-mail já tem conta no Monetra. Entre com a senha, com o link por e-mail ou com o Google ou a Microsoft que você usou.";
+  if(c.includes("weak-password")) return "Senha fraca: use pelo menos 8 caracteres, com letras e números.";
+  if(c.includes("invalid-email")||c.includes("missing-email")) return "Este e-mail não parece válido.";
+  if(c.includes("too-many-requests")) return "Muitas tentativas. Espere alguns minutos e tente de novo.";
+  if(c.includes("operation-not-allowed")||c.includes("admin-restricted")) return "Esta forma de entrar ainda não está ativada. Use o Google por enquanto.";
+  if(c.includes("credential-already-in-use")||c.includes("provider-already-linked")) return "Essa conta já está ligada a outro Monetra. Use outra forma de entrar ou saia e entre com ela.";
+  if(c.includes("requires-recent-login")) return "Por segurança, saia e entre de novo antes de fazer isso.";
+  if(c.includes("invalid-action-code")||c.includes("expired-action-code")) return "Este link expirou ou já foi usado. Peça um novo.";
+  if(c.includes("app-check")) return "Não deu para confirmar que você não é um robô. Recarregue a página e tente de novo.";
+  return "Não foi possível entrar ("+c+")."; }
+const LINK_KEY="mb.linkEmail", NOMES_PROV={"google.com":"Google","microsoft.com":"Microsoft","password":"e-mail e senha"};
+/** @type {any} */
+let credPendente=null;
+const urlRetorno=()=>location.origin+location.pathname;
+const emailOk=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+const senhaBoa=x=>x.length>=8&&/[a-zA-Z]/.test(x)&&/\d/.test(x);
+const temProv=id=>!!(authUser&&(authUser.providerData||[]).some(p=>p.providerId===id));
+const ehAnonimo=()=>!!(authUser&&authUser.isAnonymous);
+function provedor(nome){ const p=nome==="microsoft"?new fb.OAuthProvider("microsoft.com"):new fb.GoogleAuthProvider(); p.setCustomParameters({prompt:"select_account"}); return p; }
+async function entrar(nome,vincular){
+  loginErro=""; const p=provedor(nome), u=fb.auth.currentUser, ligar=!!u&&(vincular||u.isAnonymous);
   iniciaAppCheck();
-  try{ const r=await fb.signInWithPopup(fb.auth,p); boasVindas(r); }
-  catch(e){ const c=e.code||""; if(c.includes("popup-blocked")||c.includes("operation-not-supported")){ await fb.signInWithRedirect(fb.auth,p); } else { loginErro=traduzErro(e); render(); } }
+  try{ const r=ligar?await fb.linkWithPopup(u,p):await fb.signInWithPopup(fb.auth,p); await aposLogin(r); }
+  catch(e){ const c=e.code||"";
+    if(c.includes("popup-blocked")||c.includes("operation-not-supported")){ if(ligar) await fb.linkWithRedirect(u,p); else await fb.signInWithRedirect(fb.auth,p); return; }
+    if(c.includes("account-exists-with-different-credential")){ credPendente=(nome==="microsoft"?fb.OAuthProvider:fb.GoogleAuthProvider).credentialFromError(e); const em=(e.customData&&e.customData.email)||"este e-mail";
+      loginErro="Você já tem conta no Monetra com "+em+". Entre do jeito que usou antes (Google, senha ou link por e-mail): a "+(nome==="microsoft"?"Microsoft":"conta Google")+" é vinculada em seguida, sem criar outra conta."; ui.lgEmail=em==="este e-mail"?ui.lgEmail:em; render(); return; }
+    loginErro=traduzErro(e); if(ligar&&loginErro) toast(loginErro); render(); }
+}
+async function aposLogin(r){
+  if(credPendente&&r&&r.user){ const c=credPendente; credPendente=null; try{ await fb.linkWithCredential(r.user,c); toast("Pronto: agora você também entra com "+(NOMES_PROV[c.providerId]||c.providerId)+"."); }catch(e){ console.warn("vincular",e&&e.code); } }
+  ui.lgAviso=""; if(fb.auth.currentUser) authUser=fb.auth.currentUser;
+  boasVindas(r); if(ui.sheet&&ui.sheet.tipo==="vincular") closeSheet(); render();
 }
 function boasVindas(r){
   try{ const info=fb.getAdditionalUserInfo(r); const nome=((r.user&&r.user.displayName)||"").split(" ")[0];
+    if(r.operationType==="link"){ toast("Conta criada! Seus lançamentos continuam aqui."); return; }
+    if(r.user&&r.user.isAnonymous){ toast("Modo teste: crie sua conta quando quiser, sem perder nada."); return; }
     toast(info&&info.isNewUser?"Conta criada! Bem-vindo(a)"+(nome?", "+nome:"")+".":"Bem-vindo(a) de volta"+(nome?", "+nome:"")+"."); }catch(e){}
+}
+function erroLogin(msg,campo){ loginErro=msg; render(); const c=document.getElementById(campo); if(c) c.focus(); }
+async function entrarEmail(){
+  const email=campoTexto("lg-email").trim(), senha=campoTexto("lg-senha"), novo=ui.loginModo==="criar"; ui.lgEmail=email; ui.lgAviso="";
+  if(!emailOk(email)) return erroLogin("Digite um e-mail válido.","lg-email");
+  if(!senha) return erroLogin("Digite a senha.","lg-senha");
+  if(novo&&!senhaBoa(senha)) return erroLogin("A senha precisa de pelo menos 8 caracteres, com letras e números.","lg-senha");
+  loginErro=""; await iniciaAppCheck();
+  try{ const u=fb.auth.currentUser;
+    const r=novo&&u&&u.isAnonymous?await fb.linkWithCredential(u,fb.EmailAuthProvider.credential(email,senha)):novo?await fb.createUserWithEmailAndPassword(fb.auth,email,senha):await fb.signInWithEmailAndPassword(fb.auth,email,senha);
+    if(novo) fb.sendEmailVerification(r.user,{url:urlRetorno()}).catch(()=>{});
+    await aposLogin(r); }
+  catch(e){ if(novo&&String(e.code||"").includes("email-already-in-use")) credPendente=fb.EmailAuthProvider.credential(email,senha); erroLogin(traduzErro(e),"lg-senha"); }
+}
+async function enviarLink(){
+  const email=campoTexto("lg-email").trim(); ui.lgEmail=email;
+  if(!emailOk(email)) return erroLogin("Digite seu e-mail acima para receber o link.","lg-email");
+  loginErro=""; await iniciaAppCheck();
+  try{ await fb.sendSignInLinkToEmail(fb.auth,email,{url:urlRetorno(),handleCodeInApp:true}); try{ localStorage.setItem(LINK_KEY,email); }catch(e){}
+    ui.lgAviso="Enviamos um link para "+email+". Abra o e-mail neste aparelho e toque no link para entrar. Se não chegar, confira o spam."; render(); anunciar(ui.lgAviso); }
+  catch(e){ erroLogin(traduzErro(e),"lg-email"); }
+}
+async function esqueciSenha(){
+  const email=campoTexto("lg-email").trim(); ui.lgEmail=email;
+  if(!emailOk(email)) return erroLogin("Digite seu e-mail acima para receber o link de nova senha.","lg-email");
+  loginErro=""; await iniciaAppCheck();
+  try{ await fb.sendPasswordResetEmail(fb.auth,email,{url:urlRetorno()}); }
+  catch(e){ if(!String(e.code||"").includes("user-not-found")) return erroLogin(traduzErro(e),"lg-email"); }
+  ui.lgAviso="Se houver uma conta com "+email+", enviamos um link para criar uma nova senha. Confira também o spam."; render(); anunciar(ui.lgAviso);
+}
+async function testarSemConta(){ loginErro=""; await iniciaAppCheck(); try{ const r=await fb.signInAnonymously(fb.auth); boasVindas(r); }catch(e){ loginErro=traduzErro(e); render(); } }
+async function concluiLink(href,email){
+  if(!email){ try{ email=localStorage.getItem(LINK_KEY)||""; }catch(e){} }
+  if(!email){ ui.linkHref=href; render(); return; }
+  await iniciaAppCheck(); ui.linkHref="";
+  try{ history.replaceState(history.state,"",urlRetorno()); }catch(e){}
+  try{ const u=fb.auth.currentUser, r=u&&u.isAnonymous?await fb.linkWithCredential(u,fb.EmailAuthProvider.credentialWithLink(email,href)):await fb.signInWithEmailLink(fb.auth,email,href);
+    try{ localStorage.removeItem(LINK_KEY); }catch(e){} await aposLogin(r); }
+  catch(e){ loginErro=traduzErro(e); render(); }
+}
+async function salvaSenhaConta(){
+  const u=fb.auth.currentUser; if(!u) return;
+  const email=(u.isAnonymous?campoTexto("s-lgemail"):(u.email||campoTexto("s-lgemail"))).trim(), senha=campoTexto("s-lgsenha");
+  if(!emailOk(email)) return erroSheet("Digite um e-mail válido.","s-lgemail");
+  if(!senhaBoa(senha)) return erroSheet("A senha precisa de pelo menos 8 caracteres, com letras e números.","s-lgsenha");
+  await iniciaAppCheck();
+  try{ const r=await fb.linkWithCredential(u,fb.EmailAuthProvider.credential(email,senha)); if(!r.user.emailVerified) fb.sendEmailVerification(r.user,{url:urlRetorno()}).catch(()=>{}); await aposLogin(r); toast(u.isAnonymous?"Conta criada! Enviamos um link para confirmar o e-mail.":"Senha criada: agora você também entra com e-mail e senha."); }
+  catch(e){ erroSheet(traduzErro(e)||"Não deu certo. Tente de novo.","s-lgsenha"); }
+}
+function avisoConta(){
+  if(mode!=="cloud"||!authUser) return "";
+  if(authUser.isAnonymous) return `<div class="note info">Você está testando sem conta. <button class="link" type="button" data-novo="vincular">Crie sua conta</button> para guardar seus lançamentos e usar em outros aparelhos.</div>`;
+  if(temProv("password")&&!authUser.emailVerified) return `<div class="note info">Confirme seu e-mail: enviamos um link para ${esc(authUser.email||"")}. <button class="link" type="button" data-reenviar="1">Reenviar</button></div>`;
+  return "";
 }
 
 let tema="auto"; try{ tema=localStorage.getItem("meucaixa.tema")||"auto"; }catch(e){}
@@ -2096,18 +2194,34 @@ window.addEventListener("scroll",()=>{ if(apRaf) return; apRaf=requestAnimationF
   const topo=/** @type {HTMLElement} */(par.closest(".ap-topo")), r=topo.getBoundingClientRect(), p=Math.min(1,Math.max(0,-r.top/Math.max(1,r.height)));
   par.style.transform=`translateY(${(p*80).toFixed(1)}px) rotate(${(-6+p*6).toFixed(2)}deg)`; }); },{passive:true});
 function viewLogin(){
-  const novo=ui.loginModo==="criar";
+  const novo=ui.loginModo==="criar", erro=loginErro?`<p class="note" role="alert">${esc(loginErro)}</p>`:"";
+  const marca=`<div class="loginmarca"><img src="icons/logo-128.png" alt="" width="56" height="56"><span><b>Monetra</b><small>Controle financeiro</small></span></div>`;
+  const links=`<p class="hint lgpe"><a href="privacidade">Política de privacidade</a> · <a href="termos">Termos de uso</a> · <a href="faq">Ajuda</a></p>`;
+  if(ui.linkHref) return `<div class="login card">${marca}<h2>Confirme seu e-mail</h2><p>Você abriu o link em outro aparelho ou navegador. Digite o e-mail para onde o link foi enviado.</p>
+    <form class="lgform" data-lgform="link" novalidate><label class="f">E-mail<input class="in" id="lg-email" type="email" inputmode="email" autocomplete="email" required value="${esc(ui.lgEmail||"")}"></label><button class="btn wide" type="submit">Entrar</button></form>${erro}${links}</div>`;
   return `<div class="login card">
-  <div class="loginmarca"><img src="icons/logo-128.png" alt="" width="56" height="56"><span><b>Monetra</b><small>Controle financeiro</small></span></div>
+  ${marca}
   <div class="seg" role="radiogroup" aria-label="Entrar ou criar conta" style="width:100%"><input type="radio" name="lmodo" id="lmE" value="entrar" ${novo?"":"checked"}><label for="lmE">Entrar</label><input type="radio" name="lmodo" id="lmC" value="criar" ${novo?"checked":""}><label for="lmC">Criar conta</label></div>
   <h2>${novo?"Crie sua conta grátis":"Seu controle de gastos, só seu"}</h2>
-  <p>${novo?"Use sua conta Google: não precisa inventar senha nem preencher cadastro. Sua página começa vazia e só você vê os seus lançamentos.":"Entre com a conta Google que você usou para criar sua conta. Cada pessoa tem a própria página: ninguém vê os lançamentos de outra pessoa."}</p>
-  <button class="btn google" data-login="1" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${novo?"Criar conta com Google":"Entrar com Google"}</button>
+  <p>${novo?"Escolha como quer entrar. Sua página começa vazia e só você vê os seus lançamentos.":"Entre do mesmo jeito que você usou para criar a conta."}</p>
   ${/FBAN|FBAV|FB_IAB|Instagram|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|Twitter/i.test(navigator.userAgent)?`<div class="note">Você abriu o link dentro de outro app (Instagram, Facebook…), e o Google não permite entrar por aqui. Toque nos <b>três pontinhos</b> e escolha <b>Abrir no navegador</b> (Chrome ou Safari).<br><button class="link" type="button" data-copialink="1">Copiar link</button></div>`:""}
-  ${loginErro?`<p class="note">${esc(loginErro)}</p>`:""}
-  <p class="hint">${novo?"Já tem conta? Clique em Entrar.":"Primeira vez aqui? Clique em Criar conta."} Seus dados ficam salvos na nuvem e aparecem em qualquer aparelho onde você entrar.</p>
+  <div class="lgprov"><button class="btn google" data-login="google" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuar com Google</button>
+  <button class="btn google" data-login="microsoft" type="button"><svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true"><path fill="#F25022" d="M1 1h9v9H1z"/><path fill="#7FBA00" d="M11 1h9v9h-9z"/><path fill="#00A4EF" d="M1 11h9v9H1z"/><path fill="#FFB900" d="M11 11h9v9h-9z"/></svg>Continuar com Microsoft</button></div>
+  <div class="lgsep"><span>ou com e-mail</span></div>
+  <form class="lgform" data-lgform="email" novalidate>
+    <label class="f">E-mail<input class="in" id="lg-email" type="email" inputmode="email" autocomplete="email" required value="${esc(ui.lgEmail||"")}"></label>
+    <label class="f">Senha<input class="in" id="lg-senha" type="password" autocomplete="${novo?"new-password":"current-password"}" required ${novo?'minlength="8" aria-describedby="lg-regra"':""}></label>
+    ${novo?`<p class="hint" id="lg-regra">Mínimo de 8 caracteres, com letras e números. Enviamos um link para confirmar o e-mail.</p>`:""}
+    <button class="btn wide" type="submit">${novo?"Criar conta com e-mail":"Entrar com e-mail"}</button>
+  </form>
+  <div class="lglinks">${novo?"":`<button class="link" type="button" data-lg="senha">Esqueci a senha</button>`}<button class="link" type="button" data-lg="link">Entrar sem senha, por link no e-mail</button></div>
+  ${ui.lgAviso?`<p class="note info" role="status">${esc(ui.lgAviso)}</p>`:""}
+  ${erro}
+  <div class="lgsep"><span>ou</span></div>
+  <button class="btn ghost wide" type="button" data-lg="anon">Testar sem criar conta</button>
+  <p class="hint">No teste, os lançamentos ficam guardados e você cria a conta depois, sem perder nada.</p>
   <p class="hint">Ao entrar, você vai ler e decidir se aceita os <button class="link" type="button" data-termos="ler">termos de privacidade</button>.</p>
-  <p class="hint"><a href="privacidade">Política de privacidade</a> · <a href="termos">Termos de uso</a> · <a href="faq">Ajuda</a></p></div>`;
+  ${links}</div>`;
 }
 
 function donut(itens,total,centro,sub,clicavel){
@@ -2537,7 +2651,7 @@ function viewMes(){
   const k=ui.month, m=getMonth(k), c=calc(k), cats=state.config.categorias, isCur=k===todayKey, fase=faseSalario(k);
   const prevK=shiftKey(k,-1), prev=MESES.includes(prevK)&&ativo(prevK)&&ativo(k)?calc(prevK):null;
   const acum=acumulado(k), cx=caixinhaAte(k), ini=inicioKey();
-  const aviso=avisoCompart()+(!ini?`<div class="note info">Seu controle ainda não começou. Informe o <b>salário deste mês</b> no card Receitas (ou lance uma receita) e os cálculos passam a contar a partir deste mês.</div>`
+  const aviso=avisoConta()+avisoCompart()+(!ini?`<div class="note info">Seu controle ainda não começou. Informe o <b>salário deste mês</b> no card Receitas (ou lance uma receita) e os cálculos passam a contar a partir deste mês.</div>`
     :k<ini?`<div class="note info">Este mês é anterior ao início do seu controle (${esc(nomeMes(ini).toLowerCase())}). Aqui só conta o que você lançar à mão; salário padrão, rendas e contas fixas não entram.</div>`:"");
   const varDesp=prev?variacao(c.despesas,prev.despesas):"";
   const mesN=NOMES[kM(k)-1].toLowerCase(), varS=prev&&Math.abs(prev.saldo)>0.5?(c.saldo-prev.saldo)/Math.abs(prev.saldo):null;
@@ -3172,8 +3286,9 @@ function viewPerfil(){
   const nLanc=Object.values(state.months).reduce((a,m)=>a+(m.gastos?m.gastos.length:0)+(m.avulsos?m.avulsos.length:0)+(m.caixinha?m.caixinha.length:0),0);
   const rendas=cf.rendas.filter(r=>!r.ate||r.ate>=todayKey);
   return `<button type="button" class="ajlink" data-tab="ajustes"><span class="aji">${icq("engrenagem",20)}</span><span><b>Ajustes</b><small>Contas fixas, categorias, cartões, ferramentas e mais</small></span><span class="chev">${icq("chev",18)}</span></button>
-  <div class="perfilhead card">${avatar(72)}<div class="pinfo"><h2>${esc(u?(u.displayName||"Sua conta"):"Modo local")}</h2>
-    <p class="muted">${u?esc(u.email||""):"Sem login: os dados ficam só neste aparelho."}</p>
+  <div class="perfilhead card">${avatar(72)}<div class="pinfo"><h2>${esc(u?(u.isAnonymous?"Modo teste":(u.displayName||"Sua conta")):"Modo local")}</h2>
+    <p class="muted">${u?(u.isAnonymous?"Sem conta: crie a sua para não perder os lançamentos.":esc(u.email||"")):"Sem login: os dados ficam só neste aparelho."}</p>
+    ${u?`<p class="small muted">${u.isAnonymous?`<button class="link" type="button" data-novo="vincular">Criar minha conta</button>`:`Entra com ${esc(((u.providerData||[]).map(p=>NOMES_PROV[p.providerId]||p.providerId)).join(", "))} · <button class="link" type="button" data-novo="vincular">Formas de entrar</button>`}</p>`:""}
     <p class="small muted">${criado?"Conta criada em "+esc(criado)+" · ":""}${ini?"controle desde "+esc(nomeMes(ini).toLowerCase()):"controle ainda não começou"} · ${nLanc} lançamento${nLanc===1?"":"s"}</p></div>
     ${u?`<button class="btn ghost" type="button" data-logout="1">Sair da conta</button>`:""}</div>
     ${cardCompartilhado()}
@@ -3222,7 +3337,7 @@ function viewPerfil(){
       <button class="btn danger" type="button" data-novo="excluirconta">Excluir minha conta…</button></div>`:""}</div></div>`;
 }
 
-const TERMOS_V="1.1", TERMOS_DATA="17/10/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
+const TERMOS_V="1.2", TERMOS_DATA="05/11/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
 const CONTATO_EMAIL="", CONTATO_WHATS="";
 /** @typedef {{nome:string,cidade?:string,texto:string,foto?:string}} Depoimento */
 /** @type {Depoimento[]} */
@@ -3244,14 +3359,14 @@ function textoTermos(){
   return `<h3>1. O que é o Monetra</h3>
   <p>O Monetra é um aplicativo gratuito de controle de gastos pessoais, criado por Gustavo M. Barbosa. Ele serve para você anotar e acompanhar o seu próprio dinheiro. Não é banco, não movimenta dinheiro e não pede senha de banco.</p>
   <h3>2. Quais dados o app guarda</h3>
-  <ul><li><b>Da sua conta Google:</b> nome, e-mail, foto e um código de identificação, usados só para fazer o login e mostrar seu perfil.</li>
+  <ul><li><b>Da forma de login que você escolher</b> (Google, Microsoft, e-mail e senha ou link por e-mail): nome, e-mail e foto, quando existirem, e um código de identificação, usados só para fazer o login e mostrar seu perfil. A senha é guardada de forma protegida pelo Google Firebase; o Monetra não tem acesso a ela. No modo teste, sem conta, só o código de identificação é criado.</li>
   <li><b>O que você digita:</b> salário, receitas, despesas, categorias, contas, cartões (só nome, datas e limite, nunca o número do cartão), parcelas, metas e lembretes.</li>
   <li><b>Extratos importados:</b> o arquivo é lido dentro do seu aparelho. Só os lançamentos que você escolher importar são salvos; o arquivo em si não é enviado.</li>
   <li><b>No seu aparelho:</b> preferências como tema, lembretes já avisados e uma cópia para funcionar sem internet.</li></ul>
   <h3>3. Para que os dados são usados</h3>
   <p>Somente para mostrar o seu controle financeiro a você, em qualquer aparelho em que você entrar. Os dados <b>não são vendidos, não são usados para publicidade e não são compartilhados</b> com ninguém, a não ser com as pessoas de um controle compartilhado do qual você decidir participar (item 5).</p>
   <h3>4. Onde os dados ficam</h3>
-  <p>Na sua conta, nos servidores do Google Firebase (login e banco de dados), protegidos por regras que só deixam a sua própria conta ler e alterar os seus dados. O site é hospedado no GitHub Pages, que pode registrar dados técnicos de acesso (como endereço IP) por segurança. O Google e o GitHub seguem as próprias políticas de privacidade.</p>
+  <p>Na sua conta, nos servidores do Google Firebase (login e banco de dados), protegidos por regras que só deixam a sua própria conta ler e alterar os seus dados. O site é hospedado no Firebase Hosting, que registra dados técnicos de acesso (como endereço IP) por segurança, e o login usa o reCAPTCHA do Google para bloquear robôs. Se você aceitar os cookies de análise, o Google Analytics conta as visitas ao site, sem os seus lançamentos. O Google segue a própria política de privacidade.</p>
   <h3>5. Controles compartilhados</h3>
   <ul><li>Só existem se você quiser. Um controle compartilhado é <b>separado do seu controle Pessoal</b>: quem participa não vê nada do Pessoal.</li>
   <li>Dentro de um controle compartilhado, todas as pessoas aceitas veem e alteram os lançamentos daquele controle e veem o nome, o e-mail e a foto umas das outras. O app mostra quem fez cada lançamento.</li>
@@ -3576,7 +3691,7 @@ function renderSheet(){
   document.body.classList.add("sheet-open"); const _ap=document.getElementById("app"); if(_ap) _ap.inert=true;
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
   if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="catmes"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",vincular:ehAnonimo()?"Criar sua conta":"Formas de entrar",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="radiogroup" aria-label="Tipo de lançamento">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -3606,6 +3721,14 @@ function renderSheet(){
       ${selConta(it?it.contaId:null,"Entra na conta")}
       ${novo?`<label class="switch"><input type="checkbox" id="s-repete"><span></span>Recebo esse valor todo mês</label><p class="hint">Ligado, vira uma renda fixa que entra sozinha a partir deste mês.</p>`:""}`;
     botoes=novo?`<button class="btn" type="submit">Salvar</button>`:`${apagar}<button class="btn" type="submit">Salvar</button>`;
+  }else if(s.tipo==="vincular"){
+    const anon=ehAnonimo(), u=authUser, provs=((u&&u.providerData)||[]).map(p=>NOMES_PROV[p.providerId]||p.providerId);
+    corpo=`<p>${anon?"Crie sua conta e continue com tudo o que você lançou no teste.":"Você entra com: <b>"+esc(provs.join(", ")||"—")+"</b>. Adicione outra forma de entrar na mesma conta."}</p>
+      <div class="lgprov">${temProv("google.com")?"":`<button class="btn google" type="button" data-lg="google">Continuar com Google</button>`}${temProv("microsoft.com")?"":`<button class="btn google" type="button" data-lg="microsoft">Continuar com Microsoft</button>`}</div>
+      ${temProv("password")?"":`<div class="lgsep"><span>ou com e-mail e senha</span></div>
+      <label class="f">E-mail<input class="in" id="s-lgemail" type="email" inputmode="email" autocomplete="email" value="${esc(anon?"":(u&&u.email)||"")}" ${!anon&&u&&u.email?"readonly":""}></label>
+      <label class="f">Senha<input class="in" id="s-lgsenha" type="password" autocomplete="new-password" minlength="8" aria-describedby="s-lgregra"></label><p class="hint" id="s-lgregra">Mínimo de 8 caracteres, com letras e números.</p>`}`;
+    botoes=temProv("password")?"":`<button class="btn" type="submit">${anon?"Criar conta com e-mail":"Criar senha"}</button>`;
   }else if(s.tipo==="salario"){
     const rec=salRecebido(k), cf=cfgSal(), ja=soma(rec), padrao=state.config.salarioPadrao, resto=Math.max(0,Math.round((padrao-ja)*100)/100);
     const sug=rec.length?(resto||null):cf.tipo==="quinz"?Math.round(padrao/2*100)/100:padrao;
@@ -3955,6 +4078,7 @@ function salvarSheet(outro){
   if(s.tipo==="busca") return;
   if(s.tipo==="pin"){ salvarPin(); return; }
   if(s.tipo==="retro") return;
+  if(s.tipo==="vincular"){ salvaSenhaConta(); return; }
   if(s.tipo==="salario"){
     const v=parseMoney((document.getElementById("s-valor")||{}).value); if(!(v>0)) return erroSheet("Digite quanto caiu na conta.","s-valor");
     const m=getMonth(k), dia=Number(valSel("s-dia"))||1, ct=valSel("s-conta")||state.config.contaSalario, ant=m.avulsos.filter(x=>x.sal), antes=m.salario;
@@ -4174,7 +4298,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-avsal],[data-avaliar],[data-salextra],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-avsal],[data-lg],[data-avaliar],[data-salextra],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -4197,6 +4321,7 @@ function bindSheet(r){
     if(b.dataset.simdiv){ const x=(state.config.dividas||[]).find(d=>d.id===b.dataset.simdiv), el=document.getElementById("s-simsaldo"); if(x&&el){ el.value=moneyInput(restaDiv(x)); atualizaSim(); } return; }
     if(b.dataset.avsemana){ openSheet("semana",null,{fim:b.dataset.avsemana}); return; }
     if(b.dataset.avaliar){ try{ localStorage.setItem("mb.avaliar",b.dataset.avaliar==="1"?"1":String(Date.now()+30*864e5)); }catch(e){} setTimeout(()=>renderSheet(),50); return; }
+    if(b.dataset.lg){ entrar(b.dataset.lg==="microsoft"?"microsoft":"google",true); return; }
     if(b.dataset.avsal){ openSheet("salario",null,{mes:todayKey}); return; }
     if(b.dataset.salextra){ openSheet("avulso",null,{mes:k}); return; }
     if(b.dataset.mesano){ ui.sheet.ano=(Number(ui.sheet.ano)||kY(ui.month))+Number(b.dataset.mesano); renderSheet(); return; }
@@ -4363,6 +4488,8 @@ app.addEventListener("focusin",e=>{ const t=/** @type {Element} */(e.target); if
 app.addEventListener("focusout",e=>{ const t=/** @type {Element} */(e.target); if(t.classList&&t.classList.contains("hs-grafwrap")) escondeGraf(/** @type {HTMLElement} */(t),0); });
 function abreFatia(el){ const id=el.getAttribute("data-fatia"); if(!id) return; vibra(10); openSheet("catmes",null,{cat:id,mes:ui.month}); anunciar("Lançamentos de "+catName(id)+"."); }
 app.addEventListener("click",e=>{ const t=/** @type {Element} */(e.target), f=t.closest&&t.closest("[data-fatia]"); if(f) abreFatia(f); });
+app.addEventListener("submit",e=>{ const f=/** @type {HTMLElement|null} */(e.target instanceof Element?e.target.closest("[data-lgform]"):null); if(!f) return; e.preventDefault();
+  if(f.dataset.lgform==="link"){ const em=campoTexto("lg-email").trim(); ui.lgEmail=em; if(!emailOk(em)){ erroLogin("Digite um e-mail válido.","lg-email"); return; } concluiLink(ui.linkHref||"",em); } else entrarEmail(); });
 app.addEventListener("keydown",e=>{ const t=/** @type {Element} */(e.target); if((e.key==="Enter"||e.key===" ")&&t.getAttribute&&t.getAttribute("data-fatia")){ e.preventDefault(); e.stopPropagation(); abreFatia(t); } });
 document.addEventListener("click",e=>{ if(Date.now()<semCliqueAte){ semCliqueAte=0; e.stopPropagation(); e.preventDefault(); } },true);
 app.addEventListener("click",e=>{
@@ -4378,11 +4505,14 @@ app.addEventListener("click",e=>{
   if(d.ouvir){ ouvirResumo(); return; }
   if(d.pular){ const m=document.getElementById("conteudo"), alvo=/** @type {HTMLElement|null} */(m&&(m.querySelector(".pagetitle h2, .heroSaldo, h2, h1")||m.firstElementChild));
     if(alvo){ if(!alvo.hasAttribute("tabindex")) alvo.setAttribute("tabindex","-1"); alvo.classList.add("alvo-pulo"); alvo.focus({preventScroll:true}); alvo.scrollIntoView({block:"start"}); } return; }
-  if(d.login){ entrar(); return; }
+  if(d.login){ entrar(d.login==="microsoft"?"microsoft":"google"); return; }
+  if(d.lg){ if(d.lg==="senha") esqueciSenha(); else if(d.lg==="link") enviarLink(); else if(d.lg==="anon") testarSemConta(); return; }
+  if(d.reenviar){ const u=fb&&fb.auth.currentUser; if(u) iniciaAppCheck().then(()=>fb.sendEmailVerification(u,{url:urlRetorno()})).then(()=>toast("Link de confirmação enviado para "+u.email+".")).catch(e=>toast(traduzErro(e)||"Não deu para enviar agora.")); return; }
   if(d.apres){ ui.verLogin=true; if(d.apres==="criar") ui.loginModo="criar"; render(); window.scrollTo({top:0}); return; }
   if(d.termos){ acaoTermos(d.termos); return; }
   if(d.comp){ acaoComp(d.comp,d.id); return; }
   if(d.virafixo!==undefined){ virarFixo(+d.virafixo); return; }
+  if(d.logout&&ehAnonimo()){ if(++sairAnon<2){ toast("Sem conta, os lançamentos do teste são apagados ao sair. Toque de novo em Sair para confirmar, ou crie sua conta antes."); setTimeout(()=>{ sairAnon=0; },6000); return; } sairAnon=0; excluirConta().catch(()=>encerraSessao()); return; }
   if(d.logout){ setStatus("Salvando antes de sair…","saving"); salvaPendentes().finally(()=>encerraSessao()); return; }
   if(d.tema){ trocaTema(); return; }
   if(d.privado){ trocaPrivado(); return; }
@@ -4589,7 +4719,8 @@ function vigiaAtualizacao(){
   }).catch(()=>{});
 }
 
-["pointerdown","focusin","keydown"].forEach(t=>document.addEventListener(t,ev=>{ if(mode==="login"&&ev.target instanceof Element&&ev.target.closest("[data-login],[data-apres]")) iniciaAppCheck(); },{capture:true,passive:true}));
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&mode==="cloud"&&authUser&&temProv("password")&&!authUser.emailVerified) fb.reload(authUser).then(()=>{ authUser=fb.auth.currentUser; render(); }).catch(()=>{}); });
+["pointerdown","focusin","keydown"].forEach(t=>document.addEventListener(t,ev=>{ if(mode==="login"&&ev.target instanceof Element&&ev.target.closest("[data-login],[data-apres],[data-lg],.lgform")) iniciaAppCheck(); },{capture:true,passive:true}));
 
 travar();
 migraPin().catch(()=>{});

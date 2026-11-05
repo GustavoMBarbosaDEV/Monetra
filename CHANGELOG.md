@@ -12,6 +12,15 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.7.0 — 05/11/2026 **Novas formas de entrar**
+
+- **Login:** tela redesenhada com Google, Microsoft, e-mail e senha (mínimo de 8 caracteres com letras e números, link de confirmação do e-mail, "Esqueci a senha"), link de acesso por e-mail (sem senha; se aberto em outro aparelho, pede o e-mail) e "Testar sem criar conta" (login anônimo). Links de privacidade, termos e ajuda.
+- **Vincular contas:** no modo teste, criar a conta (Google, Microsoft ou e-mail e senha) mantém o mesmo usuário e todos os lançamentos. Em Perfil → Formas de entrar, dá para adicionar outro login à mesma conta. Se o e-mail já tem conta por outro método, o app pede para entrar do jeito antigo e vincula o novo em seguida, sem duplicar.
+- **APK e popups:** se o popup for bloqueado, o login e a vinculação passam para redirecionamento. App Check inicia antes de cada chamada de login.
+- **Excluir conta / sair:** confirmação de identidade com Google ou Microsoft; com senha ou link, pede para entrar de novo. Sair do modo teste avisa e apaga os lançamentos de teste.
+- **Termos de privacidade 1.2:** novas formas de login, hospedagem no Firebase Hosting, reCAPTCHA e Analytics opcional. Todos vão aceitar de novo ao abrir o app.
+- Firebase vendorizado com as funções novas de Auth (só `firebase-auth.js` mudou).
+
 ## 5.6.0 — 05/11/2026 **Site, SEO e conversão**
 
 - **Páginas estáticas:** `faq`, `privacidade` (LGPD: o que guarda, onde fica, cookies, direitos, como apagar), `termos`, `obrigado` (`?c=apk` inicia o download com instruções de instalação; `?c=cadastro`) e `404`. Títulos e descrições únicos, trilha (breadcrumbs) com BreadcrumbList, rodapé com links cruzados. `cleanUrls` no Firebase Hosting.
