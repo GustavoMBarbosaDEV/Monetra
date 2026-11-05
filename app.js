@@ -345,7 +345,7 @@ const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinhei
 const LSKEY="meucaixa.v1";
 const VERSAO="5.7.0";
 const NOVIDADES=[
-  "Novas formas de entrar: Microsoft, e-mail e senha (com “esqueci a senha”) e link de acesso por e-mail, sem senha.",
+  "Novas formas de entrar: e-mail e senha (com “esqueci a senha”) e link de acesso por e-mail, sem senha.",
   "Quer só conhecer? Toque em “Testar sem criar conta” e crie a conta depois, sem perder os lançamentos.",
   "Em Perfil → Formas de entrar, ligue mais de um login à mesma conta. Os termos de privacidade foram atualizados para explicar isso."
 ];
@@ -1181,7 +1181,7 @@ function traduzErro(e){ const c=e&&e.code||"";
   if(c.includes("popup-closed")||c.includes("cancelled")) return "";
   if(c.includes("network")) return "Sem internet. Tente de novo.";
   if(c.includes("invalid-credential")||c.includes("wrong-password")||c.includes("user-not-found")||c.includes("invalid-login")) return "E-mail ou senha incorretos.";
-  if(c.includes("email-already-in-use")) return "Este e-mail já tem conta no Monetra. Entre com a senha, com o link por e-mail ou com o Google ou a Microsoft que você usou.";
+  if(c.includes("email-already-in-use")) return "Este e-mail já tem conta no Monetra. Entre com a senha, com o link por e-mail ou com o Google, se foi assim que você criou.";
   if(c.includes("weak-password")) return "Senha fraca: use pelo menos 8 caracteres, com letras e números.";
   if(c.includes("invalid-email")||c.includes("missing-email")) return "Este e-mail não parece válido.";
   if(c.includes("too-many-requests")) return "Muitas tentativas. Espere alguns minutos e tente de novo.";
@@ -2207,8 +2207,7 @@ function viewLogin(){
   <h2>${novo?"Crie sua conta grátis":"Seu controle de gastos, só seu"}</h2>
   <p>${novo?"Escolha como quer entrar. Sua página começa vazia e só você vê os seus lançamentos.":"Entre do mesmo jeito que você usou para criar a conta."}</p>
   ${/FBAN|FBAV|FB_IAB|Instagram|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|Twitter/i.test(navigator.userAgent)?`<div class="note">Você abriu o link dentro de outro app (Instagram, Facebook…), e o Google não permite entrar por aqui. Toque nos <b>três pontinhos</b> e escolha <b>Abrir no navegador</b> (Chrome ou Safari).<br><button class="link" type="button" data-copialink="1">Copiar link</button></div>`:""}
-  <div class="lgprov"><button class="btn google" data-login="google" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuar com Google</button>
-  <button class="btn google" data-login="microsoft" type="button"><svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true"><path fill="#F25022" d="M1 1h9v9H1z"/><path fill="#7FBA00" d="M11 1h9v9h-9z"/><path fill="#00A4EF" d="M1 11h9v9H1z"/><path fill="#FFB900" d="M11 11h9v9h-9z"/></svg>Continuar com Microsoft</button></div>
+  <div class="lgprov"><button class="btn google" data-login="google" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuar com Google</button></div>
   <div class="lgsep"><span>ou com e-mail</span></div>
   <form class="lgform" data-lgform="email" novalidate>
     <label class="f">E-mail<input class="in" id="lg-email" type="email" inputmode="email" autocomplete="email" required value="${esc(ui.lgEmail||"")}"></label>
@@ -3361,7 +3360,7 @@ function textoTermos(){
   return `<h3>1. O que é o Monetra</h3>
   <p>O Monetra é um aplicativo gratuito de controle de gastos pessoais, criado por Gustavo M. Barbosa. Ele serve para você anotar e acompanhar o seu próprio dinheiro. Não é banco, não movimenta dinheiro e não pede senha de banco.</p>
   <h3>2. Quais dados o app guarda</h3>
-  <ul><li><b>Da forma de login que você escolher</b> (Google, Microsoft, e-mail e senha ou link por e-mail): nome, e-mail e foto, quando existirem, e um código de identificação, usados só para fazer o login e mostrar seu perfil. A senha é guardada de forma protegida pelo Google Firebase; o Monetra não tem acesso a ela. No modo teste, sem conta, só o código de identificação é criado.</li>
+  <ul><li><b>Da forma de login que você escolher</b> (Google, e-mail e senha ou link por e-mail): nome, e-mail e foto, quando existirem, e um código de identificação, usados só para fazer o login e mostrar seu perfil. A senha é guardada de forma protegida pelo Google Firebase; o Monetra não tem acesso a ela. No modo teste, sem conta, só o código de identificação é criado.</li>
   <li><b>O que você digita:</b> salário, receitas, despesas, categorias, contas, cartões (só nome, datas e limite, nunca o número do cartão), parcelas, metas e lembretes.</li>
   <li><b>Extratos importados:</b> o arquivo é lido dentro do seu aparelho. Só os lançamentos que você escolher importar são salvos; o arquivo em si não é enviado.</li>
   <li><b>No seu aparelho:</b> preferências como tema, lembretes já avisados e uma cópia para funcionar sem internet.</li></ul>
@@ -3726,7 +3725,7 @@ function renderSheet(){
   }else if(s.tipo==="vincular"){
     const anon=ehAnonimo(), u=authUser, provs=((u&&u.providerData)||[]).map(p=>NOMES_PROV[p.providerId]||p.providerId);
     corpo=`<p>${anon?"Crie sua conta e continue com tudo o que você lançou no teste.":"Você entra com: <b>"+esc(provs.join(", ")||"—")+"</b>. Adicione outra forma de entrar na mesma conta."}</p>
-      <div class="lgprov">${temProv("google.com")?"":`<button class="btn google" type="button" data-lg="google">Continuar com Google</button>`}${temProv("microsoft.com")?"":`<button class="btn google" type="button" data-lg="microsoft">Continuar com Microsoft</button>`}</div>
+      <div class="lgprov">${temProv("google.com")?"":`<button class="btn google" type="button" data-lg="google">Continuar com Google</button>`}</div>
       ${temProv("password")?"":`<div class="lgsep"><span>ou com e-mail e senha</span></div>
       <label class="f">E-mail<input class="in" id="s-lgemail" type="email" inputmode="email" autocomplete="email" value="${esc(anon?"":(u&&u.email)||"")}" ${!anon&&u&&u.email?"readonly":""}></label>
       <label class="f">Senha<input class="in" id="s-lgsenha" type="password" autocomplete="new-password" minlength="8" aria-describedby="s-lgregra"></label><p class="hint" id="s-lgregra">Mínimo de 8 caracteres, com letras e números.</p>`}`;
