@@ -890,7 +890,7 @@ async function encerraSessao(msg){
   setTimeout(()=>location.reload(),150);
 }
 let aberto="pessoal", eu={}, euCarregado=false, grupoDoc=null, pedidosG={}, unsubs=[], unsubsFixos=[], seqEspaco=0, perdendo={};
-const FB_V="13.1.0", FB_REV="2";
+const FB_V="13.2.0", FB_REV="2";
 async function init(){
   const cfg=window.FIREBASE_CONFIG;
   if(!cfg||!cfg.apiKey||/COLE|SUA_/i.test(cfg.apiKey)){ mode="local"; loadLocal(); state.loaded=true; setStatus("Modo local (sem login)",""); render(); return; }
