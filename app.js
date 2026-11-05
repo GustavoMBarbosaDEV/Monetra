@@ -343,7 +343,7 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.7.1";
+const VERSAO="5.7.2";
 const NOVIDADES=[
   "Novas formas de entrar: e-mail e senha (com “esqueci a senha”) e link de acesso por e-mail, sem senha.",
   "Quer só conhecer? Toque em “Testar sem criar conta” e crie a conta depois, sem perder os lançamentos.",

@@ -12,6 +12,13 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.7.2 — 05/11/2026 **Aviso de nova versão redesenhado**
+
+- **Aviso de atualização:** cartão com o ícone do app, o número da versão nova e os botões **Atualizar** e **Depois**. Ao atualizar, mostra uma barra de progresso. Arrastar para baixo ou apertar Esc dispensa, e o aviso volta em 30 minutos ou quando o app é reaberto. Fica acima do aviso de cookies quando os dois aparecem juntos. Tema claro e escuro; sem animações no modo com menos movimento.
+- **vendor/:** saem as pastas do Firebase 13.1.0 e do pdf.js 6.4.299, que não são mais usadas.
+- **Testes das regras:** `glob` 14 no lugar do 10 (alerta do `minimatch`).
+- **Testado** no navegador (celular e computador, claro e escuro) com uma versão nova de verdade do service worker: o aviso aparece, mostra a versão, sobe acima dos cookies, o arrasto curto volta ao lugar, o longo dispensa, e Atualizar recarrega na versão nova.
+
 ## 5.7.1 — 05/11/2026 **Bibliotecas atualizadas**
 
 - **Firebase JS SDK** 13.1.0 → **13.2.0**, em `vendor/firebase-13.2.0/`, com as mesmas funções de antes.
