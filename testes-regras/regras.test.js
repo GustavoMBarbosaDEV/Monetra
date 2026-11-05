@@ -59,12 +59,20 @@ test("cada pessoa lê e grava só os próprios dados", async () => {
   await assertSucceeds(deleteDoc(doc(como("ana"), "users", "ana", "docs", "config")));
 });
 
+test("dia do salário fica na config", async () => {
+  const ana = como("ana");
+  await assertSucceeds(setDoc(doc(ana, "users", "ana", "docs", "config"), { ...configValida(), salarioDia: { tipo: "util", dia: 5, dia2: 20, off: false } }));
+  await assertSucceeds(setDoc(doc(ana, "users", "ana", "docs", "config"), configValida()));
+});
+
 test("dados no formato errado são recusados", async () => {
   const ana = como("ana");
   await assertFails(setDoc(doc(ana, "users", "ana", "docs", "config"), { ...configValida(), chaveEstranha: 1 }));
   await assertFails(setDoc(doc(ana, "users", "ana", "docs", "config"), { ...configValida(), categorias: "não é lista" }));
   await assertFails(setDoc(doc(ana, "users", "ana", "docs", "config"), { ...configValida(), ate: "dezembro" }));
   await assertFails(setDoc(doc(ana, "users", "ana", "docs", "config"), { ...configValida(), categorias: Array.from({ length: 301 }, (_, i) => ({ id: "c" + i })) }));
+  await assertFails(setDoc(doc(ana, "users", "ana", "docs", "config"), { ...configValida(), salarioDia: [5] }));
+  await assertFails(setDoc(doc(ana, "users", "ana", "docs", "config"), { ...configValida(), salarioDia: { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 } }));
   await assertFails(setDoc(doc(ana, "users", "ana", "docs", "m-2026-10"), { ...mesValido(), gastos: {} }));
   await assertFails(setDoc(doc(ana, "users", "ana", "docs", "m-2026-10"), { ...mesValido(), salario: "muito" }));
   await assertFails(setDoc(doc(ana, "users", "ana", "docs", "m-2026-10"), { ...mesValido(), extra: true }));

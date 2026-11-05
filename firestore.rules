@@ -29,7 +29,7 @@ service cloud.firestore {
         && (!('faturaPaga' in d) || d.faturaPaga is bool);
     }
     function configValida(d) {
-      return d.keys().hasOnly(['desafios','viagens','dividas','termos','salarioPadrao','saldoInicial','saldoCaixinha','ate','inicio','categorias','fixos','parcelas','rendas','cartoes','contas','contaSalario','metas'])
+      return d.keys().hasOnly(['desafios','viagens','dividas','termos','salarioPadrao','saldoInicial','saldoCaixinha','ate','inicio','categorias','fixos','parcelas','rendas','cartoes','contas','contaSalario','metas','salarioDia'])
         && lista(d, 'desafios', 500)
         && lista(d, 'categorias', 300)
         && lista(d, 'fixos', 500)
@@ -46,7 +46,8 @@ service cloud.firestore {
         && (!('ate' in d) || chaveMes(d.ate))
         && (!('inicio' in d) || d.inicio == null || chaveMes(d.inicio))
         && (!('contaSalario' in d) || textoOuNulo(d.contaSalario, 128))
-        && (!('termos' in d) || d.termos == null || (d.termos is map && d.termos.size() <= 4));
+        && (!('termos' in d) || d.termos == null || (d.termos is map && d.termos.size() <= 4))
+        && (!('salarioDia' in d) || d.salarioDia == null || (d.salarioDia is map && d.salarioDia.size() <= 6));
     }
     function euValido(d) {
       return mapa(d, 'grupos', 200)
