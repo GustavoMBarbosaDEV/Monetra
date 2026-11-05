@@ -190,7 +190,7 @@ Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_
   - **Mudou só a lista de funções (MODULOS) sem trocar a versão?** Rode `node vendor-firebase.mjs` e suba `FB_REV` no `app.js`. Os arquivos de `vendor/` têm cache `immutable`; o `?r=` no import faz quem já tem o arquivo antigo baixar o novo.
 - O workflow `versoes.yml` abre uma issue toda semana em que o npm tiver versão nova do Firebase ou do pdf.js.
 
-- **pdf.js 6.4.299** (build `legacy`), em `vendor/pdfjs-6.4.299/`: `pdf.min.mjs`, `pdf.worker.min.mjs` e `LICENSE` (Apache-2.0). Usado só na importação de extrato em PDF e carregado sob demanda (`carregaPdfjs()` em `app.js`). Não entra no `SHELL` do `sw.js` (são ~1,8 MB); o service worker guarda os arquivos na primeira vez que forem usados.
+- **pdf.js 6.5.438** (build `legacy`), em `vendor/pdfjs-6.5.438/`: `pdf.min.mjs`, `pdf.worker.min.mjs` e `LICENSE` (Apache-2.0). Usado só na importação de extrato em PDF e carregado sob demanda (`carregaPdfjs()` em `app.js`). Não entra no `SHELL` do `sw.js` (são ~1,8 MB); o service worker guarda os arquivos na primeira vez que forem usados.
 - **Atualizar:** `npm pack pdfjs-dist@<versão>` numa pasta temporária, copie `legacy/build/pdf.min.mjs`, `legacy/build/pdf.worker.min.mjs` e `LICENSE` para uma pasta nova `vendor/pdfjs-<versão>/`, troque `PDFJS_DIR` no `app.js`, apague a pasta antiga e teste a importação com PDFs reais e com senha. A pasta leva a versão no nome para nenhum cache antigo misturar arquivos.
 
 ## Segurança do repositório

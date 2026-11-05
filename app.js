@@ -3443,7 +3443,7 @@ function parseCSV(t){
   linhas.slice(hi+1).forEach(l=>{ const c=linhaCSV(l,sep), d=dataCSV(c[iD]), v=numCSV(c[iV]); if(!d||!isFinite(v)||v===0) return; itens.push({data:d,valor:v,desc:(iDesc>=0?c[iDesc]:"").replace(/\s+/g," "),fitid:iId>=0?c[iId]:""}); });
   return {itens,cartao};
 }
-const PDFJS_DIR="vendor/pdfjs-6.4.299/";
+const PDFJS_DIR="vendor/pdfjs-6.5.438/";
 /** @type {Promise<any>|null} */
 let pdfjsProm=null;
 function carregaPdfjs(){
