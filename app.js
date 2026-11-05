@@ -2166,6 +2166,8 @@ function viewApresentacao(){
   </div>
   ${CASES.length?`<section class="ap-deps ap-revela"><h2>Quem usa o Monetra</h2><div class="ap-depl">${CASES.map(x=>`<figure class="ap-dep"><blockquote>${esc(x.texto)}</blockquote><figcaption>${x.foto?`<img src="${esc(x.foto)}" alt="" width="40" height="40" loading="lazy">`:""}<b>${esc(x.nome)}</b>${x.cidade?`<span>${esc(x.cidade)}</span>`:""}</figcaption></figure>`).join("")}</div></section>`:""}
   ${AVALIACOES.length?`<section class="ap-deps ap-revela"><h2>O que dizem do Monetra</h2><div class="ap-depl">${AVALIACOES.map(x=>`<figure class="ap-dep"><blockquote>${esc(x.texto)}</blockquote><figcaption>${x.foto?`<img src="${esc(x.foto)}" alt="" width="40" height="40" loading="lazy">`:""}<b>${esc(x.nome)}</b>${x.cidade?`<span>${esc(x.cidade)}</span>`:""}</figcaption></figure>`).join("")}</div></section>`:""}
+  <section class="ap-quem ap-revela"><picture><source srcset="img/equipe-gustavo.webp" type="image/webp"><img src="img/equipe-gustavo.jpg" alt="Gustavo, criador do Monetra, sorrindo" width="144" height="144" loading="lazy" decoding="async"></picture>
+    <div><h2>Quem faz o Monetra</h2><p><b>Gustavo M. Barbosa</b> criou o Monetra para organizar o próprio dinheiro e deixou grátis para todo mundo. Cada sugestão que chega por e-mail é lida e ajuda a decidir o que vem na próxima versão.</p></div></section>
   <section class="ap-faq ap-revela" id="faq"><h2>Perguntas frequentes</h2>
     ${FAQ.map(([q,a])=>`<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}
     <p><a href="faq">Ver todas as perguntas</a></p></section>
@@ -3338,7 +3340,7 @@ function viewPerfil(){
 }
 
 const TERMOS_V="1.2", TERMOS_DATA="05/11/2026", CONTATO="https://github.com/GustavoMBarbosaDEV";
-const CONTATO_EMAIL="", CONTATO_WHATS="";
+const CONTATO_EMAIL="monetra.app26@gmail.com", CONTATO_WHATS="";
 /** @typedef {{nome:string,cidade?:string,texto:string,foto?:string}} Depoimento */
 /** @type {Depoimento[]} */
 const CASES=[];
@@ -3384,7 +3386,7 @@ function textoTermos(){
   <h3>9. Mudanças nestes termos</h3>
   <p>Se os termos mudarem, o app mostra a nova versão e pede o seu aceite de novo antes de continuar.</p>
   <h3>10. Contato</h3>
-  <p><a href="${CONTATO}" target="_blank" rel="noopener">${CONTATO.replace(/^https?:\/\//,"")}</a></p>`;
+  <p>E-mail: <a href="mailto:${CONTATO_EMAIL}">${CONTATO_EMAIL}</a> (respondemos em até 24h, em dias úteis) · <a href="${CONTATO}" target="_blank" rel="noopener">${CONTATO.replace(/^https?:\/\//,"")}</a></p>`;
 }
 function viewTermos(pedir){
   const recusou=ui.recusouTermos&&pedir;

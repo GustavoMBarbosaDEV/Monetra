@@ -20,6 +20,7 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 - **Excluir conta / sair:** confirmação de identidade com Google ou Microsoft; com senha ou link, pede para entrar de novo. Sair do modo teste avisa e apaga os lançamentos de teste.
 - **Termos de privacidade 1.2:** novas formas de login, hospedagem no Firebase Hosting, reCAPTCHA e Analytics opcional. Todos vão aceitar de novo ao abrir o app.
 - Firebase vendorizado com as funções novas de Auth (só `firebase-auth.js` mudou).
+- **Landing:** seção "Quem faz o Monetra" com foto (WebP 288x288 com JPG de reserva, carregamento preguiçoso). **Contato:** monetra.app26@gmail.com na landing, FAQ, privacidade, termos do app e schema Organization.
 
 ## 5.6.0 — 05/11/2026 **Site, SEO e conversão**
 
