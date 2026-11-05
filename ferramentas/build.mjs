@@ -10,8 +10,9 @@ import { fileURLToPath } from "node:url";
 const raiz = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dist = path.join(raiz, "dist");
 
-const ARQUIVOS = ["index.html", "firebase-config.js", "manifest.webmanifest", "sw.js", "app.js", "boot.js", "pre.js", "style.css", "boot.css"];
-const PASTAS = ["icons", "screenshots", "fonts", "vendor", ".well-known"];
+const ARQUIVOS = ["index.html", "firebase-config.js", "manifest.webmanifest", "sw.js", "app.js", "boot.js", "pre.js", "style.css", "boot.css",
+  "site.js", "site.css", "faq.html", "privacidade.html", "termos.html", "obrigado.html", "404.html", "robots.txt", "sitemap.xml"];
+const PASTAS = ["icons", "screenshots", "fonts", "vendor", "img", ".well-known"];
 const MINIFICA = { "app.js": "js", "boot.js": "js", "pre.js": "js", "style.css": "css", "boot.css": "css" };
 
 fs.rmSync(dist, { recursive: true, force: true });

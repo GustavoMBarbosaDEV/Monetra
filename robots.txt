@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /obrigado
+Disallow: /baixar
+
+Sitemap: https://monetraapp.web.app/sitemap.xml

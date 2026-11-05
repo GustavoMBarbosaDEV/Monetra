@@ -1,10 +1,11 @@
-const V = "5.5.0";
+const V = "5.6.0";
 const CACHE = "monetra-" + V;
 const SHELL = ["./", "index.html", ...["style.css", "boot.css", "pre.js", "boot.js", "app.js"].map(f => f + "?v=" + V), "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png",
   "fonts/fontsource-variable-5.3.0/inter-latin-wght-normal.woff2", "fonts/fontsource-variable-5.3.0/sora-latin-wght-normal.woff2"];
 const ESPERA_NAVEGACAO = 3000;
 const FORA = /^\/(__|baixar)(\/|$)/;
+const RAIZ = new URL("./", self.registration.scope).pathname;
 const SEM_AVISO = /^monetra-(?:[0-4]\.|5\.[0-3]\.|5\.4\.[01]$)/;
 
 self.addEventListener("install", e => {
@@ -40,7 +41,10 @@ self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin || FORA.test(url.pathname)) return;
-  if (e.request.mode === "navigate") { e.respondWith(navegacao(e)); return; }
+  if (e.request.mode === "navigate") {
+    if (url.pathname !== RAIZ && url.pathname !== RAIZ + "index.html") return;
+    e.respondWith(navegacao(e)); return;
+  }
   e.respondWith(arquivo(e));
 });
 
