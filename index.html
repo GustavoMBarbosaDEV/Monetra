@@ -2,11 +2,26 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.google.com; style-src 'self' 'unsafe-inline'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://open.er-api.com https://www.google.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://www.google.com https://recaptcha.google.com; worker-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.googleapis.com https://open.er-api.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://www.google.com https://recaptcha.google.com; worker-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Monetra — Controle financeiro</title>
-<meta name="description" content="Controle de gastos pessoal: salário, recebimentos avulsos, despesas diárias, caixinha e relatórios.">
+<title>Monetra — Controle de gastos grátis no celular e no computador</title>
+<meta name="description" content="App grátis e sem anúncios para controlar gastos: contas do mês, salário, cartões, parcelas e metas. Funciona no navegador, no iPhone e no Android.">
+<link rel="canonical" href="https://monetraapp.web.app/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Monetra">
+<meta property="og:title" content="Monetra — Controle de gastos grátis no celular e no computador">
+<meta property="og:description" content="App grátis e sem anúncios para controlar gastos: contas do mês, salário, cartões, parcelas e metas. Funciona no navegador, no iPhone e no Android.">
+<meta property="og:url" content="https://monetraapp.web.app/">
+<meta property="og:image" content="https://monetraapp.web.app/img/og-monetra.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Monetra: controle de gastos grátis, no celular e no computador">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Monetra","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS","inLanguage":"pt-BR","url":"https://monetraapp.web.app/","image":"https://monetraapp.web.app/img/og-monetra.png","description":"App grátis e sem anúncios para controlar gastos: contas do mês, salário, cartões, parcelas e metas. Funciona no navegador, no iPhone e no Android.","downloadUrl":"https://monetraapp.web.app/baixar","offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"},"publisher":{"@type":"Organization","name":"Monetra","url":"https://monetraapp.web.app/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Monetra","url":"https://monetraapp.web.app/","logo":"https://monetraapp.web.app/icons/icon-512.png","founder":{"@type":"Person","name":"Gustavo M. Barbosa"},"sameAs":["https://github.com/GustavoMBarbosaDEV"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Monetra","url":"https://monetraapp.web.app/","inLanguage":"pt-BR"}</script>
 <meta name="theme-color" content="#04261A">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
@@ -15,11 +30,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Monetra">
 <link rel="preload" href="fonts/fontsource-variable-5.3.0/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=5.5.0">
-<link rel="stylesheet" href="boot.css?v=5.5.0">
+<link rel="stylesheet" href="style.css?v=5.6.0">
+<link rel="stylesheet" href="boot.css?v=5.6.0">
 </head>
 <body>
-<script src="pre.js?v=5.5.0"></script>
+<script src="pre.js?v=5.6.0"></script>
 <div id="boot" aria-hidden="true"><svg class="bm" viewBox="90 120 340 270" width="220" height="175"><defs><linearGradient id="bmW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C9D2CD"/></linearGradient><linearGradient id="bmG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2BE08A"/><stop offset="1" stop-color="#0BA86A"/></linearGradient><linearGradient id="bmB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34E897"/><stop offset="1" stop-color="#0E9F6E"/></linearGradient></defs><path class="b1" d="M100 135 L292 268 L257 302 L158 232 L158 378 L100 342 Z" fill="url(#bmW)"/><path class="b2" d="M257 250 L413 135 L413 190 L292 272 Z" fill="url(#bmG)"/><path class="b3" d="M358 222 L413 190 L413 345 L358 378 Z" fill="url(#bmG)"/><rect class="r1" x="195" y="352" width="32" height="24" rx="2" fill="url(#bmB)"/><rect class="r2" x="245" y="325" width="32" height="51" rx="2" fill="url(#bmB)"/><rect class="r3" x="295" y="293" width="32" height="83" rx="2" fill="url(#bmB)"/></svg><span>Monetra</span></div>
 <div class="wrap" id="app">
   <div class="top"><div class="brand"><img class="logo" src="icons/logo-128.png" alt="" width="36" height="36"><h1>Monetra</h1><span class="status" id="status"><i></i>Carregando…</span></div></div>
@@ -28,8 +43,9 @@
     <div class="sk-qa"><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i></div>
     <div class="card"><i class="sk" style="width:50%;height:16px"></i><div class="sk-row"><i class="sk sk-circ"></i><div class="sk-col"><i class="sk" style="width:60%;height:13px"></i><i class="sk" style="width:38%;height:10px"></i></div><i class="sk" style="width:64px;height:14px"></i></div><div class="sk-row"><i class="sk sk-circ"></i><div class="sk-col"><i class="sk" style="width:60%;height:13px"></i><i class="sk" style="width:38%;height:10px"></i></div><i class="sk" style="width:64px;height:14px"></i></div><div class="sk-row"><i class="sk sk-circ"></i><div class="sk-col"><i class="sk" style="width:60%;height:13px"></i><i class="sk" style="width:38%;height:10px"></i></div><i class="sk" style="width:64px;height:14px"></i></div><div class="sk-row"><i class="sk sk-circ"></i><div class="sk-col"><i class="sk" style="width:60%;height:13px"></i><i class="sk" style="width:38%;height:10px"></i></div><i class="sk" style="width:64px;height:14px"></i></div></div></div>
 </div>
-<script src="boot.js?v=5.5.0"></script>
+<script src="boot.js?v=5.6.0"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=5.5.0"></script>
+<script src="site.js"></script>
+<script src="app.js?v=5.6.0"></script>
 </body>
 </html>

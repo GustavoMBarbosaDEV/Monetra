@@ -45,4 +45,6 @@ interface Window {
   APPCHECK_SITE_KEY?: string;
   /** navegadores antigos (Internet Explorer) */
   clipboardData?: any;
+  /** definido em site.js (Google Analytics, só com consentimento) */
+  mbEvento?: (nome: string, p?: object) => void;
 }
