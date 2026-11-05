@@ -1553,11 +1553,35 @@ button.ptlin{cursor:pointer;min-height:48px}
 button.ptlin:hover b{color:var(--accent)}
 
 .exclista{margin:0 0 4px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
-.novaversao{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);background:var(--fg);color:var(--bg);padding:8px 8px 8px 16px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
-.novaversao .btn{min-height:40px;padding:8px 14px}
-.novaversao .btn:focus-visible{outline:2px solid var(--bg);outline-offset:2px}
-@media (max-width:760px){.novaversao{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
-@media (prefers-reduced-motion:no-preference){.novaversao.entra{animation:novaEntra .2s ease-out}@keyframes novaEntra{from{opacity:0;translate:0 10px}}}
+.novaversao{position:fixed;z-index:60;left:50%;bottom:var(--nvbase,calc(20px + env(safe-area-inset-bottom,0px)));width:min(460px,calc(100% - 24px));display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px 12px;padding:14px 14px 16px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 40px -12px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.08);overflow:hidden;transform:translate(-50%,var(--nvdy,0px));touch-action:none;user-select:none}
+.novaversao::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 35%,transparent))}
+.nv-ic{position:relative;display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:radial-gradient(120% 120% at 30% 20%,#123528,#050b08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.nv-ponto{position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--surface)}
+.nv-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.nv-txt b{font-size:15px;letter-spacing:-.01em}
+.nv-txt small{font-size:13px;color:var(--muted);line-height:1.35}
+.nv-acoes{grid-column:1 / -1;display:flex;justify-content:flex-end;gap:8px}
+.nv-acoes .btn{min-height:40px;padding:8px 16px}
+.nv-acoes .btn[data-atualizar]{flex:0 1 auto;min-width:118px}
+.novaversao .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nv-barra{position:absolute;left:0;right:0;bottom:0;height:3px;background:color-mix(in srgb,var(--accent) 15%,transparent);opacity:0;transition:opacity .2s}
+.nv-barra i{display:block;height:100%;width:0;background:var(--accent)}
+.novaversao.atualizando .nv-barra{opacity:1}
+.novaversao.atualizando .nv-barra i{width:92%;transition:width 2.4s cubic-bezier(.2,.7,.3,1)}
+.novaversao.atualizando .nv-acoes [data-nvdepois]{visibility:hidden}
+.novaversao.arrasta{transition:none;cursor:grabbing}
+@media (min-width:520px){.novaversao{grid-template-columns:auto 1fr auto;width:min(540px,calc(100% - 24px))}.nv-acoes{grid-column:auto}}
+@media (max-width:760px){.novaversao{bottom:var(--nvbase,calc(84px + env(safe-area-inset-bottom,0px)))}}
+@media (prefers-reduced-motion:no-preference){
+  .novaversao{transition:transform .2s ease,opacity .2s ease}
+  .novaversao.entra{animation:novaEntra .42s cubic-bezier(.2,1.25,.4,1)}
+  .novaversao.sai{opacity:0;transform:translate(-50%,24px)}
+  .nv-ponto{animation:nvPulso 1.8s ease-out infinite}
+  .novaversao.entra .nv-ic{animation:nvIcone .6s .15s cubic-bezier(.2,1.4,.4,1) both}
+  @keyframes novaEntra{from{opacity:0;transform:translate(-50%,28px) scale(.96)}}
+  @keyframes nvIcone{from{transform:scale(.6) rotate(-12deg)}}
+  @keyframes nvPulso{0%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px color-mix(in srgb,var(--accent) 55%,transparent)}100%{box-shadow:0 0 0 3px var(--surface),0 0 0 12px transparent}}
+}
 @media (pointer:coarse){html{scrollbar-width:none}html::-webkit-scrollbar{display:none;width:0;height:0}}
 .hsal .salcaiu{margin-top:14px;min-height:50px;font-size:16px;font-weight:700;border-radius:14px;width:100%}
 .tema-claro .hsal .salcaiu{background:#fff;color:#04261A}
