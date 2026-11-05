@@ -1403,7 +1403,7 @@ function heroSalario(k,fase,olho){
     <b class="hs-val" data-v="${aPagar}">${valorGrande(aPagar)}</b>
     <div class="hs-sub">${aPagar>0?"para pagar em "+esc(mesN):"nada para pagar em "+esc(mesN)}${pago>0?` · já pago <b>${brl(pago)}</b>`:""}</div>
     ${antes>0?`<div class="hs-sub">Você já gastou <b>${brl(antes)}</b> antes do salário. Isso sai do saldo quando ele cair.</div>`:""}
-    <button type="button" class="btn salcaiu" data-salcaiu="1">Meu salário caiu <span aria-hidden="true">💰</span></button>
+    <button type="button" class="btn salcaiu" data-salcaiu="1">${ICON.dinheiro}Meu salário caiu</button>
   </div>`;
   }
   const r=salRecebido(k), u=r[r.length-1], acum=acumulado(k);
@@ -1413,7 +1413,7 @@ function heroSalario(k,fase,olho){
     <b class="hs-val" data-v="${conta}">${valorGrande(conta)}</b>
     <div class="hs-sub">${r.length>1?"Salário de <b>"+brl(soma(r))+"</b> em "+r.length+" partes":"Salário de <b>"+brl(u.valor)+"</b> caiu dia "+pad2(u.dia)} · <button type="button" class="link" data-edit="avulso" data-id="${esc(u.id)}">Editar</button> · <button type="button" class="link" data-saldesfaz="1">Desfazer</button></div>
     <div class="hs-duo"><div class="hs-mini"><span class="lab">Falta pagar</span><b data-v="${aPagar}">${valorGrande(aPagar)}</b></div><div class="hs-mini"><span class="lab">Saldo livre</span><b class="${livre<0?"neg":""}" data-v="${livre}">${valorGrande(livre)}</b></div></div>
-    ${u.falta?`<button type="button" class="btn salcaiu" data-salcaiu="1">A outra parte caiu <span aria-hidden="true">💰</span></button>`:""}
+    ${u.falta?`<button type="button" class="btn salcaiu" data-salcaiu="1">${ICON.dinheiro}A outra parte caiu</button>`:""}
   </div>`;
 }
 function cardContasSal(k,fase){
