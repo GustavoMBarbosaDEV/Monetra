@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.7.1 — 05/11/2026 **Bibliotecas atualizadas**
+
+- **Firebase JS SDK** 13.1.0 → **13.2.0**, em `vendor/firebase-13.2.0/`, com as mesmas funções de antes.
+- **Leitor de PDF:** pdf.js 6.4.299 → **6.5.438** (build `legacy`), em `vendor/pdfjs-6.5.438/`.
+- **Testes das regras:** `firebase-tools` 15.34.1 → 15.34.2.
+- **Landing:** os botões "Começar grátis" abrem a tela de criar conta, com todas as formas de entrar, em vez de ir direto para o Google.
+- **Testado** no navegador: todas as funções do SDK que o app usa existem, Auth e Firestore iniciam sem erro e o pdf.js lê o texto de um PDF de teste.
+
 ## 5.7.0 — 05/11/2026 **Novas formas de entrar**
 
 - **Login:** tela redesenhada com Google, e-mail e senha (mínimo de 8 caracteres com letras e números, link de confirmação do e-mail, "Esqueci a senha"), link de acesso por e-mail (sem senha; se aberto em outro aparelho, pede o e-mail) e "Testar sem criar conta" (login anônimo). Links de privacidade, termos e ajuda.
