@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.0 — 06/11/2026 **Pergunte ao Monetra**
+
+- **Busca que responde perguntas:** a lupa vira "Buscar ou perguntar". Perguntas em português são respondidas com os dados do próprio aparelho, sem servidor e sem enviar nada para fora: gastos por categoria, loja ou período ("este mês", "mês passado", "outubro", "outubro de 2025", "este ano", "últimos 3 meses"), onde mais gastou, comparação entre meses, média por mês, receitas, parcelas (quando acabam e quanto falta), fatura e limite do cartão, metas, caixinha, contas fixas e dívidas.
+- **Cartão de resposta** com o valor, comparação com o mês anterior, limite da categoria e barras por categoria; botão para abrir os lançamentos da categoria. Os resultados da busca continuam abaixo.
+- **Sugestões** de perguntas com o campo vazio e **pergunta por voz** pelo microfone da busca (onde o navegador tiver reconhecimento de voz).
+- Gastos por categoria seguem a mesma conta dos relatórios (compra no cartão entra no mês da fatura); busca por loja ou descrição conta pela data da compra.
+- **Testado** no navegador com dados de exemplo (3 meses, fixas, parcelada, cartão, meta, caixinha e dívidas): 27 perguntas conferidas à mão, celular e computador.
+
 ## 5.7.2 — 05/11/2026 **Aviso de nova versão redesenhado**
 
 - **Aviso de atualização:** cartão com o ícone do app, o número da versão nova e os botões **Atualizar** e **Depois**. Ao atualizar, mostra uma barra de progresso. Arrastar para baixo ou apertar Esc dispensa, e o aviso volta em 30 minutos ou quando o app é reaberto. Fica acima do aviso de cookies quando os dois aparecem juntos. Tema claro e escuro; sem animações no modo com menos movimento.

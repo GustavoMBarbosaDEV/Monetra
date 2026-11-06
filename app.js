@@ -343,11 +343,11 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.7.2";
+const VERSAO="5.8.0";
 const NOVIDADES=[
-  "Novas formas de entrar: e-mail e senha (com “esqueci a senha”) e link de acesso por e-mail, sem senha.",
-  "Quer só conhecer? Toque em “Testar sem criar conta” e crie a conta depois, sem perder os lançamentos.",
-  "Em Perfil → Formas de entrar, ligue mais de um login à mesma conta. Os termos de privacidade foram atualizados para explicar isso."
+  "Pergunte ao Monetra: toque na lupa e pergunte, por exemplo, “quanto gastei com mercado este mês?” ou “quando termino de pagar as parcelas?”.",
+  "As respostas são calculadas neste aparelho, com os seus dados. Nada é enviado para fora.",
+  "Dá para perguntar falando, pelo microfone da busca, e ir direto para os lançamentos da categoria."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
