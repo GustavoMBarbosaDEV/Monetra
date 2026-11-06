@@ -4213,9 +4213,37 @@ function botaoMoneBot(){
   if(!deve){ if(b) b.remove(); return; } if(b) return;
   b=document.createElement("button"); b.type="button"; b.id="monebot"; b.className="monebot"+(semMovimento()?"":" entra"); b.setAttribute("aria-label","Abrir o MoneBot, assistente do Monetra"); b.title="MoneBot";
   b.innerHTML=`${roboMB(46,"rb-vivo")}<span class="mb-nome" aria-hidden="true">MoneBot</span>`;
-  b.addEventListener("click",()=>{ vibra(10); openSheet("monebot"); });
-  document.body.appendChild(b);
+  b.title="MoneBot: toque para conversar, arraste para mudar de lugar";
+  document.body.appendChild(b); arrastaBot(b); colocaBot(b);
 }
+// O botão pode ser arrastado; ao soltar, encosta na lateral mais próxima. A posição fica só neste aparelho.
+const BOT_POS="mb.botpos";
+/** @param {HTMLElement} b */
+function limitesBot(b){ const m=12, cel=matchMedia("(max-width:760px)").matches;
+  return {minX:m,maxX:Math.max(m,innerWidth-b.offsetWidth-m),minY:72,maxY:Math.max(72,innerHeight-b.offsetHeight-(cel?84:16))}; }
+/** @param {HTMLElement} b @param {number} x @param {number} y */
+function poeBot(b,x,y){ const L=limitesBot(b);
+  b.style.left=Math.round(Math.min(L.maxX,Math.max(L.minX,x)))+"px"; b.style.top=Math.round(Math.min(L.maxY,Math.max(L.minY,y)))+"px"; b.style.right="auto"; b.style.bottom="auto"; }
+/** Volta para o lugar salvo (lado e altura relativa), se houver. @param {HTMLElement} b */
+function colocaBot(b){ let p=null; try{ p=JSON.parse(localStorage.getItem(BOT_POS)||"null"); }catch(e){}
+  if(!p||(p.lado!=="esq"&&p.lado!=="dir")||typeof p.y!=="number") return; const L=limitesBot(b);
+  poeBot(b,p.lado==="esq"?L.minX:L.maxX,L.minY+Math.min(1,Math.max(0,p.y))*(L.maxY-L.minY)); }
+/** @param {HTMLElement} b */
+function arrastaBot(b){
+  /** @type {{x:number,y:number,l:number,t:number,id:number}|null} */ let ini=null; let moveu=false, ignora=false;
+  b.addEventListener("pointerdown",ev=>{ if(ev.button!==0) return; const r=b.getBoundingClientRect(); ini={x:ev.clientX,y:ev.clientY,l:r.left,t:r.top,id:ev.pointerId}; moveu=false; try{ b.setPointerCapture(ev.pointerId); }catch(e){} });
+  b.addEventListener("pointermove",ev=>{ if(!ini||ev.pointerId!==ini.id) return; const dx=ev.clientX-ini.x, dy=ev.clientY-ini.y;
+    if(!moveu){ if(Math.hypot(dx,dy)<8) return; moveu=true; b.classList.remove("encaixa"); b.classList.add("arrastando"); }
+    poeBot(b,ini.l+dx,ini.t+dy); });
+  const solta=()=>{ if(!ini) return; ini=null; if(!moveu) return; moveu=false; ignora=true; b.classList.remove("arrastando");
+    const r=b.getBoundingClientRect(), L=limitesBot(b), lado=r.left+r.width/2<innerWidth/2?"esq":"dir";
+    if(!semMovimento()) b.classList.add("encaixa"); poeBot(b,lado==="esq"?L.minX:L.maxX,r.top); vibra(8);
+    try{ localStorage.setItem(BOT_POS,JSON.stringify({lado,y:L.maxY>L.minY?(Math.min(L.maxY,Math.max(L.minY,r.top))-L.minY)/(L.maxY-L.minY):1})); }catch(e){}
+    setTimeout(()=>{ ignora=false; b.classList.remove("encaixa"); },350); };
+  b.addEventListener("pointerup",solta); b.addEventListener("pointercancel",solta);
+  b.addEventListener("click",ev=>{ if(ignora){ ev.preventDefault(); ignora=false; return; } vibra(10); openSheet("monebot"); });
+}
+addEventListener("resize",()=>{ const b=document.getElementById("monebot"); if(b) colocaBot(b); });
 let asOuvindo=null;
 function perguntarPorVoz(){ if(!ReconhecimentoVoz) return; const campo=/** @type {HTMLInputElement|null} */(document.getElementById("mb-perg")); if(!campo) return;
   if(asOuvindo){ try{ asOuvindo.stop(); }catch(e){} return; }
