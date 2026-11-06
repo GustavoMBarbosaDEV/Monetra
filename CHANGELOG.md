@@ -12,6 +12,10 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.1 — 06/11/2026 **MoneBot**
+
+- **Novo nome:** o assistente passa a se chamar **MoneBot** (antes MoneBoot) no botão, no título da conversa, na saudação e nas novidades.
+
 ## 5.8.0 — 06/11/2026 **MoneBoot**
 
 - **MoneBoot:** robozinho com a cara do Monetra (tela escura, olhos verdes e as barras do logo como sorriso) num botão flutuante no canto inferior direito, no app e na web. Flutua, pisca e a antena pulsa; parado no modo com menos movimento. Só aparece dentro do app (não na apresentação, no login nem nos termos), some quando outra tela está aberta e sobe quando o aviso de nova versão aparece.
