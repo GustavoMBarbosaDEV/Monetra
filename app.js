@@ -345,9 +345,9 @@ const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinhei
 const LSKEY="meucaixa.v1";
 const VERSAO="5.8.0";
 const NOVIDADES=[
-  "Pergunte ao Monetra: toque na lupa e pergunte, por exemplo, “quanto gastei com mercado este mês?” ou “quando termino de pagar as parcelas?”.",
+  "Conheça o MoneBoot, o robozinho no canto da tela: pergunte, por exemplo, “quanto gastei com mercado este mês?” ou “quando termino de pagar as parcelas?”.",
   "As respostas são calculadas neste aparelho, com os seus dados. Nada é enviado para fora.",
-  "Dá para perguntar falando, pelo microfone da busca, e ir direto para os lançamentos da categoria."
+  "Dá para perguntar falando, pelo microfone da conversa, e ir direto para os lançamentos da categoria."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
@@ -1562,7 +1562,7 @@ function passosTutorial(){
     {ic:"ajustes",t:"7. Mapa: Ajustes",d:`Tudo o que dá para configurar fica ${AJ}. Toque no nome para abrir cada parte:`+L("<b>Contas fixas</b> e <b>Compras parceladas</b>.","<b>Modo viagem</b>: gastos em outra moeda, convertidos para real.","<b>Dívidas com pessoas</b>: quem te deve e quem você deve.","<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar por mês.","<b>Importar extrato do banco</b>: baixe o extrato ou a fatura do cartão em <b>OFX</b>, <b>CSV</b> ou <b>PDF</b> no app do seu banco, toque em <b>Importar extrato</b> e escolha o arquivo (PDF com senha também funciona). A categoria já vem sugerida e você escolhe o que entra.","<b>Contas</b>: separe por banco ou carteira, com saldo inicial.","<b>Cartões de crédito</b>: limite, fechamento e vencimento.","<b>Categorias de gastos</b>: ícone, cor, limite por mês e subcategorias.","<b>Regras automáticas</b>: ensine suas palavras (ex.: “petz” → Pets) e a categoria vem certa.")},
     {ic:"perfil",t:"8. Mapa: Perfil",d:`Na aba <b>Perfil</b> ficam sua conta e as preferências do app:`+L(nuvem?"<b>Controles compartilhados</b>: crie um controle com a família, separado do seu Pessoal. Os botões no topo trocam entre eles.":"<b>Controles compartilhados</b>: disponíveis ao entrar com a conta Google.","<b>Renda e saldos</b>: salário padrão, outras rendas e saldo inicial.","<b>Aparência</b> (tema claro ou escuro) e <b>Bloqueio com PIN</b> (e digital).","<b>Lembretes</b>: notificações de vencimento e lembretes no calendário do celular.","<b>Acessibilidade</b>: texto maior, alto contraste, cores para daltonismo, modo calmo, modo foco, fonte de leitura fácil e botões maiores.","<b>Exportar e backup</b>: planilha para Excel, backup (também com senha) e restaurar backup.","<b>Novidades</b>, <b>Tutorial</b> e <b>Privacidade</b>.",`<b>Recomeçar do zero</b>${nuvem?" e <b>Excluir minha conta</b>":""}, no fim da página.`)},
     {ic:"ano",t:"9. Mapa: Relatórios",d:`Na aba <b>Relatórios</b> você vê o ano inteiro:`+L("<b>Receitas x despesas</b> e <b>mês a mês</b>, lado a lado.","<b>Para onde foi o dinheiro</b> e por <b>forma de pagamento</b>.","<b>Assinaturas e contas fixas</b>, com aviso quando uma fica mais cara.","<b>Imposto de Renda</b>: despesas dedutíveis do ano.","<b>Sua inflação x IPCA</b> e <b>etiquetas</b> (escreva #etiqueta na descrição).","<b>Patrimônio</b>: some imóveis, veículos e investimentos às suas contas.","<b>Retrospectiva</b> do ano em formato de stories.")},
-    {ic:"busca",t:"10. Atalhos",d:`Para ir mais rápido:`+L("<b>Busca</b> (lupa no topo): procure lançamentos ou telas, ou faça uma pergunta, como “quanto gastei com mercado este mês?”. “extrato”, “13º”, “cartões” e “backup” levam direto ao lugar.","O <b>olho</b> no saldo do mês esconde os valores para usar o app em público.",nuvem?"No compartilhado, escolha <b>Quem pagou</b> na despesa: a <b>Divisão do mês</b>, no Início, mostra quem deve a quem.":null,"Com o app instalado, <b>compartilhe um comprovante</b> com o Monetra para lançar mais rápido.","No Android, dá para instalar o app pelo botão <b>Baixar o app para Android</b> da página inicial (antes de entrar).")},
+    {ic:"busca",t:"10. Atalhos",d:`Para ir mais rápido:`+L("<b>Busca</b> (lupa no topo): procure lançamentos ou telas. “extrato”, “13º”, “cartões” e “backup” levam direto ao lugar.","O <b>olho</b> no saldo do mês esconde os valores para usar o app em público.",nuvem?"No compartilhado, escolha <b>Quem pagou</b> na despesa: a <b>Divisão do mês</b>, no Início, mostra quem deve a quem.":null,"Com o app instalado, <b>compartilhe um comprovante</b> com o Monetra para lançar mais rápido.","No Android, dá para instalar o app pelo botão <b>Baixar o app para Android</b> da página inicial (antes de entrar).")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
   ];
 }
@@ -1892,6 +1892,7 @@ function render(){
   moveIndicadorNav(app);
   deslizaMes(app); deslizaTema(app);
   checaTopo();
+  botaoMoneBoot();
   if(ui.rolarPara&&state.loaded){ const _id=ui.rolarPara, _e=document.getElementById(_id), _s=_e&&_e.closest(".mais:not(.aberta)"); if(_s){ ui.abre[_s.id.slice(4)]=true; ui.rolarPara=null; render(); ui.rolarPara=null; setTimeout(()=>{ const e2=document.getElementById(_id); e2&&e2.scrollIntoView({block:"center",behavior:"smooth"}); },60); } const el=document.getElementById(ui.rolarPara||"__nada"); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 const nomeAba=()=>mode==="login"?"Entrar no Monetra":({mes:"Início",ano:"Relatórios",metas:"Metas e desafios",perfil:"Perfil",ajustes:"Ajustes"})[ui.tab]||"Monetra";
@@ -3690,8 +3691,8 @@ function renderSheet(){
   if(!s){ r.innerHTML=""; document.body.classList.remove("sheet-open"); return; }
   document.body.classList.add("sheet-open"); const _ap=document.getElementById("app"); if(_ap) _ap.inert=true;
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
-  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="catmes"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",vincular:ehAnonimo()?"Criar sua conta":"Formas de entrar",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar ou perguntar",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="catmes"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"&&s.tipo!=="moneboot"){ closeSheet(); return; }
+  const titulos={moneboot:"MoneBoot",catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",vincular:ehAnonimo()?"Criar sua conta":"Formas de entrar",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="radiogroup" aria-label="Tipo de lançamento">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -3967,14 +3968,17 @@ function renderSheet(){
     const dd=Math.min(diasMes(k),Math.max(1,Number(s.dia)||1));
     corpo=corpoDia(k,dd); sub=esc(nomeMes(k));
     botoes=`<button class="btn" type="button" data-callancar="${dd}">${ICON.mais||"+"} Lançar despesa neste dia</button>`;
+  }else if(s.tipo==="moneboot"){
+    corpo=corpoMoneBoot(); sub="";
   }else if(s.tipo==="busca"){
-    corpo=`<label class="f"><span>Busque lançamentos e telas, ou pergunte sobre o seu dinheiro</span><span class="as-campo"><input class="in" id="s-busca" type="search" placeholder="ex.: farmácia, 89,90 ou quanto gastei com mercado?" value="${esc(s.q||"")}" data-autofocus autocomplete="off" enterkeyhint="search">${ReconhecimentoVoz?`<button type="button" class="falar" data-asvoz="1" aria-pressed="false" aria-label="Perguntar falando">${ICON_MIC}</button>`:""}</span></label><div id="s-result" class="busca"></div>`;
+    corpo=`<label class="f"><span>Procure lançamentos (descrição, categoria, valor, #etiqueta) ou telas, como “cartões” e “13º”</span><input class="in" id="s-busca" type="search" placeholder="ex.: farmácia, aluguel, 89,90" value="${esc(s.q||"")}" data-autofocus autocomplete="off"></label><div id="s-result" class="busca"></div>`;
     sub="";
   }
   r.innerHTML=`<div class="sheet-wrap ${s.tipo==="retro"?"stories"+(a11y.retroAuto?" auto":""):""}" data-sfechar="1" role="dialog" aria-modal="true" aria-labelledby="sheetTit"><form class="sheet${s.tipo==="retro"?" st"+((s.slide||0)%6):""}" id="sheetForm" autocomplete="off" novalidate>
     <div class="sheethead"><h2 id="sheetTit">${esc(titulos[s.tipo])}</h2><span class="muted small">${sub}</span><button type="button" class="x" data-sfechar="1" aria-label="Fechar">×</button></div>
     ${abas}${corpo}<p class="erro" id="s-erro" hidden></p>${botoes?`<div class="sheetbtns">${botoes}</div>`:""}</form></div>`;
   if(s.tipo==="busca") atualizaBusca();
+  if(s.tipo==="moneboot"){ const c=document.getElementById("mb-chat"); if(c) c.scrollTop=c.scrollHeight; }
   clearTimeout(timerStory);
   if(s.tipo==="retro"&&a11y.retroAuto&&!semMovimento()){ const fixo=s.slide; timerStory=setTimeout(()=>{ if(ui.sheet===s&&s.slide===fixo){ const nx=document.querySelector('#sheet [data-rpasso="1"]'); if(nx) nx.click(); } },6500); }
   if(s.tipo==="gasto") atualizaVg();
@@ -4177,23 +4181,57 @@ function htmlResposta(r){
     ${r.barras&&r.barras.length?`<ul class="as-barras">${r.barras.map(b=>`<li><span>${esc(b.nome)}</span><b class="num">${brl(b.v)}</b><i aria-hidden="true"><i style="width:${Math.max(4,Math.round(Math.abs(b.v)/max*100))}%"></i></i></li>`).join("")}</ul>`:""}
     ${r.ir?`<button type="button" class="btn mini ghost" data-ascat="${esc(r.ir.cat)}|${esc(r.ir.mes)}">${esc(r.ir.txt)}</button>`:""}</div></div>`;
 }
+// MoneBoot: robô do Monetra que conversa usando responder(); a conversa fica só na memória desta sessão
+/** @type {{eu:boolean,t?:string,r?:RespAssist}[]} */
+let mbLog=[];
+/** Robô com a cara do app: tela escura, olhos verdes e as barras do logo como sorriso. @param {number} px @param {string} [cls] */
+const roboMB=(px,cls)=>`<svg class="robo ${cls||""}" viewBox="0 0 64 64" width="${px}" height="${px}" aria-hidden="true">  <g class="rb-corpo"><line x1="32" y1="7" x2="32" y2="14" stroke="#4CC79F" stroke-width="2.4" stroke-linecap="round"/><circle class="rb-ant" cx="32" cy="6" r="3.4" fill="#22D47A"/>
+  <rect x="5" y="27" width="5" height="12" rx="2.5" fill="#0B3A2A" stroke="#4CC79F" stroke-width="1.4"/><rect x="54" y="27" width="5" height="12" rx="2.5" fill="#0B3A2A" stroke="#4CC79F" stroke-width="1.4"/>
+  <rect x="9" y="14" width="46" height="38" rx="13" fill="#145C43" stroke="#4CC79F" stroke-width="1.6"/><rect x="15" y="20" width="34" height="24" rx="8" fill="#06150F"/>
+  <g class="rb-olhos"><rect x="21" y="25" width="7" height="8" rx="3.5" fill="#22D47A"/><rect x="36" y="25" width="7" height="8" rx="3.5" fill="#22D47A"/></g>
+  <g fill="#4CC79F"><rect x="26" y="38" width="3" height="2.6" rx="1"/><rect x="30.5" y="36.4" width="3" height="4.2" rx="1"/><rect x="35" y="34.6" width="3" height="6" rx="1"/></g></g></svg>`;
+const MB_FALLBACK=/** @type {RespAssist} */({tit:"Ainda não sei responder isso",linhas:["Pergunte sobre gastos, categorias, meses, parcelas, cartão, metas, caixinha, contas fixas ou dívidas. Toque numa sugestão para ver como."]});
+function mbPergunta(/** @type {string} */ texto){
+  const q=String(texto||"").replace(/\s+/g," ").trim().slice(0,160); if(!q) return;
+  mbLog.push({eu:true,t:q}); mbLog.push({eu:false,r:responder(q.toLowerCase())||MB_FALLBACK}); if(mbLog.length>40) mbLog=mbLog.slice(-40);
+  renderSheet(); const c=document.getElementById("mb-chat"); if(c) c.scrollTop=c.scrollHeight;
+  const ult=mbLog[mbLog.length-1]; if(ult.r) anunciar(ult.r.tit+(typeof ult.r.valor==="number"?": "+brl(ult.r.valor):""));
+  const i=/** @type {HTMLInputElement|null} */(document.getElementById("mb-perg")); if(i) i.focus();
+}
+function corpoMoneBoot(){
+  const ola=`<div class="mb-msg bot"><span class="mb-av">${roboMB(30)}</span><div class="mb-bolha"><b>Oi! Eu sou o MoneBoot.</b><p>Pergunte sobre o seu dinheiro que eu respondo com os seus dados. Tudo é calculado neste aparelho, nada sai daqui.</p></div></div>`;
+  const msgs=mbLog.map(m=>m.eu?`<div class="mb-msg eu"><div class="mb-bolha">${esc(m.t||"")}</div></div>`:`<div class="mb-msg bot"><span class="mb-av">${roboMB(30)}</span>${m.r?htmlResposta(m.r):""}</div>`).join("");
+  const sug=AS_SUGESTOES.filter(x=>!mbLog.some(m=>m.eu&&m.t===x)).slice(0,mbLog.length?4:10);
+  return `<div class="mb-chat" id="mb-chat" role="log" aria-live="polite">${ola}${msgs}</div>
+    ${sug.length?`<div class="as-sug mb-sug">${sug.map(x=>`<button type="button" class="chip" data-asperg="${esc(x)}">${esc(x)}</button>`).join("")}</div>`:""}
+    <div class="mb-envio"><label class="sr" for="mb-perg">Sua pergunta</label><input class="in" id="mb-perg" type="text" placeholder="Pergunte ao MoneBoot…" autocomplete="off" enterkeyhint="send" maxlength="160" data-autofocus>
+    ${ReconhecimentoVoz?`<button type="button" class="mb-bt" data-asvoz="1" aria-pressed="false" aria-label="Perguntar falando">${ICON_MIC}</button>`:""}<button type="submit" class="mb-bt envia" aria-label="Enviar pergunta">${icq("seta-cima",20)}</button></div>`;
+}
+/** Botão flutuante: só dentro do app (não na apresentação, no login ou nos termos). */
+function botaoMoneBoot(){
+  const deve=state.loaded&&mode!=="login"&&!precisaTermos()&&!ui.lerTermos; let b=document.getElementById("moneboot");
+  if(!deve){ if(b) b.remove(); return; } if(b) return;
+  b=document.createElement("button"); b.type="button"; b.id="moneboot"; b.className="moneboot"+(semMovimento()?"":" entra"); b.setAttribute("aria-label","Abrir o MoneBoot, assistente do Monetra"); b.title="MoneBoot";
+  b.innerHTML=`${roboMB(46,"rb-vivo")}<span class="mb-nome" aria-hidden="true">MoneBoot</span>`;
+  b.addEventListener("click",()=>{ vibra(10); openSheet("moneboot"); });
+  document.body.appendChild(b);
+}
 let asOuvindo=null;
-function perguntarPorVoz(){ if(!ReconhecimentoVoz) return; const campo=/** @type {HTMLInputElement|null} */(document.getElementById("s-busca")); if(!campo) return;
+function perguntarPorVoz(){ if(!ReconhecimentoVoz) return; const campo=/** @type {HTMLInputElement|null} */(document.getElementById("mb-perg")); if(!campo) return;
   if(asOuvindo){ try{ asOuvindo.stop(); }catch(e){} return; }
   const r=new ReconhecimentoVoz(); r.lang="pt-BR"; r.interimResults=true; r.maxAlternatives=1; asOuvindo=r;
   const marca=(/** @type {boolean} */ on)=>{ const b=document.querySelector("[data-asvoz]"); if(b){ b.classList.toggle("on",on); b.setAttribute("aria-pressed",String(on)); b.setAttribute("aria-label",on?"Parar de ouvir":"Perguntar falando"); } };
   marca(true); anunciar("Pode perguntar. Exemplo: quanto gastei com mercado este mês?");
-  r.onresult=e=>{ let t=""; for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; campo.value=t.replace(/\s+/g," ").trim().slice(0,120); atualizaBusca(); };
+  r.onresult=e=>{ let t=""; for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; campo.value=t.replace(/\s+/g," ").trim().slice(0,160); };
   r.onerror=e=>{ if(e&&e.error==="not-allowed") toast("Permita o uso do microfone para perguntar falando."); else if(e&&e.error!=="aborted"&&e.error!=="no-speech") toast("Não consegui ouvir. Tente de novo."); };
-  r.onend=()=>{ asOuvindo=null; marca(false); const a=document.querySelector("#s-result .assist"); if(a) anunciar(a.textContent.replace(/\s+/g," ").trim()); };
+  r.onend=()=>{ asOuvindo=null; marca(false); const c=/** @type {HTMLInputElement|null} */(document.getElementById("mb-perg")); if(c&&c.value.trim()) mbPergunta(c.value); };
   try{ r.start(); }catch(e){ asOuvindo=null; marca(false); } }
 function atualizaBusca(){
   const el=document.getElementById("s-result"); if(!el) return;
   const q=((document.getElementById("s-busca")||{}).value||"").trim().toLowerCase(); ui.sheet.q=q;
   const dest=q.length>=2||/^\d+º?$/.test(q)?destinosBusca(q):[];
-  const resp=q.length>=6?responder(q):null, blocoResp=resp?htmlResposta(resp):"";
   const blocoDest=dest.length?`<p class="hint">Ir para</p><div class="buscadest">${dest.map(x=>`<button type="button" class="item irpara" data-sir="${x.i}"><span class="ir-ic" aria-hidden="true">${icq("chev",16)}</span><span class="desc"><b>${esc(x.d[0])}</b><small>${esc(x.d[1])}</small></span></button>`).join("")}</div>`:"";
-  if(q.length<2){ el.innerHTML=blocoDest||`<p class="hint">Pergunte ao Monetra (tudo é calculado neste aparelho):</p><div class="as-sug">${AS_SUGESTOES.map(x=>`<button type="button" class="chip" data-asperg="${esc(x)}">${esc(x)}</button>`).join("")}</div>`; return; }
+  if(q.length<2){ el.innerHTML=blocoDest||'<p class="hint">Digite pelo menos 2 letras. Dá para buscar telas também, como “cartões” ou “13º”.</p>'; return; }
   const qn=parseMoney(q), res=[];
   const qt=q.startsWith("#")?normTag(q):null;
   const bate=(txt,v,g)=>{ if(qt) return !!(g&&g.tags&&g.tags.some(t=>t.startsWith(qt))); return norm(txt).includes(norm(q))||(qn>0&&Math.abs((Number(v)||0)-qn)<0.005); };
@@ -4204,7 +4242,7 @@ function atualizaBusca(){
   });
   state.config.parcelas.forEach(p=>{ if(bate(p.desc+" "+catName(p.cat)+" "+subName(p.cat,p.sub)+" parcela "+(p.tags||[]).map(t=>"#"+t).join(" "),p.total,p)) res.push({k:p.compra,tipo:"parcela",id:p.id,t:p.desc||"Compra parcelada",s:p.n+"x · "+catName(p.cat)+extraTxt(p),v:-p.total}); });
   state.config.fixos.forEach(f=>{ if(bate(f.nome+" "+catName(f.cat)+" fixa",f.valor)) res.push({k:null,tipo:"fixo",id:f.id,t:f.nome,s:"conta fixa · dia "+pad2(f.dia),v:-f.valor}); });
-  el.innerHTML=blocoResp+blocoDest+(res.length?`<p class="hint">${res.length} resultado${res.length===1?"":"s"}</p>`+res.slice(0,60).map(x=>`<button type="button" class="item" data-sres="${x.tipo}" data-id="${esc(x.id)}" data-mes="${x.k||""}"><span class="pill">${x.k?esc(abrMes(x.k)):"fixa"}</span><span class="desc"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span><span class="v ${x.v>0?"pos":""}">${brl(Math.abs(x.v))}</span></button>`).join(""):(blocoDest||blocoResp?"":'<p class="hint">Nada encontrado.</p>'));
+  el.innerHTML=blocoDest+(res.length?`<p class="hint">${res.length} resultado${res.length===1?"":"s"}</p>`+res.slice(0,60).map(x=>`<button type="button" class="item" data-sres="${x.tipo}" data-id="${esc(x.id)}" data-mes="${x.k||""}"><span class="pill">${x.k?esc(abrMes(x.k)):"fixa"}</span><span class="desc"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span><span class="v ${x.v>0?"pos":""}">${brl(Math.abs(x.v))}</span></button>`).join(""):(blocoDest?"":'<p class="hint">Nada encontrado.</p>'));
 }
 function erroSheet(msg,campo){ salvando=false; const e=document.getElementById("s-erro"); if(e){ e.textContent=msg; e.hidden=false; } if(campo){ const c=document.getElementById(campo); if(c) c.focus(); } }
 const TIPOS_COM_ITEM=["bem","desafio","viagem","gasto","avulso","caixinha","fixo","fixoMes","parcela","renda","rendaMes","categoria","meta","conta","cartao","transf","divida"];
@@ -4215,6 +4253,7 @@ function salvarSheet(outro){
   if(s.id&&TIPOS_COM_ITEM.includes(s.tipo)&&!itemAtual()){ closeSheet(); render(); toast("Este item foi apagado (talvez em outro aparelho)."); return; }
   if(salvando) return; salvando=true; setTimeout(()=>{ salvando=false; },350);
   if(s.tipo==="busca") return;
+  if(s.tipo==="moneboot"){ salvando=false; mbPergunta(campoTexto("mb-perg")); return; }
   if(s.tipo==="pin"){ salvarPin(); return; }
   if(s.tipo==="retro") return;
   if(s.tipo==="vincular"){ salvaSenhaConta(); return; }
@@ -4496,7 +4535,7 @@ function bindSheet(r){
       if(valor!=null) document.getElementById("s-valor").value=valor; if(desc!=null&&document.getElementById("s-desc")) document.getElementById("s-desc").value=desc; if(dia&&document.getElementById("s-dia")) document.getElementById("s-dia").value=dia; if(forma){ const f=document.getElementById("s-fm-"+forma); if(f) f.checked=true; }
       const r2=document.getElementById("s-cat-"+nova.id); if(r2) r2.checked=true; render(); toast("Categoria "+nome+" criada."); return; }
     if(b.dataset.sir){ irDestino(Number(b.dataset.sir)); return; }
-    if(b.dataset.asperg){ const c=/** @type {HTMLInputElement|null} */(document.getElementById("s-busca")); if(c){ c.value=b.dataset.asperg; atualizaBusca(); c.focus(); } return; }
+    if(b.dataset.asperg){ mbPergunta(b.dataset.asperg); return; }
     if(b.dataset.ascat){ const [cat,mes]=b.dataset.ascat.split("|"); closeSheet(); render(); openSheet("catmes",null,{cat,mes}); return; }
     if(b.dataset.asvoz){ perguntarPorVoz(); return; }
     if(b.dataset.scat){ const [t,id,mes]=b.dataset.scat.split("|"); closeSheet(); render(); openSheet(t,id,mes?{mes}:null); return; }
