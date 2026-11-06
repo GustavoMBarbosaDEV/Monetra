@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.2 — 06/11/2026 **MoneBot arrastável**
+
+- **Botão do MoneBot arrastável:** arraste o robozinho para qualquer altura; ao soltar, ele encosta na lateral mais próxima, sem sair da tela nem cobrir o topo ou a barra de baixo. A posição fica salva só neste aparelho e volta ao abrir o app ou girar a tela. Toque rápido abre a conversa; arrastar não abre.
+- **Testado** no navegador com arrasto do mouse: arrasto lento e rápido, encaixe nas duas laterais, limites de cima e de baixo, posição mantida ao recarregar e ao girar a tela, e toque abrindo a conversa.
+
 ## 5.8.1 — 06/11/2026 **MoneBot**
 
 - **Novo nome:** o assistente passa a se chamar **MoneBot** (antes MoneBoot) no botão, no título da conversa, na saudação e nas novidades.

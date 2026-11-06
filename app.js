@@ -343,11 +343,12 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.8.1";
+const VERSAO="5.8.2";
 const NOVIDADES=[
   "Conheça o MoneBot, o robozinho no canto da tela: pergunte, por exemplo, “quanto gastei com mercado este mês?” ou “quando termino de pagar as parcelas?”.",
   "As respostas são calculadas neste aparelho, com os seus dados. Nada é enviado para fora.",
-  "Dá para perguntar falando, pelo microfone da conversa, e ir direto para os lançamentos da categoria."
+  "Dá para perguntar falando, pelo microfone da conversa, e ir direto para os lançamentos da categoria.",
+  "O MoneBot está atrapalhando? Arraste o robozinho para outro lugar da tela. Ele lembra onde você deixou."
 ];
 const ENDERECO_NOVO="https://monetraapp.web.app/";
 const APK_URL=ENDERECO_NOVO+"baixar";
