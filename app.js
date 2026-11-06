@@ -1562,7 +1562,7 @@ function passosTutorial(){
     {ic:"ajustes",t:"7. Mapa: Ajustes",d:`Tudo o que dá para configurar fica ${AJ}. Toque no nome para abrir cada parte:`+L("<b>Contas fixas</b> e <b>Compras parceladas</b>.","<b>Modo viagem</b>: gastos em outra moeda, convertidos para real.","<b>Dívidas com pessoas</b>: quem te deve e quem você deve.","<b>Ferramentas</b>: simulador de quitação, 13º, férias, salário líquido e quanto guardar por mês.","<b>Importar extrato do banco</b>: baixe o extrato ou a fatura do cartão em <b>OFX</b>, <b>CSV</b> ou <b>PDF</b> no app do seu banco, toque em <b>Importar extrato</b> e escolha o arquivo (PDF com senha também funciona). A categoria já vem sugerida e você escolhe o que entra.","<b>Contas</b>: separe por banco ou carteira, com saldo inicial.","<b>Cartões de crédito</b>: limite, fechamento e vencimento.","<b>Categorias de gastos</b>: ícone, cor, limite por mês e subcategorias.","<b>Regras automáticas</b>: ensine suas palavras (ex.: “petz” → Pets) e a categoria vem certa.")},
     {ic:"perfil",t:"8. Mapa: Perfil",d:`Na aba <b>Perfil</b> ficam sua conta e as preferências do app:`+L(nuvem?"<b>Controles compartilhados</b>: crie um controle com a família, separado do seu Pessoal. Os botões no topo trocam entre eles.":"<b>Controles compartilhados</b>: disponíveis ao entrar com a conta Google.","<b>Renda e saldos</b>: salário padrão, outras rendas e saldo inicial.","<b>Aparência</b> (tema claro ou escuro) e <b>Bloqueio com PIN</b> (e digital).","<b>Lembretes</b>: notificações de vencimento e lembretes no calendário do celular.","<b>Acessibilidade</b>: texto maior, alto contraste, cores para daltonismo, modo calmo, modo foco, fonte de leitura fácil e botões maiores.","<b>Exportar e backup</b>: planilha para Excel, backup (também com senha) e restaurar backup.","<b>Novidades</b>, <b>Tutorial</b> e <b>Privacidade</b>.",`<b>Recomeçar do zero</b>${nuvem?" e <b>Excluir minha conta</b>":""}, no fim da página.`)},
     {ic:"ano",t:"9. Mapa: Relatórios",d:`Na aba <b>Relatórios</b> você vê o ano inteiro:`+L("<b>Receitas x despesas</b> e <b>mês a mês</b>, lado a lado.","<b>Para onde foi o dinheiro</b> e por <b>forma de pagamento</b>.","<b>Assinaturas e contas fixas</b>, com aviso quando uma fica mais cara.","<b>Imposto de Renda</b>: despesas dedutíveis do ano.","<b>Sua inflação x IPCA</b> e <b>etiquetas</b> (escreva #etiqueta na descrição).","<b>Patrimônio</b>: some imóveis, veículos e investimentos às suas contas.","<b>Retrospectiva</b> do ano em formato de stories.")},
-    {ic:"busca",t:"10. Atalhos",d:`Para ir mais rápido:`+L("<b>Busca</b> (lupa no topo): procure lançamentos ou telas. “extrato”, “13º”, “cartões” e “backup” levam direto ao lugar.","O <b>olho</b> no saldo do mês esconde os valores para usar o app em público.",nuvem?"No compartilhado, escolha <b>Quem pagou</b> na despesa: a <b>Divisão do mês</b>, no Início, mostra quem deve a quem.":null,"Com o app instalado, <b>compartilhe um comprovante</b> com o Monetra para lançar mais rápido.","No Android, dá para instalar o app pelo botão <b>Baixar o app para Android</b> da página inicial (antes de entrar).")},
+    {ic:"busca",t:"10. Atalhos",d:`Para ir mais rápido:`+L("<b>Busca</b> (lupa no topo): procure lançamentos ou telas, ou faça uma pergunta, como “quanto gastei com mercado este mês?”. “extrato”, “13º”, “cartões” e “backup” levam direto ao lugar.","O <b>olho</b> no saldo do mês esconde os valores para usar o app em público.",nuvem?"No compartilhado, escolha <b>Quem pagou</b> na despesa: a <b>Divisão do mês</b>, no Início, mostra quem deve a quem.":null,"Com o app instalado, <b>compartilhe um comprovante</b> com o Monetra para lançar mais rápido.","No Android, dá para instalar o app pelo botão <b>Baixar o app para Android</b> da página inicial (antes de entrar).")},
     {ic:"check",t:"Pronto para começar!",d:`Comece informando o <b>salário deste mês</b>. Depois é só lançar os gastos do dia a dia no <b>+</b>.`,fim:true}
   ];
 }
@@ -2267,7 +2267,7 @@ function sequencias(gs){
   let azulMelhor=0, r=0; fechados.forEach((k,i)=>{ r=calc(k).saldo>=0?(i&&entre(fechados[i-1],k)===1?r+1:1):0; if(r>azulMelhor) azulMelhor=r; });
   return {atual,melhor,azulAtual,azulMelhor,fechados};
 }
-const ICQ={"seta-baixo":'<path d="M12 5v14M6 13l6 6 6-6"/>',"seta-cima":'<path d="M12 19V5M6 11l6-6 6 6"/>',troca:'<path d="M7 7h12l-3-3M17 17H5l3 3"/>',repete:'<path d="M17 4l3 3-3 3"/><path d="M4 12V9a2 2 0 0 1 2-2h14M7 20l-3-3 3-3"/><path d="M20 12v3a2 2 0 0 1-2 2H4"/>',tendencia:'<path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/>',engrenagem:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',chev:'<path d="m9 6 6 6-6 6"/>',broto:'<path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>',chama:'<path d="M12 21c-4 0-6.5-2.6-6.5-6 0-4 4-6 4.5-10 2.5 1.5 4 4 4 6 1-1 1.5-2 1.5-3 2 1.5 3 4 3 7 0 3.4-2.5 6-6.5 6z"/>',medalha:'<circle cx="12" cy="14" r="5"/><path d="M9 9.5 7 3h4l1 3 1-3h4l-2 6.5"/>',coracao:'<path d="M12 20s-7-4.4-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4c0 5.2-7 9.6-7 9.6z"/>',nuvem:'<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.5A3.5 3.5 0 0 1 17 18z"/>',sol:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',trofeu:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6"/>',alvo:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/>',cofre:'<path d="M5 11a7 6 0 0 1 12.5-3.5L20 7v4l-1.5 1A7 6 0 0 1 15 17v2h-3v-1.5h-2V19H7v-2.3A6 6 0 0 1 5 11z"/>',bandeira:'<path d="M6 21V4M6 4h11l-2 4 2 4H6"/>',raio:'<path d="M13 3 5.5 13.5H12L11 21l7.5-10.5H12z"/>',estrela:'<path d="m12 4 2.4 5 5.4.7-4 3.7 1 5.4L12 16.3 7.2 18.8l1-5.4-4-3.7 5.4-.7z"/>'};
+const ICQ={"seta-baixo":'<path d="M12 5v14M6 13l6 6 6-6"/>',"seta-cima":'<path d="M12 19V5M6 11l6-6 6 6"/>',troca:'<path d="M7 7h12l-3-3M17 17H5l3 3"/>',repete:'<path d="M17 4l3 3-3 3"/><path d="M4 12V9a2 2 0 0 1 2-2h14M7 20l-3-3 3-3"/><path d="M20 12v3a2 2 0 0 1-2 2H4"/>',tendencia:'<path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/>',engrenagem:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',chev:'<path d="m9 6 6 6-6 6"/>',broto:'<path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>',chama:'<path d="M12 21c-4 0-6.5-2.6-6.5-6 0-4 4-6 4.5-10 2.5 1.5 4 4 4 6 1-1 1.5-2 1.5-3 2 1.5 3 4 3 7 0 3.4-2.5 6-6.5 6z"/>',medalha:'<circle cx="12" cy="14" r="5"/><path d="M9 9.5 7 3h4l1 3 1-3h4l-2 6.5"/>',coracao:'<path d="M12 20s-7-4.4-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4c0 5.2-7 9.6-7 9.6z"/>',nuvem:'<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.5A3.5 3.5 0 0 1 17 18z"/>',sol:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',trofeu:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6"/>',alvo:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/>',cofre:'<path d="M5 11a7 6 0 0 1 12.5-3.5L20 7v4l-1.5 1A7 6 0 0 1 15 17v2h-3v-1.5h-2V19H7v-2.3A6 6 0 0 1 5 11z"/>',bandeira:'<path d="M6 21V4M6 4h11l-2 4 2 4H6"/>',raio:'<path d="M13 3 5.5 13.5H12L11 21l7.5-10.5H12z"/>',estrela:'<path d="m12 4 2.4 5 5.4.7-4 3.7 1 5.4L12 16.3 7.2 18.8l1-5.4-4-3.7 5.4-.7z"/>',balao:'<path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M8 10h8M8 13h5"/>'};
 const icq=(k,px)=>`<svg viewBox="0 0 24 24" width="${px||22}" height="${px||22}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICQ[k]||ICQ.estrela}</svg>`;
 const CONQ=[
   {id:"primeiro",ic:"broto",nome:"Primeiro passo",como:"Lance sua primeira despesa."},
@@ -3691,7 +3691,7 @@ function renderSheet(){
   document.body.classList.add("sheet-open"); const _ap=document.getElementById("app"); if(_ap) _ap.inert=true;
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
   if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="catmes"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"){ closeSheet(); return; }
-  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",vincular:ehAnonimo()?"Criar sua conta":"Formas de entrar",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  const titulos={catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",vincular:ehAnonimo()?"Criar sua conta":"Formas de entrar",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar ou perguntar",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="radiogroup" aria-label="Tipo de lançamento">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -3968,7 +3968,7 @@ function renderSheet(){
     corpo=corpoDia(k,dd); sub=esc(nomeMes(k));
     botoes=`<button class="btn" type="button" data-callancar="${dd}">${ICON.mais||"+"} Lançar despesa neste dia</button>`;
   }else if(s.tipo==="busca"){
-    corpo=`<label class="f"><span>Procure lançamentos (descrição, categoria, valor, #etiqueta) ou telas, como “cartões” e “13º”</span><input class="in" id="s-busca" type="search" placeholder="ex.: farmácia, aluguel, 89,90" value="${esc(s.q||"")}" data-autofocus autocomplete="off"></label><div id="s-result" class="busca"></div>`;
+    corpo=`<label class="f"><span>Busque lançamentos e telas, ou pergunte sobre o seu dinheiro</span><span class="as-campo"><input class="in" id="s-busca" type="search" placeholder="ex.: farmácia, 89,90 ou quanto gastei com mercado?" value="${esc(s.q||"")}" data-autofocus autocomplete="off" enterkeyhint="search">${ReconhecimentoVoz?`<button type="button" class="falar" data-asvoz="1" aria-pressed="false" aria-label="Perguntar falando">${ICON_MIC}</button>`:""}</span></label><div id="s-result" class="busca"></div>`;
     sub="";
   }
   r.innerHTML=`<div class="sheet-wrap ${s.tipo==="retro"?"stories"+(a11y.retroAuto?" auto":""):""}" data-sfechar="1" role="dialog" aria-modal="true" aria-labelledby="sheetTit"><form class="sheet${s.tipo==="retro"?" st"+((s.slide||0)%6):""}" id="sheetForm" autocomplete="off" novalidate>
@@ -4049,12 +4049,151 @@ function irDestino(i){
   setTimeout(()=>{ alvo.scrollIntoView({block:"start",behavior:semMovimento()?"auto":"smooth"}); if(h){ alvo.classList.remove("realce"); void alvo.offsetWidth; alvo.classList.add("realce"); setTimeout(()=>alvo.classList.remove("realce"),1600); }
     if(!alvo.hasAttribute("tabindex")) alvo.setAttribute("tabindex","-1"); alvo.focus({preventScroll:true}); anunciar("Aberto: "+d[0]); },60);
 }
+// Pergunte ao Monetra: entende perguntas em português e responde com os dados do próprio aparelho (nada sai dele)
+/** @typedef {{tit:string,valor?:number|null,linhas:string[],barras?:{nome:string,v:number}[],ir?:{txt:string,cat:string,mes:MesKey}|null}} RespAssist */
+const AS_SUGESTOES=["Quanto gastei com mercado este mês?","Onde mais gastei no mês passado?","Gastei mais que no mês passado?","Quanto gasto por mês em média?","Quando termino de pagar as parcelas?","Quanto está a fatura do cartão?","Quanto falta para as minhas metas?","Quanto tenho na caixinha?","Quanto gasto com contas fixas?","Quanto eu devo?"];
+const AS_PARADA=new Set("quanto quantos quantas quanta qual quais quando onde como que o a os as um uma de do da dos das em no na nos nas ao aos com pra pro para por pelo pela meu minha meus minhas eu me mim ja foi foram foi esta estao esse este essa nesse neste nessa nesta tenho tive estou gastei gasto gastos gastando gastar gastamos despesa despesas paguei pago pagar mais menos total valor ate e ou mes meses ano vez vezes ai la isso aquilo tudo todo toda todos todas fiz tem teve".split(" "));
+const AS_MESES=NOMES.map(n=>limpaPal(n));
+/** Lê o período da pergunta. @param {string} t texto já limpo @returns {{ks:MesKey[],nome:string,resto:string}|null} */
+function asPeriodo(t){
+  const ateHoje=(/** @type {MesKey} */ a,/** @type {MesKey} */ b)=>{ const ks=[]; for(let k=a;k<=b&&ks.length<120;k=shiftKey(k,1)) ks.push(k); return ks; };
+  let m;
+  if((m=/\b(mes passado|mes anterior|ultimo mes)\b/.exec(t))){ const k=shiftKey(todayKey,-1); return {ks:[k],nome:nomeMes(k),resto:t.replace(m[0]," ")}; }
+  if((m=/\bultimos? (\d{1,2}|dois|tres|seis|doze) meses\b/.exec(t))){ const n=Math.min(24,Math.max(1,Number({dois:2,tres:3,seis:6,doze:12}[m[1]]||m[1]))); return {ks:ateHoje(shiftKey(todayKey,1-n),todayKey),nome:"últimos "+n+" meses",resto:t.replace(m[0]," ")}; }
+  if((m=/\b(este|esse|neste|nesse|no|deste|desse) ano\b/.exec(t))){ const y=kY(todayKey); return {ks:ateHoje(keyOf(y,1),todayKey),nome:String(y),resto:t.replace(m[0]," ")}; }
+  if((m=/\b(este|esse|neste|nesse|deste|desse|o) mes\b|\bhoje\b/.exec(t))) return {ks:[todayKey],nome:nomeMes(todayKey),resto:t.replace(m[0]," ")};
+  for(let i=0;i<12;i++){ const r=new RegExp("\\b"+AS_MESES[i]+"(?: de (20\\d\\d))?\\b"); if((m=r.exec(t))){
+    let y=m[1]?Number(m[1]):kY(todayKey); if(!m[1]&&keyOf(y,i+1)>todayKey) y--; const k=keyOf(y,i+1); return {ks:[k],nome:nomeMes(k),resto:t.replace(m[0]," ")}; } }
+  if((m=/\b(20\d\d)\b/.exec(t))){ const y=Number(m[1]), fim=y===kY(todayKey)?todayKey:keyOf(y,12); return {ks:ateHoje(keyOf(y,1),fim),nome:String(y),resto:t.replace(m[0]," ")}; }
+  return null;
+}
+/** Palavras que sobram depois de tirar as comuns. @param {string} t */
+const asTermos=t=>t.split(" ").filter(w=>w.length>=3&&!AS_PARADA.has(w));
+/** Categoria cujo nome tem uma das palavras (mercado, luz, farmácia…). @param {string[]} ws */
+function asCategoria(ws){
+  for(const w of ws) for(const ct of state.config.categorias){
+    const pal=limpaPal(ct.nome).split(" ").filter(p=>p.length>=3).concat((ct.subs||[]).flatMap(s=>limpaPal(s.nome||"").split(" ")));
+    if(pal.some(p=>p===w||(w.length>=4&&(p.startsWith(w)||w.startsWith(p))&&p.length>=4))) return ct; }
+  return null;
+}
+const asDespesas=(/** @type {MesKey[]} */ ks)=>ks.flatMap(k=>despesasDoMes(k).map(x=>Object.assign({},x,{_k:k})));
+/** Itens pela data da compra (compra no cartão conta no mês em que foi feita). @param {MesKey[]} ks */
+const asCompras=ks=>ks.flatMap(k=>/** @type {any[]} */(((state.months[k]||{}).gastos||[]).slice()).concat(fixosDoMes(k).filter(f=>!f.pular),parcelasDoMes(k)));
+const asTotal=(/** @type {MesKey[]} */ ks)=>ks.reduce((a,k)=>a+calc(k).despesas,0);
+/** @param {MesKey[]} ks */
+function asPorCat(ks){ /** @type {Object<string,number>} */ const t={}; ks.forEach(k=>{ const pc=calc(k).porCat; Object.keys(pc).forEach(id=>{ t[id]=(t[id]||0)+pc[id]; }); }); return t; }
+const asPct=(/** @type {number} */ a,/** @type {number} */ b)=>b>0?Math.round((a-b)/b*100):null;
+/** Fim e restante de uma compra parcelada. @param {Parcela} p */
+function asParcela(p){
+  const cc=p.forma==="credito"?cartaoDe(p):null, prim=cc&&cartaoOk(cc)?faturaMes(p.compra,p.dia,cc):p.compra;
+  let resta=0, n=0; for(let i=0;i<p.n;i++){ const mk=shiftKey(prim,i), o=((state.months[mk]||{}).parcelas||{})[p.id]||{}; if(mk>=todayKey&&!o.pago){ resta+=valorParcela(p.total,p.n,i); n++; } }
+  return {fim:shiftKey(prim,p.n-1),resta:Math.round(resta*100)/100,n};
+}
+/** @param {string} q @returns {RespAssist|null} */
+function responder(q){
+  const t=" "+limpaPal(q)+" ", per=asPeriodo(t), resto=per?per.resto:t, ws=asTermos(resto.trim());
+  const ks=per?per.ks:[todayKey], quando=(per?per.nome:nomeMes(todayKey)).toLowerCase(), emQ=(/^últimos/.test(quando)?"nos ":"em ")+quando, tem=(/** @type {RegExp} */ r)=>r.test(t);
+  if(tem(/\b(ajuda|exemplos?|o que (voce )?(sabe|faz|responde|entende))\b/)) return {tit:"Pergunte sobre o seu dinheiro",linhas:["Eu respondo com os dados deste aparelho, sem enviar nada para fora. Toque numa sugestão ou escreva do seu jeito."]};
+  if(tem(/\b(devo|deve|devendo|dividas?|emprestei|emprestimos?|me pagar)\b/)){
+    const ds=state.config.dividas.map(d=>({d,falta:Math.max(0,Math.round((d.valor-pagoDiv(d))*100)/100)})).filter(x=>x.falta>0);
+    const receber=tem(/\b(me deve|me devem|receber|emprestei|me pagar)\b/), lista=ds.filter(x=>x.d.tipo===(receber?"receber":"pagar"));
+    if(!lista.length) return {tit:receber?"Ninguém te deve nada":"Você não tem dívidas em aberto",linhas:["Nada registrado em Dívidas, no Perfil."]};
+    return {tit:receber?"Te devem":"Você deve",valor:soma(lista,x=>x.falta),linhas:[],barras:lista.sort((a,b)=>b.falta-a.falta).slice(0,6).map(x=>({nome:x.d.pessoa+(x.d.desc?" · "+x.d.desc:""),v:x.falta}))};
+  }
+  if(tem(/\b(metas?|objetivos?|sonhos?)\b/)){
+    const ms=state.config.metas; if(!ms.length) return {tit:"Você ainda não tem metas",linhas:["Crie uma na aba Metas e eu acompanho quanto falta."]};
+    const alvo=ms.find(mt=>ws.some(w=>limpaPal(mt.nome).split(" ").some(p=>p.length>=3&&(p.startsWith(w)||w.startsWith(p)))));
+    if(alvo){ const i=infoMeta(alvo,todayKey); return {tit:i.feita?"Meta "+alvo.nome+" concluída":"Falta para "+alvo.nome,valor:i.falta,linhas:[Math.round(i.pct*100)+"% guardado ("+brl(i.saldo)+" de "+brl(alvo.alvo)+")."+(i.porMes&&!i.feita?" Guardando "+brl(i.porMes)+" por mês, você chega lá até "+nomeMes(/** @type {MesKey} */(alvo.prazo)).toLowerCase()+".":"")]}; }
+    return {tit:"Suas metas",valor:soma(ms,mt=>infoMeta(mt,todayKey).falta),linhas:["Quanto falta, somando todas."],barras:ms.map(mt=>({nome:mt.nome+" · "+Math.round(infoMeta(mt,todayKey).pct*100)+"%",v:infoMeta(mt,todayKey).falta}))};
+  }
+  if(tem(/\b(caixinha|guardad[oa]s?|guardei|reserva|poupanca|economizei)\b/)){
+    const tot=caixinhaAte(todayKey), mes=calc(todayKey);
+    return {tit:"Na caixinha",valor:tot,linhas:[mes.guardado||mes.retirado?"Em "+nomeMes(todayKey).toLowerCase()+": guardou "+brl(mes.guardado)+" e retirou "+brl(mes.retirado)+".":"Nada guardado ou retirado em "+nomeMes(todayKey).toLowerCase()+"."]};
+  }
+  if(tem(/\b(parcelas?|parcelad[oa]s?|prestac(ao|oes)|termino de pagar|acabo de pagar|quito|quitar)\b/)){
+    const ps=state.config.parcelas.map(p=>({p,i:asParcela(p)})).filter(x=>x.i.n>0);
+    if(!ps.length) return {tit:"Nenhuma parcela em aberto",linhas:["Todas as compras parceladas já foram pagas."]};
+    const uma=ps.find(x=>ws.some(w=>limpaPal(x.p.desc).split(" ").some(p=>p.length>=3&&(p.startsWith(w)||w.startsWith(p)))));
+    if(uma) return {tit:uma.p.desc||"Compra parcelada",valor:uma.i.resta,linhas:["Faltam "+uma.i.n+" de "+uma.p.n+" parcelas. A última é em "+nomeMes(uma.i.fim).toLowerCase()+"."]};
+    const fim=ps.map(x=>x.i.fim).sort().pop()||todayKey;
+    return {tit:"Falta pagar em parcelas",valor:soma(ps,x=>x.i.resta),linhas:["Você fica livre de todas em "+nomeMes(fim).toLowerCase()+"."],barras:ps.sort((a,b)=>b.i.resta-a.i.resta).slice(0,6).map(x=>({nome:(x.p.desc||"Parcelada")+" · até "+abrMes(x.i.fim),v:x.i.resta}))};
+  }
+  if(tem(/\b(cartao|cartoes|fatura|faturas)\b/)||(tem(/\blimite\b/)&&!asCategoria(ws))){
+    const cs=cartoesOk(); if(!cs.length) return {tit:"Nenhum cartão cadastrado",linhas:["Cadastre em Ajustes → Cartões, com o dia de fechamento e de vencimento."]};
+    const um=cs.find(c=>ws.some(w=>limpaPal(c.nome).split(" ").some(p=>p.length>=3&&p.startsWith(w))))||null, lista=um?[um]:cs, k=per?per.ks[per.ks.length-1]:todayKey;
+    if(tem(/\blimite\b/)) return {tit:"Limite livre"+(um?" no "+um.nome:""),valor:soma(lista,c=>usoCartao(c).livre),linhas:lista.map(c=>{ const u=usoCartao(c); return c.nome+": "+brl(u.usado)+" usados de "+brl(u.limite)+"."; })};
+    return {tit:"Fatura de "+nomeMes(k).toLowerCase(),valor:soma(lista,c=>soma(faturaDoMes(k,c.id))),linhas:lista.map(c=>c.nome+": "+brl(soma(faturaDoMes(k,c.id)))+", vence dia "+c.vence+".")};
+  }
+  if(tem(/\b(contas? fixas?|fixos?|fixas|assinaturas?|mensalidades?)\b/)){
+    const fx=fixosDoMes(ks[ks.length-1]).filter(f=>!f.pular); if(!fx.length) return {tit:"Nenhuma conta fixa",linhas:["Cadastre aluguel, luz e assinaturas em Ajustes → Contas fixas."]};
+    return {tit:"Contas fixas de "+nomeMes(ks[ks.length-1]).toLowerCase(),valor:soma(fx),linhas:[fx.length+(fx.length===1?" conta":" contas")+", "+fx.filter(f=>f.pago).length+" já pagas."],barras:fx.slice().sort((a,b)=>b.valor-a.valor).slice(0,6).map(f=>({nome:f.desc,v:f.valor}))};
+  }
+  if(tem(/\b(recebi|receitas?|ganhei|entrou|entradas?|rendas?|salarios?)\b/)&&!tem(/\bgast/)){
+    const v=ks.reduce((a,k)=>a+calc(k).receitas,0); return {tit:"Entrou "+emQ,valor:v,linhas:ks.length===1?["Saiu "+brl(calc(ks[0]).despesas)+" no mesmo mês."]:[]};
+  }
+  if(tem(/\bmedia\b|\bpor mes\b/)){
+    const base=per&&per.ks.length>1?per.ks:[1,2,3].map(n=>shiftKey(todayKey,-n)), cs=base.filter(ativo); if(!cs.length) return {tit:"Ainda não há meses suficientes",linhas:["Assim que um mês fechar, eu calculo a média."]};
+    const ct=asCategoria(ws), v=ct?cs.reduce((a,k)=>a+(calc(k).porCat[ct.id]||0),0)/cs.length:asTotal(cs)/cs.length;
+    return {tit:"Média por mês"+(ct?" com "+ct.nome:""),valor:v,linhas:["Com base "+(per&&per.ks.length>1?emQ:cs.length===1?"no mês anterior":"nos "+cs.length+" meses anteriores")+"."]};
+  }
+  if(tem(/\b(compar\w*|mais que|menos que|mais do que|menos do que|em relacao|diferenca)\b/)){
+    const nomes=AS_MESES.map((n,i)=>({i,pos:t.indexOf(" "+n+" ")})).filter(x=>x.pos>=0).sort((a,b)=>a.pos-b.pos);
+    const mesDe=(/** @type {number} */ i)=>(asPeriodo(" "+AS_MESES[i]+" ")||{ks:[todayKey]}).ks[0];
+    // "gastei mais que no mês passado?" compara o mês atual com o citado
+    const comRef=tem(/\b(mais|menos) (que|do que)\b/)&&!!per&&per.ks.length===1&&per.ks[0]<todayKey&&nomes.length<2;
+    const kA=nomes.length>=2?mesDe(nomes[0].i):comRef?todayKey:ks[0], kB=nomes.length>=2?mesDe(nomes[1].i):comRef?ks[0]:shiftKey(kA,-1);
+    const a=calc(kA).despesas, b=calc(kB).despesas, p=asPct(a,b);
+    const pa=calc(kA).porCat, pb=calc(kB).porCat, dif=state.config.categorias.map(c=>({nome:c.nome,v:(pa[c.id]||0)-(pb[c.id]||0)})).filter(x=>x.v>0.004).sort((x,y)=>y.v-x.v).slice(0,3);
+    return {tit:(a>b?"Gastou mais":"Gastou menos")+" em "+nomeMes(kA).toLowerCase(),valor:a,linhas:[nomeMes(kB)+": "+brl(b)+(p!==null?" ("+(p>0?"+":"")+p+"%).":".")].concat(dif.length?["O que mais subiu:"]:[]),barras:dif.map(x=>({nome:x.nome,v:x.v}))};
+  }
+  if(tem(/\b(onde mais|maior(es)?|mais gast\w*|principais|top|para onde|pra onde)\b/)){
+    const pc=asPorCat(ks), cats=Object.keys(pc).filter(id=>pc[id]>0).sort((a,b)=>pc[b]-pc[a]).slice(0,5);
+    if(!cats.length) return {tit:"Nenhum gasto "+emQ,linhas:[]};
+    const top=asDespesas(ks).sort((a,b)=>(b.valor||0)-(a.valor||0))[0];
+    return {tit:"Onde mais gastou "+emQ,valor:asTotal(ks),linhas:top?["Maior gasto: "+(top.desc||catName(top.cat))+", "+brl(top.valor)+"."]:[],barras:cats.map(id=>({nome:catName(id),v:pc[id]})),ir:ks.length===1?{txt:"Ver "+catName(cats[0]),cat:cats[0],mes:ks[0]}:null};
+  }
+  if(tem(/\b(gast\w*|paguei|despesas?|quanto|custou|custa|limite|orcamento)\b/)&&ws.length){
+    const ct=asCategoria(ws);
+    if(ct){ const v=ks.reduce((a,k)=>a+(calc(k).porCat[ct.id]||0),0), lim=ks.length===1?limiteCat(ct,ks[0]):0;
+      const ant=ks.length===1?(calc(shiftKey(ks[0],-1)).porCat[ct.id]||0):0, p=ks.length===1?asPct(v,ant):null;
+      const linhas=[]; const mAnt=nomeMes(shiftKey(ks[0],-1)).toLowerCase(); if(p===0) linhas.push("Mesmo valor de "+mAnt+"."); else if(p!==null) linhas.push((p>0?"+":"")+p+"% em relação a "+mAnt+" ("+brl(ant)+").");
+      if(lim>0) linhas.push(v>lim?"Passou "+brl(v-lim)+" do limite de "+brl(lim)+".":"Ainda cabem "+brl(lim-v)+" no limite de "+brl(lim)+".");
+      return {tit:ct.nome+" "+emQ,valor:v,linhas,ir:ks.length===1?{txt:"Ver lançamentos",cat:ct.id,mes:ks[0]}:null}; }
+    const its=asCompras(ks).filter(x=>{ const d=limpaPal((x.desc||"")+" "+(x.tags||[]).join(" ")); return ws.some(w=>d.split(" ").some(p=>p.startsWith(w))); });
+    if(!its.length) return {tit:"Nada encontrado "+emQ,linhas:["Não achei gastos com “"+ws.join(" ")+"”. Veja os resultados da busca abaixo."]};
+    return {tit:"“"+ws.join(" ")+"” "+emQ,valor:soma(its),linhas:[its.length+(its.length===1?" lançamento":" lançamentos")+(its.length>1?", média de "+brl(soma(its)/its.length)+" cada":"")+"."]};
+  }
+  if(tem(/\bquanto gastei\b|\btotal de gastos\b|\bgastei (no|em|este|esse)\b/)||(per&&tem(/\bgast/))){
+    const v=asTotal(ks); return {tit:"Gastos "+emQ,valor:v,linhas:ks.length===1?["Entrou "+brl(calc(ks[0]).receitas)+" no mesmo mês."]:[]};
+  }
+  return null;
+}
+/** @param {RespAssist} r */
+function htmlResposta(r){
+  const max=r.barras&&r.barras.length?Math.max(...r.barras.map(b=>Math.abs(b.v)),0.01):1;
+  return `<div class="assist" role="status" aria-live="polite"><span class="as-ic" aria-hidden="true">${icq("balao",18)}</span><div class="as-corpo">
+    <b class="as-tit">${esc(r.tit)}</b>${typeof r.valor==="number"?`<span class="as-valor num">${brl(r.valor)}</span>`:""}
+    ${r.linhas.map(l=>`<p>${esc(l)}</p>`).join("")}
+    ${r.barras&&r.barras.length?`<ul class="as-barras">${r.barras.map(b=>`<li><span>${esc(b.nome)}</span><b class="num">${brl(b.v)}</b><i aria-hidden="true"><i style="width:${Math.max(4,Math.round(Math.abs(b.v)/max*100))}%"></i></i></li>`).join("")}</ul>`:""}
+    ${r.ir?`<button type="button" class="btn mini ghost" data-ascat="${esc(r.ir.cat)}|${esc(r.ir.mes)}">${esc(r.ir.txt)}</button>`:""}</div></div>`;
+}
+let asOuvindo=null;
+function perguntarPorVoz(){ if(!ReconhecimentoVoz) return; const campo=/** @type {HTMLInputElement|null} */(document.getElementById("s-busca")); if(!campo) return;
+  if(asOuvindo){ try{ asOuvindo.stop(); }catch(e){} return; }
+  const r=new ReconhecimentoVoz(); r.lang="pt-BR"; r.interimResults=true; r.maxAlternatives=1; asOuvindo=r;
+  const marca=(/** @type {boolean} */ on)=>{ const b=document.querySelector("[data-asvoz]"); if(b){ b.classList.toggle("on",on); b.setAttribute("aria-pressed",String(on)); b.setAttribute("aria-label",on?"Parar de ouvir":"Perguntar falando"); } };
+  marca(true); anunciar("Pode perguntar. Exemplo: quanto gastei com mercado este mês?");
+  r.onresult=e=>{ let t=""; for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; campo.value=t.replace(/\s+/g," ").trim().slice(0,120); atualizaBusca(); };
+  r.onerror=e=>{ if(e&&e.error==="not-allowed") toast("Permita o uso do microfone para perguntar falando."); else if(e&&e.error!=="aborted"&&e.error!=="no-speech") toast("Não consegui ouvir. Tente de novo."); };
+  r.onend=()=>{ asOuvindo=null; marca(false); const a=document.querySelector("#s-result .assist"); if(a) anunciar(a.textContent.replace(/\s+/g," ").trim()); };
+  try{ r.start(); }catch(e){ asOuvindo=null; marca(false); } }
 function atualizaBusca(){
   const el=document.getElementById("s-result"); if(!el) return;
   const q=((document.getElementById("s-busca")||{}).value||"").trim().toLowerCase(); ui.sheet.q=q;
   const dest=q.length>=2||/^\d+º?$/.test(q)?destinosBusca(q):[];
+  const resp=q.length>=6?responder(q):null, blocoResp=resp?htmlResposta(resp):"";
   const blocoDest=dest.length?`<p class="hint">Ir para</p><div class="buscadest">${dest.map(x=>`<button type="button" class="item irpara" data-sir="${x.i}"><span class="ir-ic" aria-hidden="true">${icq("chev",16)}</span><span class="desc"><b>${esc(x.d[0])}</b><small>${esc(x.d[1])}</small></span></button>`).join("")}</div>`:"";
-  if(q.length<2){ el.innerHTML=blocoDest||'<p class="hint">Digite pelo menos 2 letras. Dá para buscar telas também, como “cartões” ou “13º”.</p>'; return; }
+  if(q.length<2){ el.innerHTML=blocoDest||`<p class="hint">Pergunte ao Monetra (tudo é calculado neste aparelho):</p><div class="as-sug">${AS_SUGESTOES.map(x=>`<button type="button" class="chip" data-asperg="${esc(x)}">${esc(x)}</button>`).join("")}</div>`; return; }
   const qn=parseMoney(q), res=[];
   const qt=q.startsWith("#")?normTag(q):null;
   const bate=(txt,v,g)=>{ if(qt) return !!(g&&g.tags&&g.tags.some(t=>t.startsWith(qt))); return norm(txt).includes(norm(q))||(qn>0&&Math.abs((Number(v)||0)-qn)<0.005); };
@@ -4065,7 +4204,7 @@ function atualizaBusca(){
   });
   state.config.parcelas.forEach(p=>{ if(bate(p.desc+" "+catName(p.cat)+" "+subName(p.cat,p.sub)+" parcela "+(p.tags||[]).map(t=>"#"+t).join(" "),p.total,p)) res.push({k:p.compra,tipo:"parcela",id:p.id,t:p.desc||"Compra parcelada",s:p.n+"x · "+catName(p.cat)+extraTxt(p),v:-p.total}); });
   state.config.fixos.forEach(f=>{ if(bate(f.nome+" "+catName(f.cat)+" fixa",f.valor)) res.push({k:null,tipo:"fixo",id:f.id,t:f.nome,s:"conta fixa · dia "+pad2(f.dia),v:-f.valor}); });
-  el.innerHTML=blocoDest+(res.length?`<p class="hint">${res.length} resultado${res.length===1?"":"s"}</p>`+res.slice(0,60).map(x=>`<button type="button" class="item" data-sres="${x.tipo}" data-id="${esc(x.id)}" data-mes="${x.k||""}"><span class="pill">${x.k?esc(abrMes(x.k)):"fixa"}</span><span class="desc"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span><span class="v ${x.v>0?"pos":""}">${brl(Math.abs(x.v))}</span></button>`).join(""):(blocoDest?"":'<p class="hint">Nada encontrado.</p>'));
+  el.innerHTML=blocoResp+blocoDest+(res.length?`<p class="hint">${res.length} resultado${res.length===1?"":"s"}</p>`+res.slice(0,60).map(x=>`<button type="button" class="item" data-sres="${x.tipo}" data-id="${esc(x.id)}" data-mes="${x.k||""}"><span class="pill">${x.k?esc(abrMes(x.k)):"fixa"}</span><span class="desc"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span><span class="v ${x.v>0?"pos":""}">${brl(Math.abs(x.v))}</span></button>`).join(""):(blocoDest||blocoResp?"":'<p class="hint">Nada encontrado.</p>'));
 }
 function erroSheet(msg,campo){ salvando=false; const e=document.getElementById("s-erro"); if(e){ e.textContent=msg; e.hidden=false; } if(campo){ const c=document.getElementById(campo); if(c) c.focus(); } }
 const TIPOS_COM_ITEM=["bem","desafio","viagem","gasto","avulso","caixinha","fixo","fixoMes","parcela","renda","rendaMes","categoria","meta","conta","cartao","transf","divida"];
@@ -4298,7 +4437,7 @@ function bindSheet(r){
   let apertouFundo=false;
   r.addEventListener("pointerdown",e=>{ apertouFundo=!!(e.target.classList&&e.target.classList.contains("sheet-wrap")); });
   r.addEventListener("click",e=>{
-    const b=e.target.closest("[data-sir],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-avsal],[data-lg],[data-avaliar],[data-salextra],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
+    const b=e.target.closest("[data-sir],[data-asperg],[data-ascat],[data-asvoz],[data-scat],[data-falar],[data-rauto],[data-mesano],[data-messel],[data-mesok],[data-calctipo],[data-calcmeta],[data-simtaxa],[data-simdiv],[data-avsemana],[data-avsal],[data-lg],[data-avaliar],[data-salextra],[data-semnav],[data-avbackup],[data-avbackupdepois],[data-desmodelo],[data-caledit],[data-callancar],[data-vgcot],[data-rtoque],[data-addtag],[data-addsub],[data-delsub],[data-divpag],[data-divquitar],[data-divdelpag],[data-avdiv],[data-avretro],[data-rpasso],[data-rano],[data-rshare],[data-avpagar],[data-avgrupo],[data-avmes],[data-avassin],[data-avperfil],[data-impok],[data-impvoltar],[data-impsenha],[data-sguardarmeta],[data-sexcluirfixo],[data-sfechar],[data-sapagar],[data-sencerrar],[data-spular],[data-sabrir],[data-outro],[data-sres],[data-snovacat],[data-scriacat]");
     if(!b) return;
     if(b.dataset.sfechar!==undefined){ if(b.tagName==="BUTTON"||(e.target===b&&apertouFundo)) closeSheet(); return; }
     const s=ui.sheet, k=mesSheet();
@@ -4357,6 +4496,9 @@ function bindSheet(r){
       if(valor!=null) document.getElementById("s-valor").value=valor; if(desc!=null&&document.getElementById("s-desc")) document.getElementById("s-desc").value=desc; if(dia&&document.getElementById("s-dia")) document.getElementById("s-dia").value=dia; if(forma){ const f=document.getElementById("s-fm-"+forma); if(f) f.checked=true; }
       const r2=document.getElementById("s-cat-"+nova.id); if(r2) r2.checked=true; render(); toast("Categoria "+nome+" criada."); return; }
     if(b.dataset.sir){ irDestino(Number(b.dataset.sir)); return; }
+    if(b.dataset.asperg){ const c=/** @type {HTMLInputElement|null} */(document.getElementById("s-busca")); if(c){ c.value=b.dataset.asperg; atualizaBusca(); c.focus(); } return; }
+    if(b.dataset.ascat){ const [cat,mes]=b.dataset.ascat.split("|"); closeSheet(); render(); openSheet("catmes",null,{cat,mes}); return; }
+    if(b.dataset.asvoz){ perguntarPorVoz(); return; }
     if(b.dataset.scat){ const [t,id,mes]=b.dataset.scat.split("|"); closeSheet(); render(); openSheet(t,id,mes?{mes}:null); return; }
     if(b.dataset.sres){ const t=b.dataset.sres, id=b.dataset.id, mes=b.dataset.mes; closeSheet(); ui.tab=t==="fixo"?"ajustes":"mes";
       if(t!=="fixo"&&t!=="parcela"&&mes){ ui.month=mes; render(); openSheet(t,id); } else { render(); openSheet(t,id); } return; }

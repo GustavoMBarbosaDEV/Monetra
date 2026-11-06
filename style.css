@@ -1634,3 +1634,22 @@ button.ptlin:hover b{color:var(--accent)}
 .ap-quem p{margin:0;color:var(--muted);font-size:16px}
 .ap-quem p b{color:var(--fg)}
 @media (max-width:560px){.ap-quem{flex-direction:column;text-align:center}}
+/* Pergunte ao Monetra (busca) */
+.as-campo{position:relative;display:block}
+.as-campo .in{padding-right:52px}
+.as-campo .falar{right:6px;top:50%;margin-top:-18px}
+.as-sug{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0 6px}
+.as-sug .chip{white-space:normal;text-align:left;line-height:1.3;color:var(--fg)}
+.assist{display:flex;gap:12px;align-items:flex-start;margin:4px 0 12px;padding:14px;border-radius:16px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line))}
+.as-ic{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--accent);color:var(--accent-ink)}
+.as-corpo{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.as-tit{font-size:14px;color:var(--muted);font-weight:600}
+.as-valor{font-family:var(--num);font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.as-corpo p{margin:0;font-size:14px;line-height:1.4}
+.as-barras{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.as-barras li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:13px}
+.as-barras li>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as-barras li>i{grid-column:1 / -1;display:block;height:6px;border-radius:99px;background:color-mix(in srgb,var(--accent) 14%,transparent);overflow:hidden}
+.as-barras li>i>i{display:block;height:100%;border-radius:inherit;background:var(--accent)}
+.as-corpo .btn{align-self:flex-start;margin-top:6px}
+@media (prefers-reduced-motion:no-preference){.assist{animation:asEntra .25s ease-out}@keyframes asEntra{from{opacity:0;transform:translateY(4px)}}}
