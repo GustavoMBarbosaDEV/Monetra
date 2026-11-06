@@ -1653,13 +1653,13 @@ button.ptlin:hover b{color:var(--accent)}
 .as-barras li>i>i{display:block;height:100%;border-radius:inherit;background:var(--accent)}
 .as-corpo .btn{align-self:flex-start;margin-top:6px}
 @media (prefers-reduced-motion:no-preference){.assist{animation:asEntra .25s ease-out}@keyframes asEntra{from{opacity:0;transform:translateY(4px)}}}
-/* MoneBoot: botão flutuante e conversa */
-.moneboot{position:fixed;z-index:40;right:max(24px,env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 6px 4px;border:0;border-radius:22px;cursor:pointer;color:#E6FFF3;background:radial-gradient(120% 120% at 30% 20%,#1B6B4D,#06150F 75%);box-shadow:0 10px 28px -8px rgba(6,40,28,.55),0 0 0 1px rgba(76,199,159,.35),0 0 22px -4px rgba(34,212,122,.45)}
-.moneboot .mb-nome{font-size:10px;font-weight:800;letter-spacing:.02em;line-height:1}
-.moneboot:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-body.sheet-open .moneboot{display:none}
-body:has(#novaversao) .moneboot{bottom:calc(170px + env(safe-area-inset-bottom,0px))}
-@media (max-width:760px){.moneboot{right:max(12px,env(safe-area-inset-right,0px));bottom:calc(92px + env(safe-area-inset-bottom,0px));padding:5px 5px 3px;border-radius:20px}.moneboot .robo{width:40px;height:40px}body:has(#novaversao) .moneboot{bottom:calc(236px + env(safe-area-inset-bottom,0px))}}
+/* MoneBot: botão flutuante e conversa */
+.monebot{position:fixed;z-index:40;right:max(24px,env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 6px 4px;border:0;border-radius:22px;cursor:pointer;color:#E6FFF3;background:radial-gradient(120% 120% at 30% 20%,#1B6B4D,#06150F 75%);box-shadow:0 10px 28px -8px rgba(6,40,28,.55),0 0 0 1px rgba(76,199,159,.35),0 0 22px -4px rgba(34,212,122,.45)}
+.monebot .mb-nome{font-size:10px;font-weight:800;letter-spacing:.02em;line-height:1}
+.monebot:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+body.sheet-open .monebot{display:none}
+body:has(#novaversao) .monebot{bottom:calc(170px + env(safe-area-inset-bottom,0px))}
+@media (max-width:760px){.monebot{right:max(12px,env(safe-area-inset-right,0px));bottom:calc(92px + env(safe-area-inset-bottom,0px));padding:5px 5px 3px;border-radius:20px}.monebot .robo{width:40px;height:40px}body:has(#novaversao) .monebot{bottom:calc(236px + env(safe-area-inset-bottom,0px))}}
 .robo{display:block;overflow:visible}
 .mb-chat{display:flex;flex-direction:column;gap:12px;max-height:min(52vh,460px);overflow:auto;padding:4px 2px 8px;overscroll-behavior:contain}
 .mb-msg{display:flex;gap:8px;align-items:flex-end}
@@ -1680,12 +1680,12 @@ body:has(#novaversao) .moneboot{bottom:calc(170px + env(safe-area-inset-bottom,0
 .mb-bt.on{background:var(--bad);border-color:var(--bad);color:#fff}
 .mb-bt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:no-preference){
-  .moneboot.entra{animation:mbEntra .5s cubic-bezier(.2,1.3,.4,1)}
-  .moneboot .rb-vivo .rb-corpo{animation:mbFlutua 3.2s ease-in-out infinite;transform-origin:32px 40px}
-  .moneboot .rb-vivo .rb-olhos{animation:mbPisca 5s infinite;transform-origin:32px 29px}
-  .moneboot .rb-vivo .rb-ant{animation:mbAntena 1.8s ease-in-out infinite;transform-origin:32px 6px}
-  .moneboot:hover .rb-corpo,.moneboot:focus-visible .rb-corpo{animation:mbAceno .6s ease-in-out}
-  .moneboot:active{transform:scale(.94)}
+  .monebot.entra{animation:mbEntra .5s cubic-bezier(.2,1.3,.4,1)}
+  .monebot .rb-vivo .rb-corpo{animation:mbFlutua 3.2s ease-in-out infinite;transform-origin:32px 40px}
+  .monebot .rb-vivo .rb-olhos{animation:mbPisca 5s infinite;transform-origin:32px 29px}
+  .monebot .rb-vivo .rb-ant{animation:mbAntena 1.8s ease-in-out infinite;transform-origin:32px 6px}
+  .monebot:hover .rb-corpo,.monebot:focus-visible .rb-corpo{animation:mbAceno .6s ease-in-out}
+  .monebot:active{transform:scale(.94)}
   .mb-msg{animation:asEntra .25s ease-out}
   @keyframes mbEntra{from{opacity:0;transform:translateY(16px) scale(.8)}}
   @keyframes mbFlutua{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}

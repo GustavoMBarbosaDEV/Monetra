@@ -345,7 +345,7 @@ const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinhei
 const LSKEY="meucaixa.v1";
 const VERSAO="5.8.0";
 const NOVIDADES=[
-  "Conheça o MoneBoot, o robozinho no canto da tela: pergunte, por exemplo, “quanto gastei com mercado este mês?” ou “quando termino de pagar as parcelas?”.",
+  "Conheça o MoneBot, o robozinho no canto da tela: pergunte, por exemplo, “quanto gastei com mercado este mês?” ou “quando termino de pagar as parcelas?”.",
   "As respostas são calculadas neste aparelho, com os seus dados. Nada é enviado para fora.",
   "Dá para perguntar falando, pelo microfone da conversa, e ir direto para os lançamentos da categoria."
 ];
@@ -1892,7 +1892,7 @@ function render(){
   moveIndicadorNav(app);
   deslizaMes(app); deslizaTema(app);
   checaTopo();
-  botaoMoneBoot();
+  botaoMoneBot();
   if(ui.rolarPara&&state.loaded){ const _id=ui.rolarPara, _e=document.getElementById(_id), _s=_e&&_e.closest(".mais:not(.aberta)"); if(_s){ ui.abre[_s.id.slice(4)]=true; ui.rolarPara=null; render(); ui.rolarPara=null; setTimeout(()=>{ const e2=document.getElementById(_id); e2&&e2.scrollIntoView({block:"center",behavior:"smooth"}); },60); } const el=document.getElementById(ui.rolarPara||"__nada"); if(el){ ui.rolarPara=null; setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),60); } }
 }
 const nomeAba=()=>mode==="login"?"Entrar no Monetra":({mes:"Início",ano:"Relatórios",metas:"Metas e desafios",perfil:"Perfil",ajustes:"Ajustes"})[ui.tab]||"Monetra";
@@ -3691,8 +3691,8 @@ function renderSheet(){
   if(!s){ r.innerHTML=""; document.body.classList.remove("sheet-open"); return; }
   document.body.classList.add("sheet-open"); const _ap=document.getElementById("app"); if(_ap) _ap.inert=true;
   const k=mesSheet(), it=itemAtual(), novo=!s.id, diaPadrao=s.dia&&s.tipo!=="dia"?Math.min(diasMes(k),Number(s.dia)||1):k===todayKey?today.getDate():1;
-  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="catmes"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"&&s.tipo!=="moneboot"){ closeSheet(); return; }
-  const titulos={moneboot:"MoneBoot",catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",vincular:ehAnonimo()?"Criar sua conta":"Formas de entrar",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
+  if(!novo&&!it&&s.tipo!=="busca"&&s.tipo!=="importar"&&s.tipo!=="avisos"&&s.tipo!=="dia"&&s.tipo!=="catmes"&&s.tipo!=="semana"&&s.tipo!=="meses"&&s.tipo!=="simulador"&&s.tipo!=="calc"&&s.tipo!=="pin"&&s.tipo!=="retro"&&s.tipo!=="monebot"){ closeSheet(); return; }
+  const titulos={monebot:"MoneBot",catmes:s.tipo==="catmes"?catName(s.cat):"",gasto:novo?"Nova despesa":"Editar despesa",avulso:novo?"Nova receita":"Editar receita",vincular:ehAnonimo()?"Criar sua conta":"Formas de entrar",salario:salRecebido(k).length?"A outra parte caiu":"Meu salário caiu",caixinha:novo?"Movimentar caixinha":"Editar caixinha",fixo:novo?"Nova conta fixa":"Editar conta fixa",fixoMes:it?it.desc:"",parcela:"Compra parcelada",renda:novo?"Nova renda fixa":"Editar renda fixa",rendaMes:it?it.nome:"",busca:"Buscar no app",categoria:novo?"Nova categoria":"Editar categoria",meta:novo?"Nova meta de economia":"Meta de economia",conta:novo?"Nova conta":"Editar conta",cartao:novo?"Novo cartão de crédito":"Editar cartão",bksenha:"Backup com senha",bkabrir:"Abrir backup com senha",excluirconta:"Excluir minha conta",bem:novo?"Novo bem":"Editar bem",transf:novo?"Transferir entre contas":"Editar transferência",importar:"Importar extrato do banco",avisos:"Notificações",calc:"Calculadoras",simulador:"Simulador de quitação",semana:"Resumo da semana",meses:"Selecione o mês e o ano",desafio:novo?"Novo desafio":"Desafio",dia:ui.sheet&&ui.sheet.tipo==="dia"?(()=>{ const kk=mesSheet(), dt=new Date(kY(kk),kM(kk)-1,Number(ui.sheet.dia)||1); const t=DIAS_SEM[dt.getDay()]+", "+pad2(dt.getDate())+" de "+NOMES[dt.getMonth()].toLowerCase(); return t[0].toUpperCase()+t.slice(1); })():"",retro:"Retrospectiva",viagem:novo?"Nova viagem":"Viagem",divida:novo?((s.dTipo||"receber")==="pagar"?"Eu devo":"Alguém me deve"):"Dívida",pin:ui.sheet&&ui.sheet.pinModo==="trocar"?"Trocar PIN":ui.sheet&&ui.sheet.pinModo==="desligar"?"Desligar o PIN":"Criar PIN"};
   const abas=novo&&["gasto","avulso","caixinha","fixo"].includes(s.tipo)?`<div class="seg tipos" role="radiogroup" aria-label="Tipo de lançamento">${[["gasto","Despesa"],["avulso","Receita"],["caixinha","Caixinha"],["fixo","Conta fixa"]].map(([t,l])=>`<input type="radio" name="s-tipo" id="s-t-${t}" value="${t}" ${s.tipo===t?"checked":""}><label for="s-t-${t}">${l}</label>`).join("")}</div>`:"";
   const valorCampo=(v,lab,auto=true)=>`<label class="f money bigval"><span id="s-valorlab">${lab||"Valor"}</span><input class="in num" id="s-valor" inputmode="numeric" placeholder="0,00" value="${esc(v===0?"0,00":v!=null?moneyInput(v):(s.valorRasc||""))}" ${auto?"data-autofocus":""} required></label>`;
   const apagar=`<button class="btn danger" type="button" data-sapagar="1">Apagar</button>`;
@@ -3968,8 +3968,8 @@ function renderSheet(){
     const dd=Math.min(diasMes(k),Math.max(1,Number(s.dia)||1));
     corpo=corpoDia(k,dd); sub=esc(nomeMes(k));
     botoes=`<button class="btn" type="button" data-callancar="${dd}">${ICON.mais||"+"} Lançar despesa neste dia</button>`;
-  }else if(s.tipo==="moneboot"){
-    corpo=corpoMoneBoot(); sub="";
+  }else if(s.tipo==="monebot"){
+    corpo=corpoMoneBot(); sub="";
   }else if(s.tipo==="busca"){
     corpo=`<label class="f"><span>Procure lançamentos (descrição, categoria, valor, #etiqueta) ou telas, como “cartões” e “13º”</span><input class="in" id="s-busca" type="search" placeholder="ex.: farmácia, aluguel, 89,90" value="${esc(s.q||"")}" data-autofocus autocomplete="off"></label><div id="s-result" class="busca"></div>`;
     sub="";
@@ -3978,7 +3978,7 @@ function renderSheet(){
     <div class="sheethead"><h2 id="sheetTit">${esc(titulos[s.tipo])}</h2><span class="muted small">${sub}</span><button type="button" class="x" data-sfechar="1" aria-label="Fechar">×</button></div>
     ${abas}${corpo}<p class="erro" id="s-erro" hidden></p>${botoes?`<div class="sheetbtns">${botoes}</div>`:""}</form></div>`;
   if(s.tipo==="busca") atualizaBusca();
-  if(s.tipo==="moneboot"){ const c=document.getElementById("mb-chat"); if(c) c.scrollTop=c.scrollHeight; }
+  if(s.tipo==="monebot"){ const c=document.getElementById("mb-chat"); if(c) c.scrollTop=c.scrollHeight; }
   clearTimeout(timerStory);
   if(s.tipo==="retro"&&a11y.retroAuto&&!semMovimento()){ const fixo=s.slide; timerStory=setTimeout(()=>{ if(ui.sheet===s&&s.slide===fixo){ const nx=document.querySelector('#sheet [data-rpasso="1"]'); if(nx) nx.click(); } },6500); }
   if(s.tipo==="gasto") atualizaVg();
@@ -4181,7 +4181,7 @@ function htmlResposta(r){
     ${r.barras&&r.barras.length?`<ul class="as-barras">${r.barras.map(b=>`<li><span>${esc(b.nome)}</span><b class="num">${brl(b.v)}</b><i aria-hidden="true"><i style="width:${Math.max(4,Math.round(Math.abs(b.v)/max*100))}%"></i></i></li>`).join("")}</ul>`:""}
     ${r.ir?`<button type="button" class="btn mini ghost" data-ascat="${esc(r.ir.cat)}|${esc(r.ir.mes)}">${esc(r.ir.txt)}</button>`:""}</div></div>`;
 }
-// MoneBoot: robô do Monetra que conversa usando responder(); a conversa fica só na memória desta sessão
+// MoneBot: robô do Monetra que conversa usando responder(); a conversa fica só na memória desta sessão
 /** @type {{eu:boolean,t?:string,r?:RespAssist}[]} */
 let mbLog=[];
 /** Robô com a cara do app: tela escura, olhos verdes e as barras do logo como sorriso. @param {number} px @param {string} [cls] */
@@ -4198,22 +4198,22 @@ function mbPergunta(/** @type {string} */ texto){
   const ult=mbLog[mbLog.length-1]; if(ult.r) anunciar(ult.r.tit+(typeof ult.r.valor==="number"?": "+brl(ult.r.valor):""));
   const i=/** @type {HTMLInputElement|null} */(document.getElementById("mb-perg")); if(i) i.focus();
 }
-function corpoMoneBoot(){
-  const ola=`<div class="mb-msg bot"><span class="mb-av">${roboMB(30)}</span><div class="mb-bolha"><b>Oi! Eu sou o MoneBoot.</b><p>Pergunte sobre o seu dinheiro que eu respondo com os seus dados. Tudo é calculado neste aparelho, nada sai daqui.</p></div></div>`;
+function corpoMoneBot(){
+  const ola=`<div class="mb-msg bot"><span class="mb-av">${roboMB(30)}</span><div class="mb-bolha"><b>Oi! Eu sou o MoneBot.</b><p>Pergunte sobre o seu dinheiro que eu respondo com os seus dados. Tudo é calculado neste aparelho, nada sai daqui.</p></div></div>`;
   const msgs=mbLog.map(m=>m.eu?`<div class="mb-msg eu"><div class="mb-bolha">${esc(m.t||"")}</div></div>`:`<div class="mb-msg bot"><span class="mb-av">${roboMB(30)}</span>${m.r?htmlResposta(m.r):""}</div>`).join("");
   const sug=AS_SUGESTOES.filter(x=>!mbLog.some(m=>m.eu&&m.t===x)).slice(0,mbLog.length?4:10);
   return `<div class="mb-chat" id="mb-chat" role="log" aria-live="polite">${ola}${msgs}</div>
     ${sug.length?`<div class="as-sug mb-sug">${sug.map(x=>`<button type="button" class="chip" data-asperg="${esc(x)}">${esc(x)}</button>`).join("")}</div>`:""}
-    <div class="mb-envio"><label class="sr" for="mb-perg">Sua pergunta</label><input class="in" id="mb-perg" type="text" placeholder="Pergunte ao MoneBoot…" autocomplete="off" enterkeyhint="send" maxlength="160" data-autofocus>
+    <div class="mb-envio"><label class="sr" for="mb-perg">Sua pergunta</label><input class="in" id="mb-perg" type="text" placeholder="Pergunte ao MoneBot…" autocomplete="off" enterkeyhint="send" maxlength="160" data-autofocus>
     ${ReconhecimentoVoz?`<button type="button" class="mb-bt" data-asvoz="1" aria-pressed="false" aria-label="Perguntar falando">${ICON_MIC}</button>`:""}<button type="submit" class="mb-bt envia" aria-label="Enviar pergunta">${icq("seta-cima",20)}</button></div>`;
 }
 /** Botão flutuante: só dentro do app (não na apresentação, no login ou nos termos). */
-function botaoMoneBoot(){
-  const deve=state.loaded&&mode!=="login"&&!precisaTermos()&&!ui.lerTermos; let b=document.getElementById("moneboot");
+function botaoMoneBot(){
+  const deve=state.loaded&&mode!=="login"&&!precisaTermos()&&!ui.lerTermos; let b=document.getElementById("monebot");
   if(!deve){ if(b) b.remove(); return; } if(b) return;
-  b=document.createElement("button"); b.type="button"; b.id="moneboot"; b.className="moneboot"+(semMovimento()?"":" entra"); b.setAttribute("aria-label","Abrir o MoneBoot, assistente do Monetra"); b.title="MoneBoot";
-  b.innerHTML=`${roboMB(46,"rb-vivo")}<span class="mb-nome" aria-hidden="true">MoneBoot</span>`;
-  b.addEventListener("click",()=>{ vibra(10); openSheet("moneboot"); });
+  b=document.createElement("button"); b.type="button"; b.id="monebot"; b.className="monebot"+(semMovimento()?"":" entra"); b.setAttribute("aria-label","Abrir o MoneBot, assistente do Monetra"); b.title="MoneBot";
+  b.innerHTML=`${roboMB(46,"rb-vivo")}<span class="mb-nome" aria-hidden="true">MoneBot</span>`;
+  b.addEventListener("click",()=>{ vibra(10); openSheet("monebot"); });
   document.body.appendChild(b);
 }
 let asOuvindo=null;
@@ -4253,7 +4253,7 @@ function salvarSheet(outro){
   if(s.id&&TIPOS_COM_ITEM.includes(s.tipo)&&!itemAtual()){ closeSheet(); render(); toast("Este item foi apagado (talvez em outro aparelho)."); return; }
   if(salvando) return; salvando=true; setTimeout(()=>{ salvando=false; },350);
   if(s.tipo==="busca") return;
-  if(s.tipo==="moneboot"){ salvando=false; mbPergunta(campoTexto("mb-perg")); return; }
+  if(s.tipo==="monebot"){ salvando=false; mbPergunta(campoTexto("mb-perg")); return; }
   if(s.tipo==="pin"){ salvarPin(); return; }
   if(s.tipo==="retro") return;
   if(s.tipo==="vincular"){ salvaSenhaConta(); return; }
