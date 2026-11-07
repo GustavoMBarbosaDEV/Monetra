@@ -1060,14 +1060,15 @@ async function _criarGrupo(){
   }catch(e){ falhou(e); }
 }
 async function gerarConvite(){ if(ui.ocupado) return; ui.ocupado=true; try{ return await _gerarConvite(); } finally{ ui.ocupado=false; } }
-async function _gerarConvite(){
+async function _gerarConvite(quieto){
   const F=fb, g=aberto, cod=novoCodigo(8);
   try{
     if(grupoDoc&&grupoDoc.codigo) await F.deleteDoc(F.doc(F.db,"convites",grupoDoc.codigo)).catch(()=>{});
     await F.setDoc(F.doc(F.db,"convites",cod),{grupo:g,dono:uid,nome:(grupoDoc&&grupoDoc.nome)||"",donoNome:meuNome(),em:new Date().toISOString(),criado:F.serverTimestamp()});
     await F.updateDoc(F.doc(F.db,"grupos",g),{codigo:cod});
-    toast("Código de convite criado.");
-  }catch(e){ falhou(e); }
+    if(!quieto) toast("Código de convite criado.");
+    return true;
+  }catch(e){ if(quieto) console.error(e); else falhou(e); return false; }
 }
 async function compartilharConvite(){
   const c=grupoDoc&&grupoDoc.codigo; if(!c) return;
@@ -1107,7 +1108,10 @@ async function responderPedido(g,id,aceitar){
 }
 async function removerMembro(id){
   const nome=nomeDe(id);
-  try{ await fb.updateDoc(fb.doc(fb.db,"grupos",aberto),{["m."+id]:fb.deleteField()}); toast(nome+" não participa mais deste controle."); }catch(e){ falhou(e); }
+  try{ await fb.updateDoc(fb.doc(fb.db,"grupos",aberto),{["m."+id]:fb.deleteField()}); }catch(e){ falhou(e); return; }
+  let trocou=false;
+  if(grupoDoc&&grupoDoc.codigo&&!ui.ocupado){ ui.ocupado=true; try{ trocou=await _gerarConvite(true); } finally{ ui.ocupado=false; } }
+  toast(nome+" não participa mais deste controle."+(trocou?" O código de convite foi trocado.":""));
 }
 async function sairDoGrupo(){
   const g=aberto, nome=((eu.grupos||{})[g]||{}).nome||"";
