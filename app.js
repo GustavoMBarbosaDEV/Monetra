@@ -872,7 +872,10 @@ async function excluirConta(){
         await F.deleteDoc(F.doc(F.db,"grupos",g.id)); }
       else await F.updateDoc(F.doc(F.db,"grupos",g.id),{["m."+meu]:F.deleteField()});
     }catch(e){ if(!negado(e)&&!(e&&e.code==="not-found")) throw e; } }
-  for(const g of Object.keys(eu.pendentes||{})) await F.deleteDoc(F.doc(F.db,"grupos",g,"pedidos",meu)).catch(()=>{});
+  for(const g of Object.keys(eu.pendentes||{})){
+    await F.deleteDoc(F.doc(F.db,"grupos",g,"pedidos",meu)).catch(()=>{});
+    if(!(eu.grupos||{})[g]) await F.updateDoc(F.doc(F.db,"grupos",g),{["m."+meu]:F.deleteField()}).catch(()=>{});
+  }
   const q=await F.getDocs(F.collection(F.db,"users",meu,"docs")); await Promise.all(q.docs.map(x=>F.deleteDoc(x.ref)));
   await F.deleteDoc(F.doc(F.db,"users",meu,"meta","eu"));
   try{ Object.keys(localStorage).filter(k=>k.startsWith("mb.pend."+meu+".")).forEach(k=>localStorage.removeItem(k)); }catch(e){}
