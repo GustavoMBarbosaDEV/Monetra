@@ -847,7 +847,8 @@ function loadLocal(){
   try{ const raw=localStorage.getItem(LSKEY); if(raw){ const d=JSON.parse(raw); if(d.config){ state.config=normConfig(d.config); buildMeses(); } if(d.months) for(const k in d.months) if(mesValido(k)) state.months[k]=normMonth(d.months[k]); } }catch(e){}
 }
 function resetState(){ state.config=defaultConfig(); state.months={}; buildMeses(); }
-let sairAnon=0;
+let sairAnon=0, sairOff=0;
+const temPendLocal=()=>{ try{ return !!uid&&Object.keys(localStorage).some(k=>k.startsWith("mb.pend."+uid+".")); }catch(e){ return false; } };
 let fb=null, authUser=null, unsub=null, loginErro=(()=>{ try{ const m=sessionStorage.getItem("mb.loginErro")||""; sessionStorage.removeItem("mb.loginErro"); return m; }catch(e){ return ""; } })();
 if(loginErro){ const m=loginErro; setTimeout(()=>{ toast(m); anunciar(m); },1200); }
 const CHAVES_DA_PESSOA=["mb.backup.","mb.conq.","mb.notif.vistos","mb.pin","mb.pin.erros"];
@@ -4747,6 +4748,7 @@ app.addEventListener("click",e=>{
   if(d.comp){ acaoComp(d.comp,d.id); return; }
   if(d.virafixo!==undefined){ virarFixo(+d.virafixo); return; }
   if(d.logout&&ehAnonimo()){ if(++sairAnon<2){ toast("Sem conta, os lançamentos do teste são apagados ao sair. Toque de novo em Sair para confirmar, ou crie sua conta antes."); setTimeout(()=>{ sairAnon=0; },6000); return; } sairAnon=0; excluirConta().catch(()=>encerraSessao()); return; }
+  if(d.logout&&!navigator.onLine&&temPendLocal()){ if(++sairOff<2){ toast("Sem internet: há lançamentos ainda não enviados. Eles ficam guardados neste aparelho e sobem quando você entrar de novo nele. Toque de novo em Sair para confirmar."); setTimeout(()=>{ sairOff=0; },6000); return; } sairOff=0; }
   if(d.logout){ setStatus("Salvando antes de sair…","saving"); salvaPendentes().finally(()=>encerraSessao()); return; }
   if(d.tema){ trocaTema(); return; }
   if(d.privado){ trocaPrivado(); return; }
