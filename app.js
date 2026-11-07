@@ -1422,16 +1422,21 @@ function heroSalario(k,fase,olho){
   }
   const r=salRecebido(k), u=r[r.length-1], acum=acumulado(k);
   const livre=Math.round((acum-soma(pend.filter(x=>x.div)))*100)/100, conta=Math.round((acum+soma(pend.filter(x=>!x.div)))*100)/100;
+  // quanto dá para gastar por dia: saldo livre (já sem as contas que faltam) dividido pelos dias que restam
+  const restam=k===todayKey?diasMes(k)-today.getDate()+1:diasMes(k), porDia=k>=todayKey&&livre>0?Math.floor(livre/restam*100)/100:null;
+  const diasRest=k===todayKey?(restam===1?"último dia do mês":restam+" dias, contando hoje"):"dividido pelos "+restam+" dias";
   return `<div class="heroSaldo hsal ${conta<0?"neg sd-bad":livre<0?"sd-warn":"sd-ok"}">${auras}
     <div class="hs-top"><span class="hs-lab"><span class="lab">Saldo em conta</span>${olho}</span><span class="hs-dir"><span class="hs-selo"><i></i>${u.falta?"falta uma parte":"salário recebido"}</span></span></div>
     <b class="hs-val" data-v="${conta}">${valorGrande(conta)}</b>
     <div class="hs-sub">${r.length>1?"Salário de <b>"+brl(soma(r))+"</b> em "+r.length+" partes":"Salário de <b>"+brl(u.valor)+"</b> caiu dia "+pad2(u.dia)} · <button type="button" class="link" data-edit="avulso" data-id="${esc(u.id)}">Editar</button> · <button type="button" class="link" data-saldesfaz="1">Desfazer</button></div>
-    <div class="hs-duo"><div class="hs-mini"><span class="lab">Falta pagar</span><b data-v="${aPagar}">${valorGrande(aPagar)}</b></div><div class="hs-mini"><span class="lab">Saldo livre</span><b class="${livre<0?"neg":""}" data-v="${livre}">${valorGrande(livre)}</b></div></div>
+    ${porDia!==null&&aPagar>0?`<div class="hs-sub">Dá para gastar <b>${brl(porDia)}</b> por dia ${k===todayKey?"até o fim do mês":"neste mês"}.</div>`:""}
+    <div class="hs-duo">${aPagar>0?`<div class="hs-mini"><span class="lab">Falta pagar</span><b data-v="${aPagar}">${valorGrande(aPagar)}</b></div>`:porDia!==null?`<div class="hs-mini"><span class="lab">Por dia</span><b data-v="${porDia}">${valorGrande(porDia)}</b><small>${esc(diasRest)}</small></div>`:""}<div class="hs-mini"><span class="lab">Saldo livre</span><b class="${livre<0?"neg":""}" data-v="${livre}">${valorGrande(livre)}</b></div></div>
     ${u.falta?`<button type="button" class="btn salcaiu" data-salcaiu="1">${ICON.dinheiro}A outra parte caiu</button>`:""}
   </div>`;
 }
 function cardContasSal(k,fase){
   const mesN=NOMES[kM(k)-1].toLowerCase(), cs=contasSalario(k), lista=fase==="espera"?cs:cs.filter(x=>!x.pago);
+  if(fase==="recebido"&&!lista.length) return ""; // tudo pago: o card "Falta pagar" sai da tela
   const vazio=fase==="espera"?`<p class="hint">Nenhuma conta para ${esc(mesN)}. Cadastre contas fixas, parcelas e cartões em Ajustes para ver aqui o que pagar.</p>`:`<p class="hint">Tudo pago em ${esc(mesN)}. O saldo livre é seu.</p>`;
   return `<div class="card csalcard"><div class="cardhead"><h2>${fase==="espera"?"Contas de "+esc(mesN):"Falta pagar"}</h2><span class="num muted">${brl(soma(cs.filter(x=>!x.pago)))}</span></div>
     ${lista.length?`<div>${lista.map(x=>linhaContaSal(x,k)).join("")}</div>`:vazio}

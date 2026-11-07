@@ -820,6 +820,7 @@ h1,h2,h3{letter-spacing:-.02em}
 .hs-mini{border-radius:16px;padding:10px 12px;background:rgba(255,255,255,.08);display:flex;flex-direction:column;gap:2px}
 .tema-escuro .hs-mini{background:#0B1712;box-shadow:inset 0 0 0 1px #173326}
 .hs-mini b{font-size:16px;font-variant-numeric:tabular-nums}
+.hs-mini small{font-size:11px;opacity:.75;line-height:1.2}
 .hs-mini b.neg{color:#FF8A8A} .tema-escuro .hs-mini b.neg{color:var(--bad)}
 .qa{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .q{border:0;font:inherit;cursor:pointer;background:var(--surface);color:var(--fg);box-shadow:var(--sombra);border-radius:20px;padding:12px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12.5px;font-weight:600}
