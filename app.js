@@ -1201,7 +1201,7 @@ const senhaBoa=x=>x.length>=8&&/[a-zA-Z]/.test(x)&&/\d/.test(x);
 // senhas fáceis de adivinhar: listas conhecidas, sequências, repetições e o próprio e-mail
 const SENHAS_OBVIAS=["senha123","senha1234","senha12345","password1","password123","abc12345","abcd1234","qwerty123","admin123","admin1234","mudar123","teste123","12345678a","a12345678","iloveyou1","brasil123","monetra123"];
 function senhaObvia(senha,email){ const s=String(senha||"").toLowerCase(), so=s.replace(/[^a-z0-9]/g,""), user=String(email||"").toLowerCase().split("@")[0].replace(/[^a-z0-9]/g,"");
-  if(SENHAS_OBVIAS.includes(so)||/^(.)\1+$/.test(so)) return true;
+  if(SENHAS_OBVIAS.includes(so)||/(.)\1{5,}/.test(so)) return true;
   if(/^(?:0123456789|123456789|12345678|87654321|abcdefgh|qwertyui)/.test(so)) return true;
   return user.length>=4&&so.includes(user); }
 const temProv=id=>!!(authUser&&(authUser.providerData||[]).some(p=>p.providerId===id));
