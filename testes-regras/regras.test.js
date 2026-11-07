@@ -1,7 +1,7 @@
 import { test, before, after, beforeEach } from "node:test";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, deleteField } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, deleteField, serverTimestamp, Timestamp } from "firebase/firestore";
 
 const [host, port] = (process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080").split(":");
 let env;
@@ -33,7 +33,7 @@ async function criaGrupo(dono = "ana", membros = {}) {
   await semRegras(async db => {
     await setDoc(doc(db, "grupos", "g1"), { nome: "Casa", dono, codigo: "ABCD1234", criado: "2026-10-01", m: { [dono]: { nome: "Ana" }, ...membros } });
     await setDoc(doc(db, "grupos", "g1", "docs", "m-2026-10"), mesValido());
-    await setDoc(doc(db, "convites", "ABCD1234"), { grupo: "g1", dono, nome: "Casa", donoNome: "Ana", em: "2026-10-01" });
+    await setDoc(doc(db, "convites", "ABCD1234"), { grupo: "g1", dono, nome: "Casa", donoNome: "Ana", em: "2026-10-01", criado: Timestamp.now() });
   });
 }
 
@@ -135,8 +135,23 @@ test("convites: dá para consultar um código, mas não listar nem criar para gr
   await criaGrupo();
   await assertSucceeds(getDoc(doc(como("caio"), "convites", "ABCD1234")));
   await assertFails(getDocs(collection(como("caio"), "convites")));
-  await assertFails(setDoc(doc(como("caio"), "convites", "ZZZZ0000"), { grupo: "g1", dono: "caio", nome: "Casa", donoNome: "Caio", em: "2026-10-02" }));
-  await assertSucceeds(setDoc(doc(como("ana"), "convites", "NOVO0000"), { grupo: "g1", dono: "ana", nome: "Casa", donoNome: "Ana", em: "2026-10-02" }));
+  await assertFails(setDoc(doc(como("caio"), "convites", "ZZZZ0000"), { grupo: "g1", dono: "caio", nome: "Casa", donoNome: "Caio", em: "2026-10-02", criado: serverTimestamp() }));
+  await assertSucceeds(setDoc(doc(como("ana"), "convites", "NOVO0000"), { grupo: "g1", dono: "ana", nome: "Casa", donoNome: "Ana", em: "2026-10-02", criado: serverTimestamp() }));
+  await assertFails(setDoc(doc(como("ana"), "convites", "VELHO000"), { grupo: "g1", dono: "ana", nome: "Casa", donoNome: "Ana", em: "2026-10-02", criado: Timestamp.fromMillis(Date.now() + 30 * 864e5) }));
+  await assertFails(setDoc(doc(como("ana"), "convites", "SEMDATA0"), { grupo: "g1", dono: "ana", nome: "Casa", donoNome: "Ana", em: "2026-10-02" }));
+});
+
+test("convite vale 7 dias: vencido ou sem data não deixa pedir entrada", async () => {
+  await criaGrupo();
+  await semRegras(async db => {
+    await setDoc(doc(db, "convites", "VENCIDO0"), { grupo: "g1", dono: "ana", nome: "Casa", donoNome: "Ana", em: "2026-10-01", criado: Timestamp.fromMillis(Date.now() - 8 * 864e5) });
+    await setDoc(doc(db, "convites", "ANTIGO00"), { grupo: "g1", dono: "ana", nome: "Casa", donoNome: "Ana", em: "2026-10-01" });
+    await setDoc(doc(db, "convites", "QUASE000"), { grupo: "g1", dono: "ana", nome: "Casa", donoNome: "Ana", em: "2026-10-01", criado: Timestamp.fromMillis(Date.now() - 6 * 864e5) });
+  });
+  const pedido = cod => ({ codigo: cod, nome: "Caio", email: "", foto: "", em: "2026-10-02" });
+  await assertFails(setDoc(doc(como("caio"), "grupos", "g1", "pedidos", "caio"), pedido("VENCIDO0")));
+  await assertFails(setDoc(doc(como("caio"), "grupos", "g1", "pedidos", "caio"), pedido("ANTIGO00")));
+  await assertSucceeds(setDoc(doc(como("caio"), "grupos", "g1", "pedidos", "caio"), pedido("QUASE000")));
 });
 
 test("caminhos fora do app ficam fechados", async () => {

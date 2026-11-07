@@ -16,6 +16,11 @@ service cloud.firestore {
     // e-mail da conta só quando confirmado; sem e-mail confirmado (anônimo, não verificado), vazio
     function emailConfirmado() { return request.auth.token.get('email_verified', false) == true ? request.auth.token.get('email', '') : ''; }
     function chaveMes(v) { return v is string && v.matches('[0-9]{4}-[0-9]{2}'); }
+    // convite só vale 7 dias depois de criado; convite antigo, sem data, não vale mais
+    function conviteValido(codigo, g) {
+      let c = get(/databases/$(database)/documents/convites/$(codigo)).data;
+      return c.grupo == g && c.get('criado', null) is timestamp && c.criado > request.time - duration.value(7, 'd');
+    }
 
     function mesValido(d) {
       return d.keys().hasOnly(['salario','avulsos','gastos','caixinha','fixos','rendas','parcelas','faturasPagas','transf','faturaPaga'])
@@ -117,7 +122,7 @@ service cloud.firestore {
           && texto(request.resource.data.foto, 2000)
           && (!('em' in request.resource.data) || texto(request.resource.data.em, 64))
           && exists(/databases/$(database)/documents/convites/$(request.resource.data.codigo))
-          && get(/databases/$(database)/documents/convites/$(request.resource.data.codigo)).data.grupo == g;
+          && conviteValido(request.resource.data.codigo, g);
         allow read, delete: if logado() && (request.auth.uid == quem || ehDono(g));
       }
     }
@@ -126,7 +131,8 @@ service cloud.firestore {
       allow get: if logado();
       allow create: if logado()
         && codigo.size() <= 20
-        && request.resource.data.keys().hasOnly(['grupo','dono','nome','donoNome','em'])
+        && request.resource.data.keys().hasOnly(['grupo','dono','nome','donoNome','em','criado'])
+        && request.resource.data.criado == request.time
         && request.resource.data.dono == request.auth.uid
         && texto(request.resource.data.nome, 40)
         && texto(request.resource.data.donoNome, 120)

@@ -343,7 +343,7 @@ const INICIO="2026-09", PADRAO_ATE="2027-12", LIMITE_ATE="2036-12";
 const DEFAULT_CATS=["Mercado / Alimentação","Moradia (aluguel, condomínio)","Contas (luz, água, internet, celular)","Transporte / Combustível","Saúde / Farmácia","Educação","Lazer / Restaurantes","Compras / Vestuário","Outros"];
 const FORMAS=[["pix","Pix"],["debito","Débito"],["credito","Crédito"],["dinheiro","Dinheiro"],["boleto","Boleto"]];
 const LSKEY="meucaixa.v1";
-const VERSAO="5.8.4";
+const VERSAO="5.8.5";
 const NOVIDADES=[
   "Conheça o MoneBot, o robozinho no canto da tela: pergunte, por exemplo, “quanto gastei com mercado este mês?” ou “quando termino de pagar as parcelas?”.",
   "As respostas são calculadas neste aparelho, com os seus dados. Nada é enviado para fora.",
@@ -1040,6 +1040,7 @@ const marcaPor=o=>{ if(compartilhado()) o.por=uid; return o; };
 const porTxt=g=>{ const q=g.pagou||g.por; return compartilhado()&&q&&nomeDe(q)?" · "+(g.pagou?"pago por ":"")+nomeDe(q):""; };
 const CODE_ALF="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function novoCodigo(n){ const a=new Uint32Array(n||8); crypto.getRandomValues(a); return Array.from(a,x=>CODE_ALF[x%32]).join(""); }
+const CONVITE_DIAS=7;
 const linkConvite=c=>location.origin+location.pathname+"?convite="+c;
 const falhou=e=>{ console.error(e); toast("Não deu certo ("+(e&&e.code||"erro")+")."+(negado(e)?" Confira se as regras novas do Firebase foram publicadas.":"")); };
 async function trocarEspaco(g){ if(g===aberto) return; await salvaPendentes(); await euSet("ativo",null,g); abrirEspaco(); }
@@ -1059,7 +1060,7 @@ async function _gerarConvite(){
   const F=fb, g=aberto, cod=novoCodigo(8);
   try{
     if(grupoDoc&&grupoDoc.codigo) await F.deleteDoc(F.doc(F.db,"convites",grupoDoc.codigo)).catch(()=>{});
-    await F.setDoc(F.doc(F.db,"convites",cod),{grupo:g,dono:uid,nome:(grupoDoc&&grupoDoc.nome)||"",donoNome:meuNome(),em:new Date().toISOString()});
+    await F.setDoc(F.doc(F.db,"convites",cod),{grupo:g,dono:uid,nome:(grupoDoc&&grupoDoc.nome)||"",donoNome:meuNome(),em:new Date().toISOString(),criado:F.serverTimestamp()});
     await F.updateDoc(F.doc(F.db,"grupos",g),{codigo:cod});
     toast("Código de convite criado.");
   }catch(e){ falhou(e); }
@@ -1078,7 +1079,8 @@ async function _pedirEntrada(){
   try{
     const c=await F.getDoc(F.doc(F.db,"convites",cod));
     if(!c.exists()) return erro("Código não encontrado. Confira com quem te convidou ou peça um código novo.");
-    const g=c.data().grupo, nome=c.data().nome||"compartilhado";
+    const g=c.data().grupo, nome=c.data().nome||"compartilhado", cr=c.data().criado;
+    if(!cr||typeof cr.toMillis!=="function"||cr.toMillis()<Date.now()-CONVITE_DIAS*864e5) return erro("Esse código venceu (vale "+CONVITE_DIAS+" dias). Peça um código novo a quem te convidou.");
     if((eu.grupos||{})[g]) return erro("Você já participa do controle “"+nome+"”.");
     await F.setDoc(F.doc(F.db,"grupos",g,"pedidos",uid),{codigo:cod,nome:meuNome(),email:authUser.emailVerified?(authUser.email||""):"",foto:authUser.photoURL||"",em:new Date().toISOString()});
     await euSet("pendentes",g,{nome,donoNome:c.data().donoNome||""}); refazVigias();
@@ -1138,7 +1140,7 @@ function cardCompartilhado(){
     <div class="membros">${ms.map(([id,x])=>pessoa(x.nome,x.email,(id===gd.dono?'<span class="tag">dono</span>':"")+(id===uid?'<span class="tag">você</span>':"")+(dono&&id!==uid?`<button class="link" type="button" data-comp="remover" data-id="${esc(id)}">remover</button>`:""))).join("")}</div>
     ${dono?(gd.codigo?`<div class="convite"><span class="lab">Código de convite</span><b>${esc(gd.codigo)}</b></div>
       <div class="row2"><button class="btn" type="button" data-comp="enviar">Enviar convite</button><button class="btn ghost" type="button" data-comp="novo">Gerar outro código</button></div>
-      <p class="hint">A pessoa abre o link (ou digita o código no Perfil dela) e você aceita o pedido aqui.</p>`
+      <p class="hint">A pessoa abre o link (ou digita o código no Perfil dela) e você aceita o pedido aqui. O código vale ${CONVITE_DIAS} dias; depois disso, gere outro.</p>`
       :`<button class="btn" type="button" data-comp="novo">Convidar alguém</button>`):""}
     <div class="zonaperigo" id="excluirgrupo">${dono?`<p class="hint">Excluir apaga este controle compartilhado e todos os lançamentos dele, para todas as pessoas. O seu controle Pessoal não é afetado.</p>
       <button class="btn danger wide" type="button" data-comp="excluir">${ICON.lixo||""}Excluir o controle “${esc(gd.nome)}”</button>`
