@@ -1,4 +1,4 @@
-const V = "5.8.5";
+const V = "5.8.6";
 const CACHE = "monetra-" + V;
 const SHELL = ["./", "index.html", ...["style.css", "boot.css", "pre.js", "boot.js", "app.js"].map(f => f + "?v=" + V), "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/logo-128.png", "icons/marca.png", "icons/splash-512.png",
@@ -6,7 +6,7 @@ const SHELL = ["./", "index.html", ...["style.css", "boot.css", "pre.js", "boot.
 const ESPERA_NAVEGACAO = 3000;
 const FORA = /^\/(__|baixar)(\/|$)/;
 const RAIZ = new URL("./", self.registration.scope).pathname;
-const SEM_AVISO = /^monetra-(?:[0-4]\.|5\.[0-3]\.|5\.4\.[01]$)/;
+const SEM_AVISO = /^monetra-(?:[0-4]\.|5\.[0-7]\.|5\.8\.[0-4]$)/;
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u => c.add(new Request(u, { cache: "reload" })).catch(() => null)))).catch(() => null)

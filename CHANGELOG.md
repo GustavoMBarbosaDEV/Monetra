@@ -12,12 +12,16 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.6 — 07/11/2026 **Atualização obrigatória**
+
+- **Atualização:** quem ainda está na 5.8.4 ou anterior passa para a versão nova sozinho, sem precisar tocar em "Atualizar": o app recarrega ao abrir ou ao voltar para ele. Necessário porque as regras do convite com prazo (5.8.5) recusam convites criados pelas versões antigas.
+
 ## 5.8.5 — 07/11/2026 **Convite com prazo**
 
 - **Controle compartilhado:** o código de convite vale 7 dias. O convite guarda a data de criação do servidor e as regras do Firestore recusam pedidos com código vencido ou sem data; quem tenta entrar vê "Esse código venceu" e o dono vê o prazo junto do código.
 - **Regras:** testes novos para convite vencido, sem data e com data falsa (`testes-regras/`).
 
-## 5.8.5 — 07/11/2026 **Quanto dá para gastar por dia**
+## 5.8.6 — 07/11/2026 **Quanto dá para gastar por dia**
 
 - **Card do salário:** com todas as contas do mês pagas, mostra **Por dia** (saldo livre dividido pelos dias que restam, contando hoje) no lugar de "Falta pagar". Com conta em aberto, mostra "Falta pagar" e "Saldo livre" e uma linha "Dá para gastar R$ X por dia até o fim do mês".
 - **Tela inicial:** o card "Falta pagar" some quando não há conta em aberto.
