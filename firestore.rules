@@ -13,6 +13,8 @@ service cloud.firestore {
     function lista(d, k, max) { return !(k in d) || (d[k] is list && d[k].size() <= max); }
     function mapa(d, k, max) { return !(k in d) || (d[k] is map && d[k].size() <= max); }
     function numero(d, k) { return !(k in d) || d[k] is number; }
+    // e-mail da conta só quando confirmado; sem e-mail confirmado (anônimo, não verificado), vazio
+    function emailConfirmado() { return request.auth.token.get('email_verified', false) == true ? request.auth.token.get('email', '') : ''; }
     function chaveMes(v) { return v is string && v.matches('[0-9]{4}-[0-9]{2}'); }
 
     function mesValido(d) {
@@ -111,6 +113,7 @@ service cloud.firestore {
           && texto(request.resource.data.codigo, 20)
           && texto(request.resource.data.nome, 120)
           && texto(request.resource.data.email, 200)
+          && request.resource.data.email == emailConfirmado()
           && texto(request.resource.data.foto, 2000)
           && (!('em' in request.resource.data) || texto(request.resource.data.em, 64))
           && exists(/databases/$(database)/documents/convites/$(request.resource.data.codigo))

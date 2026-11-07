@@ -1080,7 +1080,7 @@ async function _pedirEntrada(){
     if(!c.exists()) return erro("Código não encontrado. Confira com quem te convidou ou peça um código novo.");
     const g=c.data().grupo, nome=c.data().nome||"compartilhado";
     if((eu.grupos||{})[g]) return erro("Você já participa do controle “"+nome+"”.");
-    await F.setDoc(F.doc(F.db,"grupos",g,"pedidos",uid),{codigo:cod,nome:meuNome(),email:authUser.email||"",foto:authUser.photoURL||"",em:new Date().toISOString()});
+    await F.setDoc(F.doc(F.db,"grupos",g,"pedidos",uid),{codigo:cod,nome:meuNome(),email:authUser.emailVerified?(authUser.email||""):"",foto:authUser.photoURL||"",em:new Date().toISOString()});
     await euSet("pendentes",g,{nome,donoNome:c.data().donoNome||""}); refazVigias();
     ui.convErro=""; ui.conviteUrl=null; render();
     toast("Pedido enviado. Agora é só "+primeiroNome(c.data().donoNome)+" aceitar.");
@@ -1133,7 +1133,7 @@ function cardCompartilhado(){
   if(aberto!=="pessoal"&&grupoDoc){
     const gd=grupoDoc, dono=gd.dono===uid, ms=Object.entries(gd.m||{}).sort((a,b)=>(a[0]===gd.dono?-1:b[0]===gd.dono?1:0)), ped=pedidosG[aberto]||[];
     topo=`<div class="grupoatual"><span class="lab">Aberto agora</span><b>${esc(gd.nome)}</b><small>${ms.length} pessoa${ms.length===1?"":"s"} · seu controle Pessoal continua só seu</small></div>
-    ${ped.length&&dono?`<div class="subhead">Pedidos para entrar</div><div class="membros">${ped.map(p=>pessoa(p.nome,p.email,`<span class="acoes"><button class="btn ghost mini" type="button" data-comp="recusar" data-id="${esc(p.uid)}">Recusar</button><button class="btn mini" type="button" data-comp="aceitar" data-id="${esc(p.uid)}">Aceitar</button></span>`)).join("")}</div>`:""}
+    ${ped.length&&dono?`<div class="subhead">Pedidos para entrar</div><div class="membros">${ped.map(p=>pessoa(p.nome,p.email||"e-mail não confirmado",`<span class="acoes"><button class="btn ghost mini" type="button" data-comp="recusar" data-id="${esc(p.uid)}">Recusar</button><button class="btn mini" type="button" data-comp="aceitar" data-id="${esc(p.uid)}">Aceitar</button></span>`)).join("")}</div>`:""}
     <div class="subhead">Quem participa</div>
     <div class="membros">${ms.map(([id,x])=>pessoa(x.nome,x.email,(id===gd.dono?'<span class="tag">dono</span>':"")+(id===uid?'<span class="tag">você</span>':"")+(dono&&id!==uid?`<button class="link" type="button" data-comp="remover" data-id="${esc(id)}">remover</button>`:""))).join("")}</div>
     ${dono?(gd.codigo?`<div class="convite"><span class="lab">Código de convite</span><b>${esc(gd.codigo)}</b></div>
@@ -1642,7 +1642,7 @@ function listaAvisos(){
   const grupos={pedido:[],conta:[],orc:[],dica:[]};
   itens.forEach(it=>{
     if(it.tipo==="salario") grupos.conta.push(linha("pedido",icq("seta-cima",18),it.parte===2?"A outra parte do salário caiu?":"Seu salário caiu?","Toque para confirmar e ver o saldo do mês",`<button class="btn mini" type="button" data-avsal="1">Confirmar</button>`));
-    if(it.tipo==="pedido"){ const nome=((eu.grupos||{})[it.g]||{}).nome||""; grupos.pedido.push(linha("pedido",ICON.grupo,esc(primeiroNome(it.p.nome))+" quer entrar em “"+esc(nome)+"”",esc(it.p.email||""),`<button class="btn mini" type="button" data-avgrupo="${esc(it.g)}">Ver pedido</button>`)); }
+    if(it.tipo==="pedido"){ const nome=((eu.grupos||{})[it.g]||{}).nome||""; grupos.pedido.push(linha("pedido",ICON.grupo,esc(primeiroNome(it.p.nome))+" quer entrar em “"+esc(nome)+"”",esc(it.p.email||"e-mail não confirmado"),`<button class="btn mini" type="button" data-avgrupo="${esc(it.g)}">Ver pedido</button>`)); }
     if(it.tipo==="conta"){ const x=it.x, e=estadoPend(x); grupos.conta.push(linha("pagar "+e.cls,x.dd<0?ICON_ALERTA:ICON_RELOGIO,esc(x.nome)+" · "+brl(x.valor),esc(e.txt)+(x.dd>=0?" · "+fmtData(x.data):""),`<button class="btn mini" type="button" data-avpagar="${x.tipo}|${esc(x.id)}|${x.k}">Paguei</button>`)); }
     if(it.tipo==="divida"){ const x=it.x, dd=diasAte(x.venc), cls=dd<0?"atraso":dd===0?"hoje":"amanha";
       grupos.conta.push(linha("pagar "+cls,ICON.grupo,x.tipo==="receber"?esc(x.pessoa)+" te deve "+brl(restaDiv(x)):"Você deve "+brl(restaDiv(x))+" a "+esc(x.pessoa),dd<0?"combinado para "+dataCurta(x.venc)+" (passou)":dd===0?"combinado para hoje":"combinado para amanhã",`<button class="btn ghost mini" type="button" data-avdiv="${esc(x.id)}">Ver</button>`)); }

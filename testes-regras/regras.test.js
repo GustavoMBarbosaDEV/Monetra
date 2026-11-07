@@ -17,7 +17,7 @@ const mesValido = () => ({
   gastos: [{ id: "g1", dia: 3, valor: 20, desc: "Mercado", cat: "c1", forma: "pix" }]
 });
 
-const como = uid => (uid ? env.authenticatedContext(uid) : env.unauthenticatedContext()).firestore();
+const como = (uid, token) => (uid ? env.authenticatedContext(uid, token) : env.unauthenticatedContext()).firestore();
 const semRegras = fn => env.withSecurityRulesDisabled(ctx => fn(ctx.firestore()));
 
 before(async () => {
@@ -115,9 +115,20 @@ test("pedido para entrar exige código de convite válido do grupo", async () =>
   const pedido = cod => ({ codigo: cod, nome: "Caio", email: "caio@exemplo.com", foto: "", em: "2026-10-02" });
   await assertFails(setDoc(doc(como("caio"), "grupos", "g1", "pedidos", "caio"), pedido("ERRADO00")));
   await assertFails(setDoc(doc(como("caio"), "grupos", "g1", "pedidos", "bia"), pedido("ABCD1234")));
-  await assertSucceeds(setDoc(doc(como("caio"), "grupos", "g1", "pedidos", "caio"), pedido("ABCD1234")));
+  await assertSucceeds(setDoc(doc(como("caio", { email: "caio@exemplo.com", email_verified: true }), "grupos", "g1", "pedidos", "caio"), pedido("ABCD1234")));
   await assertSucceeds(getDoc(doc(como("ana"), "grupos", "g1", "pedidos", "caio")));
   await assertFails(getDoc(doc(como("bia"), "grupos", "g1", "pedidos", "caio")));
+});
+
+test("pedido para entrar só aceita o e-mail confirmado da própria conta", async () => {
+  await criaGrupo();
+  const pedido = email => ({ codigo: "ABCD1234", nome: "Bia", email, foto: "", em: "2026-10-02" });
+  const mallory = como("mallory", { email: "mallory@x.test", email_verified: true });
+  await assertFails(setDoc(doc(mallory, "grupos", "g1", "pedidos", "mallory"), pedido("bia@exemplo.com")));
+  await assertFails(setDoc(doc(como("rui", { email: "rui@x.test", email_verified: false }), "grupos", "g1", "pedidos", "rui"), pedido("rui@x.test")));
+  await assertSucceeds(setDoc(doc(como("rui", { email: "rui@x.test", email_verified: false }), "grupos", "g1", "pedidos", "rui"), pedido("")));
+  await assertSucceeds(setDoc(doc(como("anon", { firebase: { sign_in_provider: "anonymous" } }), "grupos", "g1", "pedidos", "anon"), pedido("")));
+  await assertSucceeds(setDoc(doc(mallory, "grupos", "g1", "pedidos", "mallory"), pedido("mallory@x.test")));
 });
 
 test("convites: dá para consultar um código, mas não listar nem criar para grupo dos outros", async () => {
