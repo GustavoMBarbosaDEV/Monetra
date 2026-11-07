@@ -1106,8 +1106,11 @@ async function removerMembro(id){
   try{ await fb.updateDoc(fb.doc(fb.db,"grupos",aberto),{["m."+id]:fb.deleteField()}); toast(nome+" não participa mais deste controle."); }catch(e){ falhou(e); }
 }
 async function sairDoGrupo(){
-  const g=aberto, nome=((eu.grupos||{})[g]||{}).nome||""; await salvaPendentes(); seqEspaco++; pararEspaco();
-  try{ await fb.updateDoc(fb.doc(fb.db,"grupos",g),{["m."+uid]:fb.deleteField()}); }catch(e){ console.error(e); }
+  const g=aberto, nome=((eu.grupos||{})[g]||{}).nome||"";
+  if(!navigator.onLine){ toast("Sem internet. Para sair do controle, conecte e tente de novo."); return; }
+  await salvaPendentes(); seqEspaco++; pararEspaco();
+  try{ await fb.updateDoc(fb.doc(fb.db,"grupos",g),{["m."+uid]:fb.deleteField()}); }
+  catch(e){ if(!negado(e)&&!(e&&e.code==="not-found")){ falhou(e); abrirEspaco(); return; } }
   await euSet("grupos",g,null); await euSet("ativo",null,"pessoal"); refazVigias();
   abrirEspaco("Você saiu de “"+nome+"”. Voltou para o Pessoal.");
 }
