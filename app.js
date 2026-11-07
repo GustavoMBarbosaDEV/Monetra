@@ -1198,6 +1198,12 @@ let credPendente=null;
 const urlRetorno=()=>location.origin+location.pathname;
 const emailOk=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
 const senhaBoa=x=>x.length>=8&&/[a-zA-Z]/.test(x)&&/\d/.test(x);
+// senhas fáceis de adivinhar: listas conhecidas, sequências, repetições e o próprio e-mail
+const SENHAS_OBVIAS=["senha123","senha1234","senha12345","password1","password123","abc12345","abcd1234","qwerty123","admin123","admin1234","mudar123","teste123","12345678a","a12345678","iloveyou1","brasil123","monetra123"];
+function senhaObvia(senha,email){ const s=String(senha||"").toLowerCase(), so=s.replace(/[^a-z0-9]/g,""), user=String(email||"").toLowerCase().split("@")[0].replace(/[^a-z0-9]/g,"");
+  if(SENHAS_OBVIAS.includes(so)||/^(.)\1+$/.test(so)) return true;
+  if(/^(?:0123456789|123456789|12345678|87654321|abcdefgh|qwertyui)/.test(so)) return true;
+  return user.length>=4&&so.includes(user); }
 const temProv=id=>!!(authUser&&(authUser.providerData||[]).some(p=>p.providerId===id));
 const ehAnonimo=()=>!!(authUser&&authUser.isAnonymous);
 function provedor(nome){ const p=nome==="microsoft"?new fb.OAuthProvider("microsoft.com"):new fb.GoogleAuthProvider(); p.setCustomParameters({prompt:"select_account"}); return p; }
@@ -1231,6 +1237,7 @@ async function entrarEmail(){
   if(!emailOk(email)) return erroLogin("Digite um e-mail válido.","lg-email");
   if(!senha) return erroLogin("Digite a senha.","lg-senha");
   if(novo&&!senhaBoa(senha)) return erroLogin("A senha precisa de pelo menos 8 caracteres, com letras e números.","lg-senha");
+  if(novo&&senhaObvia(senha,email)) return erroLogin("Essa senha é fácil de adivinhar. Evite sequências, palavras como “senha” e o seu e-mail.","lg-senha");
   loginErro=""; await iniciaAppCheck();
   try{ const u=fb.auth.currentUser;
     const r=novo&&u&&u.isAnonymous?await fb.linkWithCredential(u,fb.EmailAuthProvider.credential(email,senha)):novo?await fb.createUserWithEmailAndPassword(fb.auth,email,senha):await fb.signInWithEmailAndPassword(fb.auth,email,senha);
@@ -1269,6 +1276,7 @@ async function salvaSenhaConta(){
   const email=(u.isAnonymous?campoTexto("s-lgemail"):(u.email||campoTexto("s-lgemail"))).trim(), senha=campoTexto("s-lgsenha");
   if(!emailOk(email)) return erroSheet("Digite um e-mail válido.","s-lgemail");
   if(!senhaBoa(senha)) return erroSheet("A senha precisa de pelo menos 8 caracteres, com letras e números.","s-lgsenha");
+  if(senhaObvia(senha,email)) return erroSheet("Essa senha é fácil de adivinhar. Evite sequências, palavras como “senha” e o seu e-mail.","s-lgsenha");
   await iniciaAppCheck();
   try{ const r=await fb.linkWithCredential(u,fb.EmailAuthProvider.credential(email,senha)); if(!r.user.emailVerified) fb.sendEmailVerification(r.user,{url:urlRetorno()}).catch(()=>{}); await aposLogin(r); toast(u.isAnonymous?"Conta criada! Enviamos um link para confirmar o e-mail.":"Senha criada: agora você também entra com e-mail e senha."); }
   catch(e){ erroSheet(traduzErro(e)||"Não deu certo. Tente de novo.","s-lgsenha"); }
