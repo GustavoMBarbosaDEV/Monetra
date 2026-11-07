@@ -12,6 +12,16 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.7 — 07/11/2026 **Reforços de segurança nos controles compartilhados e no bloqueio**
+
+- **Sair do controle:** só mostra "Você saiu" depois que o servidor aceita. Sem internet ou com erro, avisa e continua no controle, em vez de sair só neste aparelho.
+- **Excluir conta:** também tira a pessoa dos controles em que o pedido já foi aceito, mas que ainda não tinham aparecido na lista dela.
+- **Sair sem internet:** se houver lançamentos ainda não enviados, avisa que eles ficam guardados neste aparelho e pede um segundo toque em Sair para confirmar.
+- **Remover alguém do controle:** o código de convite é trocado na hora, para a pessoa removida não pedir para entrar de novo com o código antigo.
+- **Bloqueio por PIN:** enquanto a tela está bloqueada, o app, as janelas abertas e o MoneBot ficam fora do alcance do teclado e do leitor de tela.
+- **Importar extrato:** arquivos grandes demais são recusados com aviso (máximo 5 MB para OFX/CSV e 20 MB para PDF).
+- **Testado** no navegador: com PIN, o app e o MoneBot ficam inacessíveis e voltam ao normal depois do PIN; um CSV de 6 MB é recusado e um CSV normal continua sendo lido.
+
 ## 5.8.6 — 07/11/2026 **Quanto dá para gastar por dia e atualização obrigatória**
 
 - **Atualização obrigatória:** quem ainda está na 5.8.4 ou anterior passa para a versão nova sozinho, sem precisar tocar em "Atualizar": o app recarrega ao abrir ou ao voltar para ele. Necessário porque as regras do convite com prazo (5.8.5) recusam convites criados pelas versões antigas.
