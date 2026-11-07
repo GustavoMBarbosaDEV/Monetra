@@ -14,6 +14,7 @@ signing*
 google-services.json
 GoogleService-Info.plist
 serviceAccount*.json
+*serviceAccount*.json
 *-firebase-adminsdk-*.json
 
 # pacotes do PWABuilder, APK e backups (podem conter a chave de assinatura)
