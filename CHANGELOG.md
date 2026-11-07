@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.3 — 06/11/2026 **Correções de segurança**
+
+- **Grupos — dado inválido não trava mais o grupo:** um item que não é objeto nas listas de categorias ou de contas fixas da configuração compartilhada fazia o grupo ficar preso no carregamento para os outros membros (inclusive o dono, que perdia os botões de remover membro e excluir o grupo). Agora esses itens são ignorados e um documento que não normaliza é pulado.
+- **Grupos — pedido de entrada com e-mail confirmado:** o e-mail do pedido precisa ser o e-mail confirmado da própria conta, ou vazio (regras do Firestore + app). O dono vê "e-mail não confirmado" quando não houver. Testes das regras cobrem e-mail diferente, e-mail não confirmado e usuário anônimo. **Publicar as regras depois do app.**
+- **Login — credencial pendente:** a credencial guardada quando o Google/Microsoft encontra uma conta existente só é vinculada a uma conta com o mesmo e-mail, e expira em 10 minutos.
+- **Deploy:** a credencial do Firebase fica só no passo que precisa dela; `checkout` sem guardar o token; o deploy espera os três checks essenciais.
+- **Testado** no navegador: configuração com itens vazios em categorias e contas fixas carrega normalmente, sem erros no console.
+
 ## 5.8.2 — 06/11/2026 **MoneBot arrastável**
 
 - **Botão do MoneBot arrastável:** arraste o robozinho para qualquer altura; ao soltar, ele encosta na lateral mais próxima, sem sair da tela nem cobrir o topo ou a barra de baixo. A posição fica salva só neste aparelho e volta ao abrir o app ou girar a tela. Toque rápido abre a conversa; arrastar não abre.
