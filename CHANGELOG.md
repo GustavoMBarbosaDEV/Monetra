@@ -20,6 +20,7 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 - **Remover alguém do controle:** o código de convite é trocado na hora, para a pessoa removida não pedir para entrar de novo com o código antigo.
 - **Bloqueio por PIN:** enquanto a tela está bloqueada, o app, as janelas abertas e o MoneBot ficam fora do alcance do teclado e do leitor de tela.
 - **Importar extrato:** arquivos grandes demais são recusados com aviso (máximo 5 MB para OFX/CSV e 20 MB para PDF).
+- **Tutorial atualizado:** fala do MoneBot, de quanto dá para gastar por dia e do que falta pagar no card do salário, do código de convite que vale 7 dias e do tamanho máximo do extrato.
 - **Testado** no navegador: com PIN, o app e o MoneBot ficam inacessíveis e voltam ao normal depois do PIN; um CSV de 6 MB é recusado e um CSV normal continua sendo lido.
 
 ## 5.8.6 — 07/11/2026 **Quanto dá para gastar por dia e atualização obrigatória**
