@@ -1207,12 +1207,15 @@ async function entrar(nome,vincular){
   try{ const r=ligar?await fb.linkWithPopup(u,p):await fb.signInWithPopup(fb.auth,p); await aposLogin(r); }
   catch(e){ const c=e.code||"";
     if(c.includes("popup-blocked")||c.includes("operation-not-supported")){ if(ligar) await fb.linkWithRedirect(u,p); else await fb.signInWithRedirect(fb.auth,p); return; }
-    if(c.includes("account-exists-with-different-credential")){ credPendente=(nome==="microsoft"?fb.OAuthProvider:fb.GoogleAuthProvider).credentialFromError(e); const em=(e.customData&&e.customData.email)||"este e-mail";
+    if(c.includes("account-exists-with-different-credential")){ const em=(e.customData&&e.customData.email)||"este e-mail"; credPendente={c:(nome==="microsoft"?fb.OAuthProvider:fb.GoogleAuthProvider).credentialFromError(e),email:em==="este e-mail"?"":em,em:Date.now()};
       loginErro="Você já tem conta no Monetra com "+em+". Entre do jeito que usou antes (Google, senha ou link por e-mail): a "+(nome==="microsoft"?"Microsoft":"conta Google")+" é vinculada em seguida, sem criar outra conta."; ui.lgEmail=em==="este e-mail"?ui.lgEmail:em; render(); return; }
     loginErro=traduzErro(e); if(ligar&&loginErro) toast(loginErro); render(); }
 }
 async function aposLogin(r){
-  if(credPendente&&r&&r.user){ const c=credPendente; credPendente=null; try{ await fb.linkWithCredential(r.user,c); toast("Pronto: agora você também entra com "+(NOMES_PROV[c.providerId]||c.providerId)+"."); }catch(e){ console.warn("vincular",e&&e.code); } }
+  // só vincula a credencial pendente à conta do mesmo e-mail, e por no máximo 10 minutos
+  const pend=credPendente; credPendente=null;
+  const mesmoEmail=!!(pend&&pend.c&&pend.email&&r&&r.user&&r.user.email&&pend.email.toLowerCase()===r.user.email.toLowerCase()&&Date.now()-pend.em<10*60000);
+  if(mesmoEmail){ const c=pend.c; try{ await fb.linkWithCredential(r.user,c); toast("Pronto: agora você também entra com "+(NOMES_PROV[c.providerId]||c.providerId)+"."); }catch(e){ console.warn("vincular",e&&e.code); } }
   ui.lgAviso=""; if(fb.auth.currentUser) authUser=fb.auth.currentUser;
   boasVindas(r); if(ui.sheet&&ui.sheet.tipo==="vincular") closeSheet(); render();
 }
@@ -1233,7 +1236,7 @@ async function entrarEmail(){
     const r=novo&&u&&u.isAnonymous?await fb.linkWithCredential(u,fb.EmailAuthProvider.credential(email,senha)):novo?await fb.createUserWithEmailAndPassword(fb.auth,email,senha):await fb.signInWithEmailAndPassword(fb.auth,email,senha);
     if(novo) fb.sendEmailVerification(r.user,{url:urlRetorno()}).catch(()=>{});
     await aposLogin(r); }
-  catch(e){ if(novo&&String(e.code||"").includes("email-already-in-use")) credPendente=fb.EmailAuthProvider.credential(email,senha); erroLogin(traduzErro(e),"lg-senha"); }
+  catch(e){ if(novo&&String(e.code||"").includes("email-already-in-use")) credPendente={c:fb.EmailAuthProvider.credential(email,senha),email,em:Date.now()}; erroLogin(traduzErro(e),"lg-senha"); }
 }
 async function enviarLink(){
   const email=campoTexto("lg-email").trim(); ui.lgEmail=email;
