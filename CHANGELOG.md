@@ -12,14 +12,18 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.4 — 07/11/2026 **Senhas e plano de incidente**
+
+- **Login — senhas fáceis:** criar conta e definir senha recusam senhas de uma lista conhecida (senha123, admin123...), sequências, seis ou mais caracteres iguais seguidos e senhas que contêm o nome do próprio e-mail.
+- **Perfil:** quem entra com o Google vê a dica para ativar a verificação em 2 etapas da conta Google.
+- **Repositório:** `.gitignore` cobre qualquer arquivo `*serviceAccount*.json`; `SECURITY.md` ganhou plano de incidente, rotina de monitoramento, contato por e-mail e o endereço oficial.
+- **Ícones:** `icon-512` e `icon-maskable-512` comprimidos para menos de 60 KB.
+
 ## 5.8.3 — 06/11/2026 **Correções de segurança**
 
 - **Grupos — dado inválido não trava mais o grupo:** um item que não é objeto nas listas de categorias ou de contas fixas da configuração compartilhada fazia o grupo ficar preso no carregamento para os outros membros (inclusive o dono, que perdia os botões de remover membro e excluir o grupo). Agora esses itens são ignorados e um documento que não normaliza é pulado.
 - **Grupos — pedido de entrada com e-mail confirmado:** o e-mail do pedido precisa ser o e-mail confirmado da própria conta, ou vazio (regras do Firestore + app). O dono vê "e-mail não confirmado" quando não houver. Testes das regras cobrem e-mail diferente, e-mail não confirmado e usuário anônimo. **Publicar as regras depois do app.**
 - **Login — credencial pendente:** a credencial guardada quando o Google/Microsoft encontra uma conta existente só é vinculada a uma conta com o mesmo e-mail, e expira em 10 minutos.
-- **Login — senhas fáceis:** criar conta e definir senha recusam senhas de uma lista conhecida (senha123, admin123...), sequências, seis ou mais caracteres iguais seguidos e senhas que contêm o nome do próprio e-mail.
-- **Perfil:** quem entra com o Google vê a dica para ativar a verificação em 2 etapas da conta Google.
-- **Repositório:** `.gitignore` cobre qualquer arquivo `*serviceAccount*.json`; `SECURITY.md` ganhou plano de incidente, rotina de monitoramento, contato por e-mail e o endereço oficial.
 - **Deploy:** a credencial do Firebase fica só no passo que precisa dela; `checkout` sem guardar o token; o deploy espera os três checks essenciais.
 - **Testado** no navegador: configuração com itens vazios em categorias e contas fixas carrega normalmente, sem erros no console.
 
