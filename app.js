@@ -1476,8 +1476,10 @@ async function definePin(pin,apos){ const salt=novoCodigo(16), sal2=novoCodigo(1
 let travado=false, pinDig="", saiuEm=0, pinMsg="", esqueciPin=false;
 const errosPin=()=>{ try{ return JSON.parse(localStorage.getItem("mb.pin.erros")||'{"n":0,"ate":0}'); }catch(e){ return {n:0,ate:0}; } };
 const salvaErros=x=>{ try{ localStorage.setItem("mb.pin.erros",JSON.stringify(x)); }catch(e){} };
-function travar(){ const c=pinCfg(); if(!c||travado) return; travado=true; pinDig=""; pinMsg=""; esqueciPin=false; document.body.classList.add("travado"); renderLock(); if(c.bio) setTimeout(()=>usarBio(true),350); }
-function destravar(){ travado=false; pinDig=""; document.body.classList.remove("travado"); const el=document.getElementById("lock"); if(el) el.remove(); }
+const PRESOS_NO_PIN=["app","sheet","monebot","tutorial"];
+function inerteNoPin(){ PRESOS_NO_PIN.forEach(id=>{ const el=document.getElementById(id); if(el) el.inert=travado||(id==="app"&&document.body.classList.contains("sheet-open")); }); }
+function travar(){ const c=pinCfg(); if(!c||travado) return; travado=true; pinDig=""; pinMsg=""; esqueciPin=false; document.body.classList.add("travado"); inerteNoPin(); renderLock(); if(c.bio) setTimeout(()=>usarBio(true),350); }
+function destravar(){ travado=false; pinDig=""; document.body.classList.remove("travado"); inerteNoPin(); const el=document.getElementById("lock"); if(el) el.remove(); }
 function renderLock(){
   let el=document.getElementById("lock"); if(!el){ el=document.createElement("div"); el.id="lock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.setAttribute("aria-label","App bloqueado"); document.body.appendChild(el); }
   const er=errosPin(), espera=Math.max(0,Math.ceil((er.ate-Date.now())/1000));
@@ -3649,7 +3651,7 @@ function importarExtrato(){
   toast(its.length+" lançamento"+(its.length===1?"":"s")+" importado"+(its.length===1?"":"s")+".","Desfazer",()=>{ const ms=new Set(); criados.forEach(([k,l,id])=>{ const m=getMonth(k); m[l]=m[l].filter(x=>x.id!==id); ms.add(k); }); ms.forEach(k=>save(k)); render(); toast("Importação desfeita."); });
 }
 
-function sheetRoot(){ let r=document.getElementById("sheet"); if(!r){ r=document.createElement("div"); r.id="sheet"; document.body.appendChild(r); bindSheet(r); } return r; }
+function sheetRoot(){ let r=document.getElementById("sheet"); if(!r){ r=document.createElement("div"); r.id="sheet"; r.inert=travado; document.body.appendChild(r); bindSheet(r); } return r; }
 let sheetVoltaFoco=null;
 function openSheet(tipo,id,extra){
   if(mode==="login"||!state.loaded||precisaTermos()) return;
@@ -3668,7 +3670,7 @@ window.addEventListener("popstate",()=>{
   if(ui.tab!=="mes"){ ui.tab="mes"; render(); window.scrollTo({top:0}); return; }
 });
 function closeSheet(){ const tinha=!!ui.sheet; if(tinha&&!_voltando&&history.state&&history.state.mb==="sheet"){ _ignoraPop++; try{ history.back(); }catch(e){ _ignoraPop--; } }
-  ui.sheet=null; const r=document.getElementById("sheet"); if(r) r.innerHTML=""; document.body.classList.remove("sheet-open"); const _ap=document.getElementById("app"); if(_ap) _ap.inert=false; if(sheetVoltaFoco&&document.contains(sheetVoltaFoco)) try{sheetVoltaFoco.focus()}catch(e){} sheetVoltaFoco=null; }
+  ui.sheet=null; const r=document.getElementById("sheet"); if(r) r.innerHTML=""; document.body.classList.remove("sheet-open"); const _ap=document.getElementById("app"); if(_ap) _ap.inert=travado; if(sheetVoltaFoco&&document.contains(sheetVoltaFoco)) try{sheetVoltaFoco.focus()}catch(e){} sheetVoltaFoco=null; }
 const mesSheet=()=>(ui.sheet&&ui.sheet.mes)||ui.month;
 /** @returns {any} */
 function itemAtual(){
@@ -4244,7 +4246,7 @@ function botaoMoneBot(){
   b=document.createElement("button"); b.type="button"; b.id="monebot"; b.className="monebot"+(semMovimento()?"":" entra"); b.setAttribute("aria-label","Abrir o MoneBot, assistente do Monetra"); b.title="MoneBot";
   b.innerHTML=`${roboMB(46,"rb-vivo")}<span class="mb-nome" aria-hidden="true">MoneBot</span>`;
   b.title="MoneBot: toque para conversar, arraste para mudar de lugar";
-  document.body.appendChild(b); arrastaBot(b); colocaBot(b);
+  b.inert=travado; document.body.appendChild(b); arrastaBot(b); colocaBot(b);
 }
 // O botão pode ser arrastado; ao soltar, encosta na lateral mais próxima. A posição fica só neste aparelho.
 const BOT_POS="mb.botpos";
