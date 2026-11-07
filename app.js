@@ -3597,12 +3597,14 @@ function preparaImportacao(lista,cartao){
   }).sort((a,b)=>(a.k+pad2(a.dia)).localeCompare(b.k+pad2(b.dia)));
 }
 /** @param {File} file @param {string} [senha] */
+const EXTRATO_TXT_MB=5, EXTRATO_PDF_MB=20;
 async function abrirArquivoExtrato(file,senha){
   const s=ui.sheet; if(!s||s.tipo!=="importar") return;
   const ck=/** @type {HTMLInputElement|null} */(document.getElementById("s-impcartao"));
   if(ck) s.cartaoMarcado=ck.checked;
   s.contaImp=valSel("s-impconta")||s.contaImp; s.cartaoImp=valSel("s-cartao")||s.cartaoImp;
-  const ehPDF=/\.pdf$/i.test(file.name)||file.type==="application/pdf";
+  const ehPDF=/\.pdf$/i.test(file.name)||file.type==="application/pdf", maxMB=ehPDF?EXTRATO_PDF_MB:EXTRATO_TXT_MB;
+  if(file.size>maxMB*1024*1024){ s.erroImp="Arquivo grande demais para um extrato (máximo "+maxMB+" MB). Exporte um período menor no app do banco."; s.itens=null; s.pdfArq=null; s.pedeSenha=false; renderSheet(); anunciar(s.erroImp); return; }
   try{
     let r;
     if(ehPDF){
