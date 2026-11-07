@@ -12,6 +12,11 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.5 — 07/11/2026 **Convite com prazo**
+
+- **Controle compartilhado:** o código de convite vale 7 dias. O convite guarda a data de criação do servidor e as regras do Firestore recusam pedidos com código vencido ou sem data; quem tenta entrar vê "Esse código venceu" e o dono vê o prazo junto do código.
+- **Regras:** testes novos para convite vencido, sem data e com data falsa (`testes-regras/`).
+
 ## 5.8.4 — 07/11/2026 **Senhas e plano de incidente**
 
 - **Login — senhas fáceis:** criar conta e definir senha recusam senhas de uma lista conhecida (senha123, admin123...), sequências, seis ou mais caracteres iguais seguidos e senhas que contêm o nome do próprio e-mail.
