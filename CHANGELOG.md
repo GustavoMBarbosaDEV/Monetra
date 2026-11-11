@@ -12,6 +12,14 @@ escreva aqui o que mudou e marque o commit com uma tag (ex.: `v2.4.0`).
 
 ---
 
+## 5.8.8 — 11/11/2026 **MoneBot na borda e Perfil sem espaço vazio**
+
+- **MoneBot no celular:** fica encostado na borda da tela, meio escondido e sem o nome embaixo, para não cobrir botões e campos (como o atalho Caixinha no Início e o campo Qual dia útil no Perfil). Tocar abre a conversa; arrastar muda o lado e a altura, e ele lembra onde ficou. No computador, nada muda.
+- **Perfil:** saiu o espaço vazio entre o card Ajustes e o card da conta.
+- **Código:** o app agora fica dividido em arquivos por assunto na pasta `js/`; o `app.js` publicado é montado a partir deles e continua igual.
+- **Segurança:** testes das regras com firebase 13.2.0 e firebase-tools 15.35.0; CodeQL 4.39.3 e setup-java 6.2.0 nas Actions.
+- **Testado** no navegador (celular): o robô fica na borda direita sem cobrir a Caixinha nem o Qual dia útil, vai para a esquerda ao ser arrastado, lembra o lado e abre a conversa ao tocar.
+
 ## 5.8.7 — 07/11/2026 **Reforços de segurança nos controles compartilhados e no bloqueio**
 
 - **Sair do controle:** só mostra "Você saiu" depois que o servidor aceita. Sem internet ou com erro, avisa e continua no controle, em vez de sair só neste aparelho.
