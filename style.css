@@ -1663,7 +1663,12 @@ body.sheet-open .monebot{display:none}
 .monebot.arrastando{cursor:grabbing;transform:scale(1.08);box-shadow:0 18px 36px -10px rgba(6,40,28,.6),0 0 0 2px rgba(76,199,159,.6),0 0 28px -4px rgba(34,212,122,.55)}
 .monebot.encaixa{transition:left .28s cubic-bezier(.2,1.2,.4,1),top .28s ease}
 body:has(#novaversao) .monebot{bottom:calc(170px + env(safe-area-inset-bottom,0px))}
-@media (max-width:760px){.monebot{right:max(12px,env(safe-area-inset-right,0px));bottom:calc(92px + env(safe-area-inset-bottom,0px));padding:5px 5px 3px;border-radius:20px}.monebot .robo{width:40px;height:40px}body:has(#novaversao) .monebot{bottom:calc(236px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:760px){.monebot{right:env(safe-area-inset-right,0px);bottom:calc(92px + env(safe-area-inset-bottom,0px));padding:5px 5px 3px;border-radius:20px}.monebot .robo{width:40px;height:40px}body:has(#novaversao) .monebot{bottom:calc(236px + env(safe-area-inset-bottom,0px))}
+  .monebot .mb-nome{display:none}
+  .monebot{translate:45% 0;border-radius:20px 0 0 20px}
+  .monebot[data-lado="esq"]{translate:-45% 0;border-radius:0 20px 20px 0}
+  .monebot.arrastando,.monebot:focus-visible{translate:0 0;border-radius:20px}}
+@media (max-width:760px) and (prefers-reduced-motion:no-preference){.monebot{transition:translate .25s ease,border-radius .25s ease}.monebot.encaixa{transition:left .28s cubic-bezier(.2,1.2,.4,1),top .28s ease,translate .25s ease,border-radius .25s ease}}
 .robo{display:block;overflow:visible}
 .mb-chat{display:flex;flex-direction:column;gap:12px;max-height:min(52vh,460px);overflow:auto;padding:4px 2px 8px;overscroll-behavior:contain}
 .mb-msg{display:flex;gap:8px;align-items:flex-end}

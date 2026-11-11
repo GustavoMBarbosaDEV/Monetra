@@ -167,11 +167,12 @@ function botaoMoneBot(){
 // O botão pode ser arrastado; ao soltar, encosta na lateral mais próxima. A posição fica só neste aparelho.
 const BOT_POS="mb.botpos";
 /** @param {HTMLElement} b */
-function limitesBot(b){ const m=12, cel=matchMedia("(max-width:760px)").matches;
+function limitesBot(b){ const cel=matchMedia("(max-width:760px)").matches, m=cel?0:12;
   return {minX:m,maxX:Math.max(m,innerWidth-b.offsetWidth-m),minY:72,maxY:Math.max(72,innerHeight-b.offsetHeight-(cel?84:16))}; }
 /** @param {HTMLElement} b @param {number} x @param {number} y */
 function poeBot(b,x,y){ const L=limitesBot(b);
-  b.style.left=Math.round(Math.min(L.maxX,Math.max(L.minX,x)))+"px"; b.style.top=Math.round(Math.min(L.maxY,Math.max(L.minY,y)))+"px"; b.style.right="auto"; b.style.bottom="auto"; }
+  const nx=Math.min(L.maxX,Math.max(L.minX,x)); b.dataset.lado=nx+b.offsetWidth/2<innerWidth/2?"esq":"dir";
+  b.style.left=Math.round(nx)+"px"; b.style.top=Math.round(Math.min(L.maxY,Math.max(L.minY,y)))+"px"; b.style.right="auto"; b.style.bottom="auto"; }
 /** Volta para o lugar salvo (lado e altura relativa), se houver. @param {HTMLElement} b */
 function colocaBot(b){ let p=null; try{ p=JSON.parse(localStorage.getItem(BOT_POS)||"null"); }catch(e){}
   if(!p||(p.lado!=="esq"&&p.lado!=="dir")||typeof p.y!=="number") return; const L=limitesBot(b);
