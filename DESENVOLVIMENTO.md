@@ -78,7 +78,7 @@ Para cada pessoa ter a própria conta e sincronizar entre aparelhos, faça o pas
 | Arquivo | Para que serve |
 |---|---|
 | `index.html` | Página do app |
-| `app.js` | Toda a lógica (cálculos, login, salvamento) |
+| `js/` | Toda a lógica, um arquivo por assunto (cálculos, login, salvamento, telas em `js/paginas/`, peças da interface em `js/ui/`). O `index.html` carrega cada um, na ordem, e o build junta tudo num `app.js` só |
 | `style.css` | Visual (tema claro e escuro) |
 | `firebase-config.js` | Onde você cola a configuração do seu Firebase |
 | `firestore.rules` | Regras de segurança para colar no Firebase |
@@ -108,9 +108,9 @@ O número da versão aparece no app em **Perfil → Novidades**, e o histórico 
 
 Ao publicar uma versão nova:
 
-1. Atualize `const VERSAO` e a lista `NOVIDADES` em `app.js`, e o `CACHE` em `sw.js`.
+1. Atualize `const VERSAO` e a lista `NOVIDADES` em `js/versao.js`, e o `CACHE` em `sw.js`.
 2. Escreva o que mudou no topo do `CHANGELOG.md`.
-   - Se a mudança altera telas, abas ou o jeito de usar, atualize também o **tutorial** (`passosTutorial()` em `app.js`).
+   - Se a mudança altera telas, abas ou o jeito de usar, atualize também o **tutorial** (`passosTutorial()` em `js/ui/tutorial.js`).
    - Se cria uma chave nova no topo das configurações ou do mês, atualize o `firestore.rules` e publique as regras antes. Campo novo dentro de um item (lançamento, categoria, conta…) não precisa.
 3. Faça o commit e o push.
 4. No GitHub Desktop, aba **History** → botão direito no commit → **Create Tag** → `v2.4.0` (o número da versão) → **Push origin**.
@@ -161,13 +161,13 @@ O endereço do app passou de `https://gustavombarbosadev.github.io/MB-Controle/`
 ## Firebase Hosting
 
 Endereço oficial: `https://monetraapp.web.app` (site `monetraapp`, desde a 5.3.3). O projeto continua o `mb-controle-f70b6`.
-Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_ANTIGOS` no `app.js`): `gustavombarbosadev.github.io/Monetra` (GitHub Pages, branch `main`) e o site padrão `mb-controle-f70b6.web.app` (5.3.0 a 5.3.2).
+Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_ANTIGOS` no `js/versao.js`): `gustavombarbosadev.github.io/Monetra` (GitHub Pages, branch `main`) e o site padrão `mb-controle-f70b6.web.app` (5.3.0 a 5.3.2).
 
 - **Testar com Firebase no PC (`http://localhost:5500`, Live Server):** em `localhost` o app usa o token de depuração do App Check. Na primeira vez, ao tocar em Entrar, o console (F12) mostra `Firebase App Check debug token: …`; registre esse valor em Firebase Console → App Check → Apps → app web → ⋮ → **Gerenciar tokens de depuração**. Vale só para aquele navegador; trate como senha (quem tiver o token passa pelo App Check) e apague no console quando não precisar mais. `localhost` **não** deve estar na chave do reCAPTCHA.
 - **Deploy automático:** o `hosting.yml` só publica depois que os outros checks do commit (gitleaks e CodeQL, e Regras/Scorecard quando rodam) passarem.
 - **Dois sites no `firebase.json`:** `hosting` é uma lista com uma configuração para `monetraapp` e outra para `mb-controle-f70b6`, iguais (arquivos, `ignore`, `/baixar`, cabeçalhos e cache). Mudou uma? **Mude a outra igual.**
-- **Versão nova:** `cd ferramentas && npm run bump -- X.Y.Z` (troca `VERSAO`, `const V` do `sw.js` e os `?v=` do `index.html`); depois escreva NOVIDADES no `app.js` e a entrada no `CHANGELOG.md`.
-- **O que vai ao ar:** o Firebase Hosting publica só a pasta `dist/`, montada por `ferramentas/build.mjs` a partir de uma lista fixa de arquivos (arquivo novo do app? acrescente em `ARQUIVOS` ou `PASTAS` no script). `app.js`, `boot.js`, `pre.js`, `style.css` e `boot.css` saem minificados; a raiz do repositório continua legível e é o que o GitHub Pages serve.
+- **Versão nova:** `cd ferramentas && npm run bump -- X.Y.Z` (troca `VERSAO`, `const V` do `sw.js` e os `?v=` do `index.html`); depois escreva NOVIDADES no `js/versao.js` e a entrada no `CHANGELOG.md`.
+- **O que vai ao ar:** o Firebase Hosting publica só a pasta `dist/`, montada por `ferramentas/build.mjs` a partir de uma lista fixa de arquivos (arquivo novo do app? acrescente em `ARQUIVOS` ou `PASTAS` no script). Os arquivos de `js/` são juntados, na ordem das tags `<script src="js/...">` do `index.html`, dentro de uma função só, e viram o `app.js` publicado; o `index.html` publicado carrega só esse `app.js`. Arquivo novo em `js/`? Acrescente a tag no `index.html`, junto das outras (o build recusa arquivo de `js/` fora da lista). `app.js`, `boot.js`, `pre.js`, `style.css` e `boot.css` saem minificados.
 - **Deploy pela CLI (neste PC):** `.\testes-regras\node_modules\.bin\firebase.cmd login` uma vez; depois, a cada publicação:
   1. `cd ferramentas && npm ci && npm run build`;
   2. `.\testes-regras\node_modules\.bin\firebase.cmd deploy --only hosting:monetraapp,hosting:mb-controle-f70b6 --project mb-controle-f70b6`.
@@ -186,12 +186,12 @@ Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_
 
 ## Bibliotecas de terceiros (vendor/)
 
-- **Firebase JS SDK** (`FB_V` em `app.js`), em `vendor/firebase-<versão>/`, gerado por `ferramentas/vendor-firebase.mjs`. **Atualizar:** troque a versão de `firebase` em `ferramentas/package.json` **e** o `FB_V` no `app.js`, rode `cd ferramentas && npm install && node vendor-firebase.mjs`, apague a pasta antiga do `vendor/`, leia as notas de mudança (https://firebase.google.com/support/release-notes/js) e teste login, modo local, sincronização, compartilhado e offline. Se o app passar a usar outra função do SDK, acrescente o nome na lista `MODULOS` do script.
-  - **Mudou só a lista de funções (MODULOS) sem trocar a versão?** Rode `node vendor-firebase.mjs` e suba `FB_REV` no `app.js`. Os arquivos de `vendor/` têm cache `immutable`; o `?r=` no import faz quem já tem o arquivo antigo baixar o novo.
+- **Firebase JS SDK** (`FB_V` em `js/nuvem.js`), em `vendor/firebase-<versão>/`, gerado por `ferramentas/vendor-firebase.mjs`. **Atualizar:** troque a versão de `firebase` em `ferramentas/package.json` **e** o `FB_V` no `js/nuvem.js`, rode `cd ferramentas && npm install && node vendor-firebase.mjs`, apague a pasta antiga do `vendor/`, leia as notas de mudança (https://firebase.google.com/support/release-notes/js) e teste login, modo local, sincronização, compartilhado e offline. Se o app passar a usar outra função do SDK, acrescente o nome na lista `MODULOS` do script.
+  - **Mudou só a lista de funções (MODULOS) sem trocar a versão?** Rode `node vendor-firebase.mjs` e suba `FB_REV` no `js/nuvem.js`. Os arquivos de `vendor/` têm cache `immutable`; o `?r=` no import faz quem já tem o arquivo antigo baixar o novo.
 - O workflow `versoes.yml` abre uma issue toda semana em que o npm tiver versão nova do Firebase ou do pdf.js.
 
-- **pdf.js 6.5.438** (build `legacy`), em `vendor/pdfjs-6.5.438/`: `pdf.min.mjs`, `pdf.worker.min.mjs` e `LICENSE` (Apache-2.0). Usado só na importação de extrato em PDF e carregado sob demanda (`carregaPdfjs()` em `app.js`). Não entra no `SHELL` do `sw.js` (são ~1,8 MB); o service worker guarda os arquivos na primeira vez que forem usados.
-- **Atualizar:** `npm pack pdfjs-dist@<versão>` numa pasta temporária, copie `legacy/build/pdf.min.mjs`, `legacy/build/pdf.worker.min.mjs` e `LICENSE` para uma pasta nova `vendor/pdfjs-<versão>/`, troque `PDFJS_DIR` no `app.js`, apague a pasta antiga e teste a importação com PDFs reais e com senha. A pasta leva a versão no nome para nenhum cache antigo misturar arquivos.
+- **pdf.js 6.5.438** (build `legacy`), em `vendor/pdfjs-6.5.438/`: `pdf.min.mjs`, `pdf.worker.min.mjs` e `LICENSE` (Apache-2.0). Usado só na importação de extrato em PDF e carregado sob demanda (`carregaPdfjs()` em `js/importar.js`). Não entra no `SHELL` do `sw.js` (são ~1,8 MB); o service worker guarda os arquivos na primeira vez que forem usados.
+- **Atualizar:** `npm pack pdfjs-dist@<versão>` numa pasta temporária, copie `legacy/build/pdf.min.mjs`, `legacy/build/pdf.worker.min.mjs` e `LICENSE` para uma pasta nova `vendor/pdfjs-<versão>/`, troque `PDFJS_DIR` no `js/importar.js`, apague a pasta antiga e teste a importação com PDFs reais e com senha. A pasta leva a versão no nome para nenhum cache antigo misturar arquivos.
 
 ## Segurança do repositório
 
@@ -207,8 +207,8 @@ Endereços antigos que ainda servem o app e mostram o aviso de mudança (`HOSTS_
 
 ## Checagem de tipos (VS Code / TypeScript)
 
-- O `app.js` começa com `// @ts-check` e tem os tipos principais em JSDoc (Config, Mes, Gasto, Parcela…).
+- Cada arquivo de `js/` começa com `// @ts-check`; os tipos principais ficam em JSDoc em `js/tipos.js` (Config, Mes, Gasto, Parcela…).
 - `jsconfig.json` liga a checagem; `tipos.d.ts` completa os tipos dos elementos da tela. Nenhum dos dois é carregado pelo app.
 - No VS Code: abra a pasta do projeto e veja os avisos em **Problemas** (Ctrl+Shift+M).
 - No terminal (com Node): `npx -p typescript tsc -p jsconfig.json` — o esperado é terminar sem nenhum erro.
-- Ao criar campos novos nos dados, atualize o typedef correspondente no topo do `app.js`.
+- Ao criar campos novos nos dados, atualize o typedef correspondente em `js/tipos.js`.
