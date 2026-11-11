@@ -759,6 +759,7 @@ h1,h2,h3{letter-spacing:-.02em}
 .tema-escuro .heroSaldo .hs-val{color:var(--fg)}
 .tema-claro .faixa{box-shadow:0 8px 24px -14px rgba(0,0,0,.4)}
 .card,.tile,.conta,.desafio,.ferr,.calcbox,.simcol,.semtot{border:0!important;box-shadow:var(--sombra)}
+.ajlink + .perfilhead{margin-top:0}
 .card{border-radius:24px;background:var(--surface);position:relative;margin-top:30px;padding:16px}
 .card > .cardhead,.card > h2:first-child{position:absolute;left:4px;right:4px;top:-31px;margin:0;display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-height:24px}
 .card > .cardhead h2,.card > h2:first-child{font-size:16px;font-weight:700}
