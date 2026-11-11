@@ -1,7 +1,7 @@
 // Gera vendor/firebase-<versão>/ a partir do pacote "firebase" do npm (versão fixa no package.json).
 // Uso: cd ferramentas && npm ci && node vendor-firebase.mjs
-// Mudou a lista MODULOS sem trocar a versão? Suba FB_REV no app.js: vendor/ tem cache immutable e o ?r= força o download novo.
-// Saem quatro módulos ES (app, auth, firestore, app-check) com as mesmas funções que o app.js usa,
+// Mudou a lista MODULOS sem trocar a versão? Suba FB_REV no js/nuvem.js: vendor/ tem cache immutable e o ?r= força o download novo.
+// Saem quatro módulos ES (app, auth, firestore, app-check) com as mesmas funções que o app usa,
 // mais pedaços comuns: o núcleo do Firebase fica num arquivo só, compartilhado pelos quatro.
 import { build } from "esbuild";
 import fs from "node:fs";
@@ -11,9 +11,9 @@ import { fileURLToPath } from "node:url";
 const aqui = path.dirname(fileURLToPath(import.meta.url));
 const raiz = path.join(aqui, "..");
 const versao = JSON.parse(fs.readFileSync(path.join(aqui, "node_modules/firebase/package.json"), "utf8")).version;
-const fbv = /const FB_V="([0-9.]+)"/.exec(fs.readFileSync(path.join(raiz, "app.js"), "utf8"));
+const fbv = /const FB_V="([0-9.]+)"/.exec(fs.readFileSync(path.join(raiz, "js", "nuvem.js"), "utf8"));
 if (!fbv || fbv[1] !== versao) {
-  console.error(`FB_V no app.js (${fbv && fbv[1]}) é diferente do firebase instalado (${versao}). Ajuste os dois juntos.`);
+  console.error(`FB_V no js/nuvem.js (${fbv && fbv[1]}) é diferente do firebase instalado (${versao}). Ajuste os dois juntos.`);
   process.exit(1);
 }
 

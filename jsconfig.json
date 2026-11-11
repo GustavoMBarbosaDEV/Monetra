@@ -14,7 +14,7 @@
     "skipLibCheck": true
   },
   "include": [
-    "app.js",
+    "js/**/*.js",
     "firebase-config.js",
     "tipos.d.ts"
   ]

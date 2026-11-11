@@ -24,7 +24,7 @@ jobs:
         run: |
           set -euo pipefail
           ok() { [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; }
-          fb_app=$(grep -oE 'const FB_V="[0-9.]+"' app.js | cut -d'"' -f2)
+          fb_app=$(grep -oE 'const FB_V="[0-9.]+"' js/nuvem.js | cut -d'"' -f2)
           pdf_app=$(ls -d vendor/pdfjs-* 2>/dev/null | sed 's#.*/pdfjs-##' | sort -V | tail -1)
           fb_npm=$(npm view firebase version)
           pdf_npm=$(npm view pdfjs-dist version)
@@ -38,7 +38,7 @@ jobs:
             if [ "$n" = "0" ]; then gh issue create --title "$titulo" --body "$corpo"; else echo "Já existe issue aberta: $titulo"; fi
           }
           if [ "$fb_app" != "$fb_npm" ]; then
-            abre "Versão nova do Firebase JS SDK: $fb_npm (o app usa $fb_app)" "O npm tem o Firebase JS SDK **$fb_npm** e o app usa **$fb_app** (\`FB_V\` em \`app.js\`).
+            abre "Versão nova do Firebase JS SDK: $fb_npm (o app usa $fb_app)" "O npm tem o Firebase JS SDK **$fb_npm** e o app usa **$fb_app** (\`FB_V\` em \`js/nuvem.js\`).
 
           Antes de atualizar, leia as notas de mudança: https://firebase.google.com/support/release-notes/js
 

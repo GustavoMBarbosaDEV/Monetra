@@ -1,9 +1,9 @@
 // Troca a versão do Monetra nos lugares que dependem dela.
 // Uso: cd ferramentas && node bump.mjs 5.4.5
-//   app.js     const VERSAO="X.Y.Z"
+//   js/versao.js const VERSAO="X.Y.Z"
 //   sw.js      const V = "X.Y.Z"   (nome do cache e ?v= do SHELL)
-//   index.html ?v=X.Y.Z nos links de style.css, boot.css, pre.js, boot.js e app.js
-// NOVIDADES (app.js) e CHANGELOG.md continuam à mão.
+//   index.html ?v=X.Y.Z nos links de style.css, boot.css, pre.js e boot.js (o app.js publicado ganha o ?v= no build)
+// NOVIDADES (js/versao.js) e CHANGELOG.md continuam à mão.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,11 +23,11 @@ function troca(arquivo, trocas) {
   return () => { fs.writeFileSync(f, t); console.log("atualizado:", arquivo); };
 }
 
-const ARQUIVOS_V = ["style.css", "boot.css", "pre.js", "boot.js", "app.js"];
+const ARQUIVOS_V = ["style.css", "boot.css", "pre.js", "boot.js"];
 const gravar = [
-  troca("app.js", [[/const VERSAO="\d+\.\d+\.\d+";/g, `const VERSAO="${nova}";`, 1]]),
+  troca("js/versao.js", [[/const VERSAO="\d+\.\d+\.\d+";/g, `const VERSAO="${nova}";`, 1]]),
   troca("sw.js", [[/const V = "\d+\.\d+\.\d+";/g, `const V = "${nova}";`, 1]]),
   troca("index.html", ARQUIVOS_V.map((a) => [new RegExp(`((?:href|src)="${a.replace(".", "\\.")})(?:\\?v=[0-9.]+)?"`, "g"), `$1?v=${nova}"`, 1])),
 ];
 gravar.forEach((g) => g());
-console.log(`Versão ${nova}. Falta escrever NOVIDADES no app.js e a entrada no CHANGELOG.md.`);
+console.log(`Versão ${nova}. Falta escrever NOVIDADES no js/versao.js e a entrada no CHANGELOG.md.`);
